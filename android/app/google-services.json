@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "530812811944",
+    "project_id": "fouta-app",
+    "storage_bucket": "fouta-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:530812811944:android:25dbfdf862b9a26fd2a09d",
+        "android_client_info": {
+          "package_name": "com.example.fouta_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCfSF2IyJT7T9QODoPwUPsj2vP9Tx2qYaQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:530812811944:android:6aa2269fc3b07e7fd2a09d",
+        "android_client_info": {
+          "package_name": "com.fouta.foutaapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCfSF2IyJT7T9QODoPwUPsj2vP9Tx2qYaQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

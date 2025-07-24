@@ -1,0 +1,508 @@
+// lib/screens/profile_screen.dart
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:intl/intl.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+import 'package:fouta_app/main.dart'; // Import APP_ID
+import 'package:fouta_app/screens/chat_screen.dart';
+import 'package:fouta_app/widgets/full_screen_image_viewer.dart';
+import 'package:fouta_app/widgets/post_card_widget.dart';
+
+class ProfileScreen extends StatefulWidget {
+  final String userId;
+  final bool initialIsEditing;
+  const ProfileScreen({super.key, required this.userId, this.initialIsEditing = false});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final _bioController = TextEditingController();
+  late bool _isEditing;
+  bool _isFollowing = false;
+  String _currentProfileImageUrl = '';
+  XFile? _newProfileImageFile;
+  Uint8List? _newProfileImageBytes;
+  double _uploadProgress = 0.0;
+  bool _isUploading = false;
+
+  final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _isEditing = widget.initialIsEditing;
+  }
+
+  @override
+  void dispose() {
+    _bioController.dispose();
+    super.dispose();
+  }
+
+  void _showMessage(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: msg.contains('successful') ? Colors.green : Theme.of(context).colorScheme.error,
+      ),
+    );
+  }
+
+  Future<void> _pickProfileImage() async {
+    if (_isUploading) {
+      _showMessage('Upload in progress. Please wait.');
+      return;
+    }
+
+    XFile? pickedFile;
+    try {
+      pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    } catch (e) {
+      _showMessage('Error picking image: $e');
+      return;
+    }
+
+    if (pickedFile != null) {
+      _showMessage('Image selected. Tap the checkmark to save changes.');
+      setState(() {
+        if (kIsWeb) {
+          pickedFile!.readAsBytes().then((bytes) {
+            setState(() {
+              _newProfileImageBytes = bytes;
+            });
+          });
+        } else {
+          _newProfileImageFile = pickedFile;
+        }
+      });
+    } else {
+      _showMessage('No image selected.');
+    }
+  }
+
+  Future<void> _updateProfile(String currentProfileImageUrl) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.uid != widget.userId) {
+      _showMessage('You can only edit your own profile.');
+      return;
+    }
+
+    String? newImageUrl = currentProfileImageUrl;
+    if (_newProfileImageFile != null || _newProfileImageBytes != null) {
+      setState(() {
+        _isUploading = true;
+        _uploadProgress = 0.0;
+      });
+      try {
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('profile_images/${user.uid}/${DateTime.now().millisecondsSinceEpoch}_profile_pic.jpg');
+
+        UploadTask uploadTask;
+        if (kIsWeb && _newProfileImageBytes != null) {
+          uploadTask = storageRef.putData(_newProfileImageBytes!);
+        } else if (_newProfileImageFile != null) {
+          uploadTask = storageRef.putFile(File(_newProfileImageFile!.path));
+        } else {
+          _showMessage('Invalid media data for upload.');
+          if (mounted) setState(() { _isUploading = false; });
+          return;
+        }
+
+        uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+          if(mounted) {
+            setState(() {
+              _uploadProgress = snapshot.bytesTransferred / snapshot.totalBytes;
+            });
+          }
+        });
+
+        await uploadTask.whenComplete(() async {
+          newImageUrl = await storageRef.getDownloadURL();
+          _showMessage('Profile image uploaded successfully!');
+        });
+      } on FirebaseException catch (e) {
+        _showMessage('Profile image upload failed: ${e.message}');
+        if(mounted) setState(() => _isUploading = false);
+        return;
+      } finally {
+        if(mounted) setState(() => _isUploading = false);
+      }
+    }
+
+    try {
+      await FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(user.uid).update({
+        'bio': _bioController.text.trim(),
+        'profileImageUrl': newImageUrl,
+      });
+
+      final userPostsQuery = FirebaseFirestore.instance
+          .collection('artifacts/$APP_ID/public/data/posts')
+          .where('authorId', isEqualTo: user.uid);
+
+      final userPostsSnapshot = await userPostsQuery.get();
+      for (final postDoc in userPostsSnapshot.docs) {
+        await postDoc.reference.update({
+          'authorProfileImageUrl': newImageUrl,
+        });
+      }
+
+      _showMessage('Profile updated successfully!');
+      if(mounted) {
+        setState(() {
+          _isEditing = false;
+          _newProfileImageFile = null;
+          _newProfileImageBytes = null;
+          _uploadProgress = 0.0;
+        });
+      }
+    } on FirebaseException catch (e) {
+      _showMessage('Failed to update profile: ${e.message}');
+    }
+  }
+
+  Future<void> _toggleFollow(String currentUserId, String targetUserId) async {
+    if (currentUserId == targetUserId) {
+      _showMessage('You cannot follow yourself.');
+      return;
+    }
+    try {
+      final currentUserRef = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(currentUserId);
+      final targetUserRef = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(targetUserId);
+
+      final currentUserDoc = await currentUserRef.get();
+      
+      if (!currentUserDoc.exists) {
+        _showMessage('User data not found for follow operation.');
+        return;
+      }
+
+      List<String> currentUserFollowing = List<String>.from(currentUserDoc.data()?['following'] ?? []);
+      
+      if (currentUserFollowing.contains(targetUserId)) {
+        await currentUserRef.update({'following': FieldValue.arrayRemove([targetUserId])});
+        await targetUserRef.update({'followers': FieldValue.arrayRemove([currentUserId])});
+        if(mounted) _showMessage('Unfollowed user.');
+      } else {
+        await currentUserRef.update({'following': FieldValue.arrayUnion([targetUserId])});
+        await targetUserRef.update({'followers': FieldValue.arrayUnion([currentUserId])});
+        
+        final String currentUserName = currentUserDoc.data()?['displayName'] ?? 'Someone';
+        await targetUserRef.collection('notifications').add({
+          'type': 'follow',
+          'fromUserId': currentUserId,
+          'fromUserName': currentUserName,
+          'isRead': false,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+
+        if(mounted) _showMessage('Followed user.');
+      }
+    } on FirebaseException catch (e) {
+      _showMessage('Failed to update follow status: ${e.message}');
+    }
+  }
+
+  void _showUserListDialog(BuildContext context, List<dynamic> userIds, String title) {
+    if (userIds.isEmpty) {
+      _showMessage('No $title yet!');
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: userIds.length,
+              itemBuilder: (context, index) {
+                final userId = userIds[index];
+                return FutureBuilder<DocumentSnapshot>(
+                  future: FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(userId).get(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const ListTile(title: Text('Loading...'));
+                    }
+                    if (!snapshot.hasData || !snapshot.data!.exists) {
+                      return const ListTile(title: Text('Unknown User'));
+                    }
+                    final userData = snapshot.data!.data() as Map<String, dynamic>;
+                    final String displayName = userData['displayName'] ?? 'Unknown User';
+                    final String profileImageUrl = userData['profileImageUrl'] ?? '';
+
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundImage: profileImageUrl.isNotEmpty
+                            ? CachedNetworkImageProvider(profileImageUrl)
+                            : null,
+                        child: profileImageUrl.isEmpty
+                            ? const Icon(Icons.person, color: Colors.white)
+                            : null,
+                        backgroundColor: Colors.grey[300],
+                      ),
+                      title: Text(displayName),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProfileScreen(userId: userId),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Close'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _formatTimestamp(Timestamp? timestamp) {
+    if (timestamp == null) return 'N/A';
+    final DateTime date = timestamp.toDate();
+    return DateFormat('MMM d, yyyy').format(date);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final bool isMyProfile = currentUser?.uid == widget.userId;
+
+    return widget.userId.isEmpty
+        ? const Center(child: Text('User ID is missing.'))
+        : StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(widget.userId).snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!snapshot.hasData || !snapshot.data!.exists) {
+                return const Center(child: Text('User not found.'));
+              }
+
+              final userData = snapshot.data!.data() as Map<String, dynamic>;
+              final String displayName = userData['displayName'] ?? 'No Name';
+              final String bio = userData['bio'] ?? 'No bio yet.';
+              final Timestamp? createdAt = userData['createdAt'] as Timestamp?;
+              final List<dynamic> followers = userData['followers'] ?? [];
+              final List<dynamic> following = userData['following'] ?? [];
+              
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && _currentProfileImageUrl != (userData['profileImageUrl'] ?? '')) {
+                  setState(() {
+                    _currentProfileImageUrl = userData['profileImageUrl'] ?? '';
+                  });
+                }
+              });
+
+              if (_isEditing) {
+                _bioController.text = bio;
+              }
+
+              if (currentUser != null && !currentUser.isAnonymous) {
+                _isFollowing = (userData['followers'] ?? []).contains(currentUser.uid);
+              }
+
+              return RefreshIndicator(
+                onRefresh: () async => setState(() {}),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        GestureDetector(
+                          onTap: isMyProfile ? () {
+                            if (_isEditing) {
+                              _pickProfileImage();
+                            } else if (_currentProfileImageUrl.isNotEmpty) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => FullScreenImageViewer(imageUrl: _currentProfileImageUrl),
+                                ),
+                              );
+                            }
+                          } : null,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              CircleAvatar(
+                                radius: 60,
+                                backgroundImage: (_newProfileImageBytes != null && kIsWeb)
+                                    ? MemoryImage(_newProfileImageBytes!)
+                                    : (_newProfileImageFile != null && !kIsWeb)
+                                        ? FileImage(File(_newProfileImageFile!.path)) as ImageProvider
+                                        : (_currentProfileImageUrl.isNotEmpty ? CachedNetworkImageProvider(_currentProfileImageUrl) : null),
+                                child: (_currentProfileImageUrl.isEmpty && _newProfileImageFile == null && _newProfileImageBytes == null)
+                                    ? const Icon(Icons.person, size: 60, color: Colors.white)
+                                    : null,
+                                backgroundColor: Colors.grey[300],
+                              ),
+                              if (isMyProfile)
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: CircleAvatar(
+                                    backgroundColor: Theme.of(context).colorScheme.primary,
+                                    child: IconButton(
+                                      icon: Icon(_isEditing ? Icons.check : Icons.edit, color: Colors.white),
+                                      onPressed: () {
+                                        if (_isEditing) {
+                                          _updateProfile(_currentProfileImageUrl);
+                                        } else {
+                                          setState(() {
+                                            _isEditing = true;
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        if (_isUploading)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: LinearProgressIndicator(value: _uploadProgress),
+                          ),
+                        const SizedBox(height: 16),
+                        Text(displayName, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        if (_isEditing)
+                          TextField(
+                            controller: _bioController,
+                            maxLines: 3,
+                            decoration: const InputDecoration(labelText: 'Bio'),
+                            textAlign: TextAlign.center,
+                          )
+                        else
+                          Text(bio, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+                        const SizedBox(height: 16),
+                        Text('Joined: ${_formatTimestamp(createdAt)}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            GestureDetector(
+                              onTap: () => _showUserListDialog(context, followers, 'Followers'),
+                              child: Column(
+                                children: [
+                                  Text('${followers.length}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  const Text('Followers', style: TextStyle(color: Colors.grey)),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 30),
+                            GestureDetector(
+                              onTap: () => _showUserListDialog(context, following, 'Following'),
+                              child: Column(
+                                children: [
+                                  Text('${following.length}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  const Text('Following', style: TextStyle(color: Colors.grey)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        if (!isMyProfile && currentUser != null && !currentUser.isAnonymous)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              ElevatedButton(
+                                onPressed: () => _toggleFollow(currentUser.uid, widget.userId),
+                                child: Text(_isFollowing ? 'Unfollow' : 'Follow'),
+                              ),
+                              const SizedBox(width: 10),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ChatScreen(
+                                        otherUserId: widget.userId,
+                                        otherUserName: displayName,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: const Text('Message'),
+                              ),
+                            ],
+                          ),
+                        const Divider(height: 40),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            isMyProfile ? 'Your Posts' : '$displayName\'s Posts',
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        StreamBuilder<QuerySnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('artifacts/$APP_ID/public/data/posts')
+                              .where('authorId', isEqualTo: widget.userId)
+                              .orderBy('timestamp', descending: true)
+                              .snapshots(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                            if (snapshot.data!.docs.isEmpty) return Center(child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 32.0),
+                              child: Text(isMyProfile ? 'You have no posts yet.' : 'This user has no posts yet.'),
+                            ));
+                            
+                            return ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: snapshot.data!.docs.length,
+                              itemBuilder: (context, index) {
+                                final post = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+                                return PostCardWidget(
+                                  postId: snapshot.data!.docs[index].id,
+                                  post: post,
+                                  currentUser: currentUser,
+                                  appId: APP_ID,
+                                  onMessage: _showMessage,
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+  }
+}
