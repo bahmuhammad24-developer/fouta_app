@@ -1,5 +1,5 @@
 # .github/workflows/build.yml
-name: Fouta iOS Build
+name: Fouta iOS Build - Diagnostic
 
 on:
   push:
@@ -20,19 +20,27 @@ jobs:
         with:
           channel: 'stable'
 
-      # CORRECTION: Run 'flutter pub get' before any iOS-specific commands.
-      # This bootstraps the environment and makes helper scripts available.
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      # This step can now find the podhelper.rb script.
+      # --- DIAGNOSTIC STEPS START ---
+      # The following steps are added to investigate the build failure.
+
+      - name: 1. Run Flutter Doctor
+        run: flutter doctor -v
+        continue-on-error: true # Allow workflow to continue even if doctor finds issues
+
+      - name: 2. List Files in Workspace
+        run: ls -lR .
+        continue-on-error: true # Allow workflow to continue
+
+      # --- DIAGNOSTIC STEPS END ---
+
       - name: Install CocoaPods dependencies
         run: |
           cd ios
           pod install --repo-update
 
-      # This step imports the code signing certificate using the verified action. [cite: 65]
-      # Secrets must be configured in the repository's settings.
       - name: Import Apple Code Signing
         uses: apple-actions/import-codesign-certs@v2
         with:
@@ -43,7 +51,6 @@ jobs:
         run: |
           flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
           
-      # Optional: Upload artifact to be able to download the .ipa file
       - name: Upload .ipa artifact
         uses: actions/upload-artifact@v4
         with:
