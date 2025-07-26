@@ -31,9 +31,9 @@ jobs:
     - name: Get dependencies
       run: flutter pub get
 
-    # THIS STEP IS NOW CORRECTLY INDENTED
     - name: Import Apple Code Signing
-      uses: apple-actions/import-codesigning-certs@v2
+      # THE FIX IS HERE: Changed @v2 to @v1
+      uses: apple-actions/import-codesigning-certs@v1
       with:
         p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
         p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
