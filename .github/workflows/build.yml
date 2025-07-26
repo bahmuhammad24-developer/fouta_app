@@ -1,4 +1,4 @@
-# This is the definitive build.yml file with the user-verified action path.
+# This is a diagnostic build.yml file.
 
 name: Build Fouta iOS App
 
@@ -28,14 +28,22 @@ jobs:
     - name: Get Flutter dependencies
       run: flutter pub get
 
+    # --- NEW DIAGNOSTIC STEP ---
+    - name: Verify File Paths
+      run: |
+        echo "--- Verifying project root ---"
+        ls -la
+        echo "--- Verifying packages directory ---"
+        ls -la packages/flutter_tools/bin/ || echo "Directory not found"
+    # --- END DIAGNOSTIC STEP ---
+
     - name: Install CocoaPods dependencies
       run: |
         cd ios
         pod install --repo-update
 
     - name: Import Apple Code Signing
-      # This path is the one you verified from the GitHub Marketplace.
-      uses: apple-actions/import-codesign-certs@v3
+      uses: apple-actions/import-codesigning-certs@v2
       with:
         p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
         p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
