@@ -1,4 +1,4 @@
-# This is a diagnostic build.yml file.
+# This is the definitive build.yml file, correcting the reverted action path.
 
 name: Build Fouta iOS App
 
@@ -25,25 +25,18 @@ jobs:
       with:
         channel: 'stable'
 
-    - name: Get Flutter dependencies
-      run: flutter pub get
-
-    # --- NEW DIAGNOSTIC STEP ---
-    - name: Verify File Paths
+    - name: Clean, Regenerate, and Install Dependencies
       run: |
-        echo "--- Verifying project root ---"
-        ls -la
-        echo "--- Verifying packages directory ---"
-        ls -la packages/flutter_tools/bin/ || echo "Directory not found"
-    # --- END DIAGNOSTIC STEP ---
-
-    - name: Install CocoaPods dependencies
-      run: |
+        flutter clean
+        rm -f ios/Podfile
+        rm -f ios/Podfile.lock
+        flutter pub get
         cd ios
         pod install --repo-update
 
     - name: Import Apple Code Signing
-      uses: apple-actions/import-codesigning-certs@v2
+      # This now uses the correct path you verified. I apologize for reverting it.
+      uses: apple-actions/import-codesign-certs@v3
       with:
         p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
         p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
