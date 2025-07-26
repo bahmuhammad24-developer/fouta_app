@@ -1,50 +1,26 @@
-# This is the definitive build.yml file.
+# Copyright 2014 The Flutter Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
 
-name: Build Fouta iOS App
+ENV['COCOAPODS_DISABLE_DART_SUBPROCESS'] = 'true'
 
-on:
-  push:
-    branches: [ "main" ]
+$flutter_minimum_ios_version_plugins = {}
 
-jobs:
-  build:
-    runs-on: macos-latest
+load File.join(File.dirname(File.realpath(__FILE__)), '..', 'packages', 'flutter_tools', 'bin', 'podhelper.rb')
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+target 'Runner' do
+  use_frameworks!
+  use_modular_headers!
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+end
 
-    - name: Set up Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'zulu'
-        java-version: '11'
-
-    - name: Set up Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        channel: 'stable'
-
-    - name: Get Flutter dependencies
-      run: flutter pub get
-
-    - name: Install CocoaPods dependencies
-      run: |
-        cd ios
-        pod install --repo-update
-
-    - name: Import Apple Code Signing
-      uses: apple-ci-tools/import-codesigning-certs@v2
-      with:
-        p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
-        p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        provisioning-profile-base64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
-
-    - name: Build iOS App
-      run: flutter build ipa --release
-
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: FoutaApp-iOS
-        path: build/ios/ipa/*.ipa
+post_install do |installer|
+  flutter_post_install(installer)
+  # --- Start Fouta Patch: Remove -G Flag ---
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['OTHER_CFLAGS']&.delete('-G')
+    end
+  end
+  # --- End Fouta Patch ---
+end
