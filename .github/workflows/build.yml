@@ -1,4 +1,4 @@
-# This is the definitive build.yml file, correcting the reverted action path.
+# This is the definitive build.yml file with the corrected parameter name.
 
 name: Build Fouta iOS App
 
@@ -25,22 +25,21 @@ jobs:
       with:
         channel: 'stable'
 
-    - name: Clean, Regenerate, and Install Dependencies
+    - name: Get Flutter dependencies
+      run: flutter pub get
+
+    - name: Install CocoaPods dependencies
       run: |
-        flutter clean
-        rm -f ios/Podfile
-        rm -f ios/Podfile.lock
-        flutter pub get
         cd ios
         pod install --repo-update
 
     - name: Import Apple Code Signing
-      # This now uses the correct path you verified. I apologize for reverting it.
       uses: apple-actions/import-codesign-certs@v3
       with:
         p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
         p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        provisioning-profile-base64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+        # THE FIX IS HERE: Corrected parameter name
+        mobile-provision-base64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
 
     - name: Build iOS App
       run: flutter build ipa --release
