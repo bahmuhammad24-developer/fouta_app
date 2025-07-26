@@ -20,12 +20,15 @@ jobs:
         with:
           channel: 'stable'
 
-      # Add "flutter clean" to ensure a fresh dependency state.
       - name: Clean project
         run: flutter clean
 
       - name: Get Flutter dependencies
         run: flutter pub get
+        
+      # This is the new, definitive step to force generation of iOS helper scripts.
+      - name: Prepare iOS for build
+        run: flutter build ios --config-only
 
       - name: Install CocoaPods dependencies
         run: |
@@ -33,7 +36,7 @@ jobs:
           pod install --repo-update
 
       - name: Import Apple Code Signing
-        uses: apple-actions/import-codesign-certs@v3
+        uses: apple-actions/import-codesign-certs@v2
         with:
           p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
