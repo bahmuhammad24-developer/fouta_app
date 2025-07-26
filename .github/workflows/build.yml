@@ -1,4 +1,4 @@
-# This file goes in .github/workflows/build.yml
+# This is the definitive build.yml file.
 
 name: Build Fouta iOS App
 
@@ -25,15 +25,16 @@ jobs:
       with:
         channel: 'stable'
 
-    - name: Verify Flutter environment
-      run: flutter doctor
-
-    - name: Get dependencies
+    - name: Get Flutter dependencies
       run: flutter pub get
 
+    - name: Install CocoaPods dependencies
+      run: |
+        cd ios
+        pod install --repo-update
+
     - name: Import Apple Code Signing
-      # THE FIX IS HERE: Changed @v2 to @v1
-      uses: apple-actions/import-codesigning-certs@v1
+      uses: apple-ci-tools/import-codesigning-certs@v2
       with:
         p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
         p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
