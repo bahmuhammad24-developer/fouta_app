@@ -1,51 +1,51 @@
-# This is the definitive build.yml file with the corrected parameter name.
-
-name: Build Fouta iOS App
+# .github/workflows/build.yml
+name: Fouta iOS Build
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
-  build:
+  build-ios:
     runs-on: macos-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'zulu'
-        java-version: '11'
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
 
-    - name: Set up Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        channel: 'stable'
+      # CORRECTION: Run 'flutter pub get' before any iOS-specific commands.
+      # This bootstraps the environment and makes helper scripts available.
+      - name: Get Flutter dependencies
+        run: flutter pub get
 
-    - name: Get Flutter dependencies
-      run: flutter pub get
+      # This step can now find the podhelper.rb script.
+      - name: Install CocoaPods dependencies
+        run: |
+          cd ios
+          pod install --repo-update
 
-    - name: Install CocoaPods dependencies
-      run: |
-        cd ios
-        pod install --repo-update
+      # This step imports the code signing certificate using the verified action. [cite: 65]
+      # Secrets must be configured in the repository's settings.
+      - name: Import Apple Code Signing
+        uses: apple-actions/import-codesign-certs@v2
+        with:
+          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
 
-    - name: Import Apple Code Signing
-      uses: apple-actions/import-codesign-certs@v3
-      with:
-        p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
-        p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        # THE FIX IS HERE: Corrected parameter name
-        mobile-provision-base64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
-
-    - name: Build iOS App
-      run: flutter build ipa --release
-
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: FoutaApp-iOS
-        path: build/ios/ipa/*.ipa
+      - name: Build and sign .ipa
+        run: |
+          flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
+          
+      # Optional: Upload artifact to be able to download the .ipa file
+      - name: Upload .ipa artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fouta-ipa
+          path: build/ios/ipa/*.ipa
