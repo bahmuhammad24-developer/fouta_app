@@ -2,57 +2,46 @@
 
 name: Build Fouta iOS App
 
-# This workflow runs on any push to the main branch.
 on:
   push:
     branches: [ "main" ]
 
 jobs:
   build:
-    # Use the latest available macOS runner.
     runs-on: macos-latest
 
     steps:
-    # 1. Check out the repository code.
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # 2. Set up Java, which is required by Flutter/Android.
     - name: Set up Java
       uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
         java-version: '11'
 
-    # 3. Set up Flutter using a community-standard action.
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
-        channel: 'stable' # Use the latest stable Flutter version
+        channel: 'stable'
 
-    # 4. Verify the Flutter environment is healthy.
     - name: Verify Flutter environment
       run: flutter doctor
 
-    # 5. Get all Flutter dependencies.
     - name: Get dependencies
       run: flutter pub get
 
-    # 6. Install the Apple certificate and provisioning profile from 
-secrets.
+    # THIS STEP IS NOW CORRECTLY INDENTED
     - name: Import Apple Code Signing
       uses: apple-actions/import-codesigning-certs@v2
       with:
         p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
         p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        provisioning-profile-base64: ${{ 
-secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+        provisioning-profile-base64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
 
-    # 7. Build the iOS app (.ipa file).
     - name: Build iOS App
       run: flutter build ipa --release
 
-    # 8. Upload the built .ipa file as an artifact.
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
