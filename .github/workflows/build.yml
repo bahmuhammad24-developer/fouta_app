@@ -1,5 +1,5 @@
 # .github/workflows/build.yml
-name: Fouta iOS Build - Diagnostic
+name: Fouta iOS Build
 
 on:
   push:
@@ -20,21 +20,12 @@ jobs:
         with:
           channel: 'stable'
 
+      # Add "flutter clean" to ensure a fresh dependency state.
+      - name: Clean project
+        run: flutter clean
+
       - name: Get Flutter dependencies
         run: flutter pub get
-
-      # --- DIAGNOSTIC STEPS START ---
-      # The following steps are added to investigate the build failure.
-
-      - name: 1. Run Flutter Doctor
-        run: flutter doctor -v
-        continue-on-error: true # Allow workflow to continue even if doctor finds issues
-
-      - name: 2. List Files in Workspace
-        run: ls -lR .
-        continue-on-error: true # Allow workflow to continue
-
-      # --- DIAGNOSTIC STEPS END ---
 
       - name: Install CocoaPods dependencies
         run: |
@@ -42,7 +33,7 @@ jobs:
           pod install --repo-update
 
       - name: Import Apple Code Signing
-        uses: apple-actions/import-codesign-certs@v2
+        uses: apple-actions/import-codesign-certs@v3
         with:
           p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
