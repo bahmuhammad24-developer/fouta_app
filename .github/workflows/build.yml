@@ -1,4 +1,4 @@
-# This is the definitive build.yml file with the verified action path.
+# This is the definitive build.yml file with the user-verified action path.
 
 name: Build Fouta iOS App
 
@@ -34,8 +34,8 @@ jobs:
         pod install --repo-update
 
     - name: Import Apple Code Signing
-      # This path is now verified against the official GitHub Marketplace.
-      uses: apple-actions/import-codesigning-certs@v2
+      # This path is the one you verified from the GitHub Marketplace.
+      uses: apple-actions/import-codesign-certs@v3
       with:
         p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
         p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
