@@ -2,12 +2,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class StorySlide {
+  final String id;
   final String url;
   final String mediaType;
   final Timestamp timestamp;
   final List<dynamic> viewers;
 
   StorySlide({
+    required this.id,
     required this.url,
     required this.mediaType,
     required this.timestamp,

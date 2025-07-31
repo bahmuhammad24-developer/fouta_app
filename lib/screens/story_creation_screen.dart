@@ -18,6 +18,7 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
   File? _mediaFile;
   bool _isUploading = false;
   final ImagePicker _picker = ImagePicker();
+  bool _isVideo = false;
 
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -25,10 +26,25 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
       if (pickedFile != null) {
         setState(() {
           _mediaFile = File(pickedFile.path);
+          _isVideo = false;
         });
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+    }
+  }
+
+  Future<void> _pickVideo(ImageSource source) async {
+    try {
+      final pickedFile = await _picker.pickVideo(source: source);
+      if (pickedFile != null) {
+        setState(() {
+          _mediaFile = File(pickedFile.path);
+          _isVideo = true;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error picking video: $e')));
     }
   }
 
@@ -43,7 +59,7 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
     try {
       final storageRef = FirebaseStorage.instance
           .ref()
-          .child('stories_media/${user.uid}/${DateTime.now().millisecondsSinceEpoch}.jpg');
+          .child('stories_media/${user.uid}/${DateTime.now().millisecondsSinceEpoch}${_isVideo ? '.mp4' : '.jpg'}');
       
       final uploadTask = storageRef.putFile(_mediaFile!);
       final snapshot = await uploadTask.whenComplete(() {});
@@ -66,7 +82,7 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
 
       batch.set(storySlideRef, {
         'mediaUrl': downloadUrl,
-        'mediaType': 'image',
+        'mediaType': _isVideo ? 'video' : 'image',
         'createdAt': FieldValue.serverTimestamp(),
         'viewers': [],
       });
@@ -103,19 +119,31 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
                     icon: const Icon(Icons.photo_library, color: Colors.white, size: 60),
                     onPressed: () => _pickImage(ImageSource.gallery),
                   ),
-                  const Text('Pick from Gallery', style: TextStyle(color: Colors.white)),
-                  const SizedBox(height: 40),
+                  const Text('Pick Image from Gallery', style: TextStyle(color: Colors.white)),
+                  const SizedBox(height: 20),
                   IconButton(
                     icon: const Icon(Icons.camera_alt, color: Colors.white, size: 60),
                     onPressed: () => _pickImage(ImageSource.camera),
                   ),
                   const Text('Take Photo', style: TextStyle(color: Colors.white)),
+                  const SizedBox(height: 20),
+                  IconButton(
+                    icon: const Icon(Icons.videocam, color: Colors.white, size: 60),
+                    onPressed: () => _pickVideo(ImageSource.gallery),
+                  ),
+                    const Text('Pick Video from Gallery', style: TextStyle(color: Colors.white)),
                 ],
               )
             : Stack(
               fit: StackFit.expand,
               children: [
-                Image.file(_mediaFile!, fit: BoxFit.contain),
+                // Show preview depending on media type
+                _isVideo
+                    ? Container(
+                        color: Colors.black,
+                        child: const Center(child: Icon(Icons.videocam, color: Colors.white70, size: 80)),
+                      )
+                    : Image.file(_mediaFile!, fit: BoxFit.contain),
                 if(_isUploading) const Center(child: CircularProgressIndicator()),
                 Positioned(
                   bottom: 20,

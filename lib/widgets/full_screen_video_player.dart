@@ -62,15 +62,30 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: _showControls ? AppBar(backgroundColor: Colors.transparent, elevation: 0) : null,
+      extendBodyBehindAppBar: true,
       body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => setState(() => _showControls = !_showControls),
-        child: Center(
-          child: _isLoading
-              ? const CircularProgressIndicator(color: Colors.white)
-              : (_controller != null)
-                  ? Video(controller: _controller!, controls: AdaptiveVideoControls)
-                  : const Text("Error loading video.", style: TextStyle(color: Colors.white)),
+        child: Stack(
+          children: [
+            Center(
+              child: _isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : (_controller != null)
+                      ? Video(controller: _controller!, controls: AdaptiveVideoControls)
+                      : const Text("Error loading video.", style: TextStyle(color: Colors.white)),
+            ),
+            // Close button overlay
+            if (_showControls)
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 16,
+                left: 16,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+          ],
         ),
       ),
     );

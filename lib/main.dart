@@ -1,4 +1,5 @@
 // lib/main.dart
+import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/screens/splash_screen.dart';
 import 'package:fouta_app/services/video_player_manager.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:fouta_app/screens/auth_screen.dart';
 import 'package:fouta_app/screens/home_screen.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 
 // Define a global constant for the app ID.
@@ -18,12 +20,18 @@ void main() async {
   // Required for media_kit to work
   MediaKit.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Enable Firestore offline persistence
+  FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: true);
   
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => VideoPlayerManager(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => ConnectivityProvider()),
+        ChangeNotifierProvider(create: (context) => VideoPlayerManager()),
+      ],
       child: const MyApp(),
-    )
+    ),
   );
 }
 

@@ -1,6 +1,7 @@
 // lib/screens/home_screen.dart
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/rendering.dart';
 import 'package:fouta_app/services/video_cache_service.dart';
 import 'package:fouta_app/services/video_player_manager.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,8 @@ import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/chat_screen.dart';
 import 'package:fouta_app/screens/create_post_screen.dart';
 import 'package:fouta_app/screens/new_chat_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/screens/profile_screen.dart';
 import 'package:fouta_app/widgets/post_card_widget.dart';
 
@@ -145,41 +148,6 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
       child: Scaffold(
-        body: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return <Widget>[
-              SliverAppBar(
-                title: Text(_getAppBarTitle()),
-                pinned: true,
-                floating: true,
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline),
-                    tooltip: 'Create Post',
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatePostScreen())),
-                  ),
-                  _NotificationsButton(unreadStream: _unreadNotificationsStream),
-                  Builder(
-                    builder: (context) => IconButton(
-                      icon: const Icon(Icons.menu),
-                      onPressed: () => Scaffold.of(context).openEndDrawer(),
-                    ),
-                  ),
-                ],
-              ),
-            ];
-          },
-          body: IndexedStack(
-            index: _selectedIndex,
-            children: <Widget>[
-              _buildOffstageNavigator(0, const FeedTab()),
-              _buildOffstageNavigator(1, ChatsTab(setNavBarVisibility: _setNavBarVisibility)),
-              _buildOffstageNavigator(2, const EventsListScreen()),
-              _buildOffstageNavigator(3, const PeopleTab()),
-              _buildOffstageNavigator(4, ProfileScreen(userId: currentUser?.uid ?? '')),
-            ],
-          ),
-        ),
         endDrawer: _AppDrawer(showMessage: _showMessage),
         floatingActionButton: _selectedIndex == 1 ? _buildNewChatFab(context) : null,
         bottomNavigationBar: _isNavBarVisible
@@ -189,6 +157,65 @@ class _HomeScreenState extends State<HomeScreen> {
                 onItemTapped: _onItemTapped,
               )
             : null,
+        body: Consumer<ConnectivityProvider>(
+          builder: (context, connectivity, _) {
+            return Column(
+              children: [
+                if (!connectivity.isOnline)
+                  Container(
+                    width: double.infinity,
+                    color: Colors.red,
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: const Center(
+                      child: Text(
+                        'You are offline',
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: NestedScrollView(
+                    headerSliverBuilder: (context, innerBoxIsScrolled) {
+                      return <Widget>[
+                        SliverAppBar(
+                          title: Text(_getAppBarTitle()),
+                          // Hide the app bar when scrolling down; show it when scrolling up
+                          pinned: false,
+                          floating: true,
+                          snap: true,
+                          actions: [
+                            IconButton(
+                              icon: const Icon(Icons.add_circle_outline),
+                              tooltip: 'Create Post',
+                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatePostScreen())),
+                            ),
+                            _NotificationsButton(unreadStream: _unreadNotificationsStream),
+                            Builder(
+                              builder: (context) => IconButton(
+                                icon: const Icon(Icons.menu),
+                                onPressed: () => Scaffold.of(context).openEndDrawer(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ];
+                    },
+            body: IndexedStack(
+                      index: _selectedIndex,
+                      children: <Widget>[
+                        _buildOffstageNavigator(0, FeedTab(setNavBarVisibility: _setNavBarVisibility)),
+                        _buildOffstageNavigator(1, ChatsTab(setNavBarVisibility: _setNavBarVisibility)),
+                        _buildOffstageNavigator(2, const EventsListScreen()),
+                        _buildOffstageNavigator(3, const PeopleTab()),
+                        _buildOffstageNavigator(4, ProfileScreen(userId: currentUser?.uid ?? '')),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -399,18 +426,21 @@ class _BottomNavItem extends StatelessWidget {
 // --- TAB WIDGETS ---
 
 class FeedTab extends StatefulWidget {
-  const FeedTab({super.key});
+  final Function(bool) setNavBarVisibility;
+  const FeedTab({super.key, required this.setNavBarVisibility});
 
   @override
   State<FeedTab> createState() => _FeedTabState();
 }
 
+// Extend TickerProviderStateMixin to use TabController for the feed toggle
 class _FeedTabState extends State<FeedTab> {
   bool _showFollowingFeed = false;
   List<String> _currentUserFollowingIds = [];
   StreamSubscription? _followingSubscription;
   final VideoCacheService _videoCacheService = VideoCacheService();
   int _lastPrecachedIndex = 0;
+
 
   // Pagination State
   List<DocumentSnapshot> _posts = [];
@@ -533,6 +563,13 @@ class _FeedTabState extends State<FeedTab> {
     double avgItemHeight = 400;
     int lastVisibleIndex = (_scrollController.position.pixels / avgItemHeight).floor();
     _precacheNextVideos(lastVisibleIndex);
+
+    // Hide or show the navigation bar based on scroll direction
+    if (_scrollController.position.userScrollDirection == ScrollDirection.reverse) {
+      widget.setNavBarVisibility(false);
+    } else if (_scrollController.position.userScrollDirection == ScrollDirection.forward) {
+      widget.setNavBarVisibility(true);
+    }
   }
 
   @override
@@ -568,8 +605,7 @@ class _FeedTabState extends State<FeedTab> {
         children: [
           const StoriesTray(),
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -784,20 +820,53 @@ class _ChatListItem extends StatelessWidget {
         },
       );
     } else {
-      final otherUserId = (List<String>.from(chat['participants'])).firstWhere((uid) => uid != currentUserId, orElse: () => '');
-      if (otherUserId.isEmpty) return const SizedBox.shrink();
-
-      return FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(otherUserId).get(),
-        builder: (context, userSnapshot) {
-          if (!userSnapshot.hasData) return const SizedBox.shrink(); // Or a loading shimmer
-          final userData = userSnapshot.data!.data() as Map<String, dynamic>;
-          final String displayName = userData['displayName'] ?? 'User';
-          
+      // Use denormalized participantDetails to avoid extra Firestore reads
+      final Map<String, dynamic>? participantDetails = chat['participantDetails'] as Map<String, dynamic>?;
+      if (participantDetails != null && participantDetails.isNotEmpty) {
+        // Get other user info
+        Map<String, dynamic>? otherUserInfo;
+        participantDetails.forEach((uid, info) {
+          if (uid != currentUserId) {
+            otherUserInfo = Map<String, dynamic>.from(info);
+          }
+        });
+        if (otherUserInfo != null) {
+          final displayName = otherUserInfo!['displayName'] ?? 'User';
           if (searchQuery.isNotEmpty && !displayName.toLowerCase().contains(searchQuery.toLowerCase())) {
             return const SizedBox.shrink();
           }
-
+          final imageUrl = otherUserInfo!['profileImageUrl'];
+          final bool isOnline = (otherUserInfo!['isOnline'] ?? false) as bool;
+          final bool showOnlineStatus = (otherUserInfo!['showOnlineStatus'] ?? false) as bool;
+          return _buildTile(
+            context: context,
+            title: displayName,
+            subtitle: isSomeoneTyping ? "typing..." : (chat['lastMessage'] ?? '...'),
+            imageUrl: imageUrl,
+            isOnline: isOnline,
+            showOnlineStatus: showOnlineStatus,
+            unreadCount: unreadCount,
+            timestamp: formatTimestamp(chat['lastMessageTimestamp'] as Timestamp?),
+            onTap: () async {
+              setNavBarVisibility(false);
+              await Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(chatId: chatDocId, otherUserId: null, otherUserName: displayName)));
+              setNavBarVisibility(true);
+            },
+          );
+        }
+      }
+      // Fallback: fetch user document if participantDetails is missing
+      final otherUserId = (List<String>.from(chat['participants'])).firstWhere((uid) => uid != currentUserId, orElse: () => '');
+      if (otherUserId.isEmpty) return const SizedBox.shrink();
+      return FutureBuilder<DocumentSnapshot>(
+        future: FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(otherUserId).get(),
+        builder: (context, userSnapshot) {
+          if (!userSnapshot.hasData) return const SizedBox.shrink();
+          final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+          final String displayName = userData['displayName'] ?? 'User';
+          if (searchQuery.isNotEmpty && !displayName.toLowerCase().contains(searchQuery.toLowerCase())) {
+            return const SizedBox.shrink();
+          }
           return _buildTile(
             context: context,
             title: displayName,
@@ -979,72 +1048,111 @@ class _PeopleTabState extends State<PeopleTab> {
   }
 
   Widget _buildUserList(BuildContext context, String type, User currentUser, String searchQuery) {
-    // This is a simplified implementation for demonstration. 
-    // A real app would have more complex queries and state management.
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+    // Load minimal user lists instead of streaming the entire collection
+    final usersCollection = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users');
+    return FutureBuilder<DocumentSnapshot>(
+      future: usersCollection.doc(currentUser.uid).get(),
+      builder: (context, currentUserSnap) {
+        if (!currentUserSnap.hasData) return const Center(child: CircularProgressIndicator());
+        final currentData = currentUserSnap.data!.data() as Map<String, dynamic>? ?? {};
+        final List<String> myFollowing = List<String>.from(currentData['following'] ?? []);
+        final List<String> myFollowers = List<String>.from(currentData['followers'] ?? []);
 
-        // Client-side filtering (for demonstration)
-        List<DocumentSnapshot> users = snapshot.data!.docs;
-        List<String> myFollowing = [];
-        List<String> myFollowers = [];
-
-        var myUserDoc = users.firstWhere((doc) => doc.id == currentUser.uid);
-        myFollowing = List<String>.from(myUserDoc.get('following') ?? []);
-        myFollowers = List<String>.from(myUserDoc.get('followers') ?? []);
-        
-        if (type == 'following') {
-          users = users.where((doc) => myFollowing.contains(doc.id)).toList();
-        } else if (type == 'followers') {
-          users = users.where((doc) => myFollowers.contains(doc.id)).toList();
-        } else { // Suggestions
-          users = users.where((doc) => !myFollowing.contains(doc.id) && doc.id != currentUser.uid).toList();
+        // Determine which user IDs to query based on the tab type
+        List<String> targetIds;
+        switch (type) {
+          case 'following':
+            targetIds = myFollowing;
+            break;
+          case 'followers':
+            targetIds = myFollowers;
+            break;
+          default:
+            // Suggestions: pick a limited set of recent users; filter later
+            targetIds = [];
         }
-        
-        if (searchQuery.isNotEmpty) {
-          users = users.where((doc) {
-            final userData = doc.data() as Map<String, dynamic>;
-            return (userData['displayName'] ?? '').toLowerCase().contains(searchQuery.toLowerCase());
-          }).toList();
+
+        if (type == 'suggestions') {
+          // Query a limited number of users and filter out self and people already followed
+          return FutureBuilder<QuerySnapshot>(
+            future: usersCollection.orderBy('createdAt', descending: true).limit(30).get(),
+            builder: (context, snap) {
+              if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+              List<DocumentSnapshot> docs = snap.data!.docs;
+              docs = docs.where((doc) => doc.id != currentUser.uid && !myFollowing.contains(doc.id)).toList();
+              if (searchQuery.isNotEmpty) {
+                docs = docs.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  return (data['displayName'] ?? '').toLowerCase().contains(searchQuery.toLowerCase());
+                }).toList();
+              }
+              if (docs.isEmpty) return Center(child: Text('No users found in this category.'));
+              return _buildUserListView(docs, myFollowing, context, currentUser);
+            },
+          );
+        } else {
+          if (targetIds.isEmpty) {
+            return Center(child: Text('No users found in this category.'));
+          }
+          // Firestore whereIn supports up to 10 elements; chunk if necessary
+          final List<Future<QuerySnapshot>> futures = [];
+          const chunkSize = 10;
+          for (var i = 0; i < targetIds.length; i += chunkSize) {
+            final chunk = targetIds.sublist(i, i + chunkSize > targetIds.length ? targetIds.length : i + chunkSize);
+            futures.add(usersCollection.where(FieldPath.documentId, whereIn: chunk).get());
+          }
+          return FutureBuilder<List<QuerySnapshot>>(
+            future: Future.wait(futures),
+            builder: (context, snap) {
+              if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+              List<DocumentSnapshot> docs = snap.data!.expand((q) => q.docs).toList();
+              if (searchQuery.isNotEmpty) {
+                docs = docs.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  return (data['displayName'] ?? '').toLowerCase().contains(searchQuery.toLowerCase());
+                }).toList();
+              }
+              if (docs.isEmpty) return Center(child: Text('No users found in this category.'));
+              return _buildUserListView(docs, myFollowing, context, currentUser);
+            },
+          );
         }
-        
-        if (users.isEmpty) return Center(child: Text('No users found in this category.'));
+      },
+    );
+  }
 
-        return ListView.builder(
-          itemCount: users.length,
-          itemBuilder: (context, index) {
-            final userDoc = users[index];
-            final userData = userDoc.data() as Map<String, dynamic>;
-            final bool isFollowing = myFollowing.contains(userDoc.id);
-
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
-              child: ListTile(
-                leading: GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen(userId: userDoc.id))),
-                  child: CircleAvatar(
-                    backgroundImage: (userData['profileImageUrl'] != null && userData['profileImageUrl']!.isNotEmpty)
-                        ? CachedNetworkImageProvider(userData['profileImageUrl'])
-                        : null,
-                    child: (userData['profileImageUrl'] == null || userData['profileImageUrl']!.isEmpty) ? const Icon(Icons.person) : null,
-                  ),
-                ),
-                title: Text(userData['displayName'] ?? 'Unknown'),
-                subtitle: Text(userData['bio'] ?? '', maxLines: 1),
-                trailing: ElevatedButton(
-                  onPressed: () => _toggleFollow(currentUser.uid, userDoc.id, isFollowing),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isFollowing ? Colors.grey : Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: Text(isFollowing ? 'Unfollow' : 'Follow'),
-                ),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen(userId: userDoc.id))),
+  // Builds the ListView for a list of user documents
+  Widget _buildUserListView(List<DocumentSnapshot> users, List<String> myFollowing, BuildContext context, User currentUser) {
+    return ListView.builder(
+      itemCount: users.length,
+      itemBuilder: (context, index) {
+        final userDoc = users[index];
+        final userData = userDoc.data() as Map<String, dynamic>;
+        final bool isFollowing = myFollowing.contains(userDoc.id);
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+          child: ListTile(
+            leading: GestureDetector(
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen(userId: userDoc.id))),
+              child: CircleAvatar(
+                backgroundImage: (userData['profileImageUrl'] != null && userData['profileImageUrl']!.toString().isNotEmpty)
+                    ? CachedNetworkImageProvider(userData['profileImageUrl'])
+                    : null,
+                child: (userData['profileImageUrl'] == null || userData['profileImageUrl']!.toString().isEmpty) ? const Icon(Icons.person) : null,
               ),
-            );
-          },
+            ),
+            title: Text(userData['displayName'] ?? 'Unknown'),
+            subtitle: Text(userData['bio'] ?? '', maxLines: 1),
+            trailing: ElevatedButton(
+              onPressed: () => _toggleFollow(currentUser.uid, userDoc.id, isFollowing),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isFollowing ? Colors.grey : Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(isFollowing ? 'Unfollow' : 'Follow'),
+            ),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen(userId: userDoc.id))),
+          ),
         );
       },
     );

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/screens/chat_details_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -16,6 +17,10 @@ import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/profile_screen.dart';
 import 'package:fouta_app/widgets/chat_video_player.dart';
 import 'package:fouta_app/widgets/full_screen_image_viewer.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:image/image.dart' as img;
+import 'package:provider/provider.dart';
+import 'package:fouta_app/services/connectivity_provider.dart';
 
 class ChatScreen extends StatefulWidget {
   final String? chatId;
@@ -42,6 +47,16 @@ class _ChatScreenState extends State<ChatScreen> {
   Timer? _typingTimer;
 
   final ImagePicker _picker = ImagePicker();
+
+  // Reaction & reply state
+  DocumentSnapshot? _replyingToMessage;
+
+  // Reaction emoji options to present to the user on long‑press
+  static const List<String> _reactionOptions = ['❤️', '😂', '👍', '😮', '😢', '🙏'];
+
+  // Media upload limitations
+  static const int _maxVideoFileSize = 15 * 1024 * 1024; // 15 MB
+  static const int _maxVideoDurationSeconds = 60; // 60 seconds max
 
   @override
   void initState() {
@@ -71,6 +86,22 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final doc = await _chatRef!.get();
     if (!doc.exists) {
+      // Fetch participant details for denormalization
+      final usersCollection = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users');
+      final currentUserDoc = await usersCollection.doc(currentUser.uid).get();
+      final otherUserDoc = await usersCollection.doc(widget.otherUserId!).get();
+      final currentUserData = currentUserDoc.data() ?? {};
+      final otherUserData = otherUserDoc.data() ?? {};
+      final participantDetails = {
+        currentUser.uid: {
+          'displayName': currentUserData['displayName'] ?? 'User',
+          'profileImageUrl': currentUserData['profileImageUrl'] ?? '',
+        },
+        widget.otherUserId!: {
+          'displayName': otherUserData['displayName'] ?? 'User',
+          'profileImageUrl': otherUserData['profileImageUrl'] ?? '',
+        },
+      };
       await _chatRef!.set({
         'participants': participants,
         'isGroupChat': false,
@@ -81,6 +112,7 @@ class _ChatScreenState extends State<ChatScreen> {
           widget.otherUserId!: 0,
         },
         'typingStatus': {},
+        'participantDetails': participantDetails,
       });
     }
     _markChatAsRead();
@@ -98,6 +130,24 @@ class _ChatScreenState extends State<ChatScreen> {
       if (!data.containsKey('isGroupChat')) updates['isGroupChat'] = false;
       if (!data.containsKey('admins')) updates['admins'] = [];
       if (!data.containsKey('typingStatus')) updates['typingStatus'] = {};
+
+      // If participantDetails are missing (legacy chats), populate them
+      if (!data.containsKey('participantDetails') && data['isGroupChat'] == false) {
+        final participants = List<String>.from(data['participants'] ?? []);
+        if (participants.length == 2) {
+          final usersCollection = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users');
+          final details = <String, Map<String, dynamic>>{};
+          for (final uid in participants) {
+            final userDoc = await usersCollection.doc(uid).get();
+            final userData = userDoc.data() ?? {};
+            details[uid] = {
+              'displayName': userData['displayName'] ?? 'User',
+              'profileImageUrl': userData['profileImageUrl'] ?? '',
+            };
+          }
+          updates['participantDetails'] = details;
+        }
+      }
       
       if(updates.isNotEmpty) await _chatRef!.update(updates);
     }
@@ -148,7 +198,29 @@ class _ChatScreenState extends State<ChatScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error picking media: $e')));
     }
 
-    if(pickedFile != null) {
+    if (pickedFile != null) {
+      // Validate video constraints for non-web platforms
+      if (isVideo && !kIsWeb) {
+        final fileSize = File(pickedFile.path).lengthSync();
+        if (fileSize > _maxVideoFileSize) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Video is too large. Please select a video under 15 MB.')),
+          );
+          return;
+        }
+        final player = Player();
+        await player.open(Media(pickedFile.path));
+        final duration = player.state.duration;
+        if (duration.inSeconds > _maxVideoDurationSeconds) {
+          await player.dispose();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Video is too long. Please select a video under 60 seconds.')),
+          );
+          return;
+        }
+        await player.dispose();
+      }
+
       setState(() {
         _selectedMediaFile = pickedFile;
         _mediaType = isVideo ? 'video' : 'image';
@@ -172,18 +244,52 @@ class _ChatScreenState extends State<ChatScreen> {
     
     String? mediaUrl;
     if (_selectedMediaFile != null) {
+      // Prevent media uploads while offline. Text messages will still be queued via Firestore offline persistence.
+      final connectivity = context.read<ConnectivityProvider>();
+      if (!connectivity.isOnline) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You are offline. Cannot send media in chat.')),
+        );
+        return;
+      }
       setState(() => _isUploading = true);
-      final ref = FirebaseStorage.instance.ref().child('chat_media/$_currentChatId/${DateTime.now().millisecondsSinceEpoch}');
-      
-      UploadTask uploadTask;
+      final ref = FirebaseStorage.instance.ref()
+          .child('chat_media/$_currentChatId/${DateTime.now().millisecondsSinceEpoch}');
+
+      Uint8List? bytesToUpload;
+      File? fileToUpload;
       if (kIsWeb) {
-        uploadTask = ref.putData(await _selectedMediaFile!.readAsBytes());
+        bytesToUpload = await _selectedMediaFile!.readAsBytes();
       } else {
-        uploadTask = ref.putFile(File(_selectedMediaFile!.path));
+        if (_mediaType == 'image') {
+          final originalBytes = await _selectedMediaFile!.readAsBytes();
+          final img.Image? decoded = img.decodeImage(originalBytes);
+          if (decoded != null) {
+            final compressed = img.encodeJpg(decoded, quality: 80);
+            bytesToUpload = Uint8List.fromList(compressed);
+          } else {
+            fileToUpload = File(_selectedMediaFile!.path);
+          }
+        } else {
+          fileToUpload = File(_selectedMediaFile!.path);
+        }
+      }
+
+      UploadTask uploadTask;
+      if (bytesToUpload != null) {
+        uploadTask = ref.putData(bytesToUpload);
+      } else if (fileToUpload != null) {
+        uploadTask = ref.putFile(fileToUpload);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid media data for upload.')),
+        );
+        setState(() => _isUploading = false);
+        return;
       }
 
       uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-        if(mounted) {
+        if (mounted) {
           setState(() {
             _uploadProgress = snapshot.bytesTransferred / snapshot.totalBytes;
           });
@@ -191,7 +297,7 @@ class _ChatScreenState extends State<ChatScreen> {
       });
 
       mediaUrl = await (await uploadTask).ref.getDownloadURL();
-      if(mounted) setState(() => _isUploading = false);
+      if (mounted) setState(() => _isUploading = false);
     }
 
     final userDoc = await FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(currentUser.uid).get();
@@ -209,7 +315,18 @@ class _ChatScreenState extends State<ChatScreen> {
           'isRead': false, // Kept for simplicity, but new `readBy` is primary
           'readBy': [currentUser.uid],
           'reactions': {},
-          'isReply': false,
+          // Reply metadata
+          'isReply': _replyingToMessage != null,
+          // If replying, include reference data of the original message
+          if (_replyingToMessage != null) ...{
+            'replyToMessageId': _replyingToMessage!.id,
+            'replyToContent': _replyingToMessage!.data() != null
+                ? (_replyingToMessage!.data()! as Map<String, dynamic>)['content'] ?? ''
+                : '',
+            'replyToSenderName': _replyingToMessage!.data() != null
+                ? (_replyingToMessage!.data()! as Map<String, dynamic>)['senderName'] ?? ''
+                : '',
+          },
         });
 
     await _chatRef!.update({
@@ -224,6 +341,8 @@ class _ChatScreenState extends State<ChatScreen> {
         _selectedMediaFile = null;
         _selectedMediaBytes = null;
         _mediaType = '';
+        // Clear reply state after sending
+        _replyingToMessage = null;
       });
     }
   }
@@ -259,11 +378,41 @@ class _ChatScreenState extends State<ChatScreen> {
   // NOTE: This is a placeholder for a more complex reaction UI
   Widget _buildReactions(Map<String, dynamic> reactions) {
     if (reactions.isEmpty) return const SizedBox.shrink();
-    // In a real app, this would be a row of styled emoji counts
-    return Text("Reactions: ${reactions.length}", style: const TextStyle(fontSize: 10, color: Colors.grey));
+    final List<Widget> reactionWidgets = [];
+    reactions.forEach((emoji, users) {
+      if (users is List && users.isNotEmpty) {
+        final bool reactedByMe = users.contains(FirebaseAuth.instance.currentUser?.uid);
+        reactionWidgets.add(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            margin: const EdgeInsets.only(right: 4, top: 4),
+            decoration: BoxDecoration(
+              color: reactedByMe ? Colors.blueGrey[50] : Colors.grey[200],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  emoji,
+                  style: const TextStyle(fontSize: 14),
+                ),
+                const SizedBox(width: 2),
+                Text(
+                  users.length.toString(),
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    });
+    return Wrap(children: reactionWidgets);
   }
 
   Widget _buildMessageBubble(Map<String, dynamic> message, bool isMe, bool isGroupChat) {
+    final currentUser = FirebaseAuth.instance.currentUser;
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -293,7 +442,23 @@ class _ChatScreenState extends State<ChatScreen> {
                   color: Colors.black.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8)
                 ),
-                child: Text("Replying to: ${message['replyToContent'] ?? ''}", style: const TextStyle(fontSize: 12)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      message['replyToSenderName'] ?? '',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black54),
+                    ),
+                    const SizedBox(height: 2),
+                    if ((message['replyToContent'] ?? '').toString().isNotEmpty)
+                      Text(
+                        message['replyToContent'],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.black54),
+                      ),
+                  ],
+                ),
               ),
             if(message['mediaUrl'] != null && message['mediaUrl']!.isNotEmpty)
               _buildChatMediaDisplay(message['mediaType'] ?? '', message['mediaUrl']),
@@ -312,11 +477,125 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  // Show a bottom sheet with reaction options and a reply action when a message is long‑pressed.
+  void _showReactionReplySheet(DocumentSnapshot messageDoc) {
+    final messageData = messageDoc.data() as Map<String, dynamic>;
+    final String messageId = messageDoc.id;
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: _reactionOptions.map((emoji) {
+                    return IconButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _toggleReaction(messageId, emoji, messageData);
+                      },
+                      icon: Text(
+                        emoji,
+                        style: const TextStyle(fontSize: 24),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.reply),
+                  title: const Text('Reply'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    setState(() {
+                      _replyingToMessage = messageDoc;
+                    });
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.close),
+                  title: const Text('Cancel'),
+                  onTap: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Toggle reaction for a message. Adds or removes the current user's UID in the reactions[emoji] list.
+  Future<void> _toggleReaction(String messageId, String emoji, Map<String, dynamic> messageData) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null || _chatRef == null) return;
+    final String uid = currentUser.uid;
+    final Map<String, dynamic> reactions = Map<String, dynamic>.from(messageData['reactions'] ?? {});
+    final List<dynamic> usersForEmoji = reactions[emoji] != null ? List<dynamic>.from(reactions[emoji]) : [];
+    final bool userReacted = usersForEmoji.contains(uid);
+    final DocumentReference messageRef = _chatRef!.collection('messages').doc(messageId);
+    if (!userReacted) {
+      // Add reaction
+      await messageRef.update({
+        'reactions.$emoji': FieldValue.arrayUnion([uid])
+      });
+    } else {
+      // Remove reaction
+      await messageRef.update({
+        'reactions.$emoji': FieldValue.arrayRemove([uid])
+      });
+    }
+  }
+
   Widget _buildMessageComposer() {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(
         children: [
+          // If replying to a message, show preview
+          if (_replyingToMessage != null)
+            Container(
+              margin: const EdgeInsets.only(bottom: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          (_replyingToMessage!.data()! as Map<String, dynamic>)['senderName'] ?? '',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          (_replyingToMessage!.data()! as Map<String, dynamic>)['content'] ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.black54),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    onPressed: () {
+                      setState(() {
+                        _replyingToMessage = null;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
           if (_isUploading) LinearProgressIndicator(value: _uploadProgress),
           if (_selectedMediaFile != null) 
             SizedBox(
@@ -442,10 +721,16 @@ class _ChatScreenState extends State<ChatScreen> {
                       padding: const EdgeInsets.all(8.0),
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
-                        final message = messages[index].data() as Map<String, dynamic>;
+                        final messageDoc = messages[index];
+                        final message = messageDoc.data() as Map<String, dynamic>;
                         final bool isMe = message['senderId'] == currentUser?.uid;
-
-                        return _buildMessageBubble(message, isMe, isGroupChat);
+                        final messageWidget = _buildMessageBubble(message, isMe, isGroupChat);
+                        return GestureDetector(
+                          onLongPress: () {
+                            _showReactionReplySheet(messageDoc);
+                          },
+                          child: messageWidget,
+                        );
                       },
                     );
                   }

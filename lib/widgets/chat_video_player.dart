@@ -31,24 +31,44 @@ class _ChatVideoPlayerState extends State<ChatVideoPlayer> {
     super.dispose();
   }
 
+  bool _hasError = false;
+
   Future<void> _initialize() async {
     try {
       final file = await _cacheService.getFile(widget.videoUrl);
       await _player.open(Media(file.path));
       if (!mounted) return;
-
       setState(() {
         _controller = VideoController(_player);
         _isInitialized = true;
+        _hasError = false;
       });
       _player.setPlaylistMode(PlaylistMode.single);
     } catch (e) {
       debugPrint("Error initializing chat video: $e");
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_hasError) {
+      return Container(
+        width: 150,
+        height: 150,
+        color: Colors.black,
+        alignment: Alignment.center,
+        child: const Text(
+          'Video unavailable',
+          style: TextStyle(color: Colors.white70, fontSize: 12),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
     if (!_isInitialized || _controller == null) {
       return Container(
         width: 150,
@@ -57,7 +77,6 @@ class _ChatVideoPlayerState extends State<ChatVideoPlayer> {
         child: const Center(child: CircularProgressIndicator(color: Colors.white)),
       );
     }
-
     return GestureDetector(
       onTap: () => _player.playOrPause(),
       child: Video(

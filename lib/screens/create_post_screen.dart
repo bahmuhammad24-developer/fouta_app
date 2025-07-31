@@ -8,6 +8,9 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:media_kit/media_kit.dart';
+import 'package:image/image.dart' as img;
+import 'package:provider/provider.dart';
+import 'package:fouta_app/services/connectivity_provider.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 
@@ -41,6 +44,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   String? _currentMediaUrl;
 
   final ImagePicker _picker = ImagePicker();
+
+  // Flag to control preview dialog when new media is selected
+  bool _isPreviewing = false;
+
+  // Media upload limitations
+  static const int _maxVideoFileSize = 15 * 1024 * 1024; // 15 MB
+  static const int _maxVideoDurationSeconds = 60; // 60 seconds max
 
   @override
   void initState() {
@@ -79,26 +89,37 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
     XFile? pickedFile;
     try {
-      if (isVideo) {
-        pickedFile = await _picker.pickVideo(source: source);
-      } else {
-        pickedFile = await _picker.pickImage(source: source);
-      }
+      pickedFile = isVideo
+          ? await _picker.pickVideo(source: source)
+          : await _picker.pickImage(source: source);
     } catch (e) {
       _showMessage('Error picking media: $e');
       return;
     }
 
+    // Validate video size and duration constraints for non-web platforms
     double? aspectRatio;
     if (isVideo && pickedFile != null && !kIsWeb) {
+      final fileSize = File(pickedFile.path).lengthSync();
+      if (fileSize > _maxVideoFileSize) {
+        _showMessage('Video is too large. Please select a video under 15 MB.');
+        return;
+      }
       final player = Player();
       await player.open(Media(pickedFile.path));
-      // Wait for player to get video properties
+      final duration = player.state.duration;
+      // Wait for width to be available to compute aspect ratio
       await player.stream.width.firstWhere((width) => width != null);
       final width = player.state.width;
       final height = player.state.height;
       if (width != null && height != null && height > 0) {
         aspectRatio = width / height;
+      }
+      // Validate duration
+      if (duration.inSeconds > _maxVideoDurationSeconds) {
+        await player.dispose();
+        _showMessage('Video is too long. Please select a video under 60 seconds.');
+        return;
       }
       await player.dispose();
     }
@@ -126,6 +147,22 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         _message = 'No media selected.';
       }
     });
+
+    // If a new media file was selected, show preview dialog and allow user to confirm or cancel.
+    if (pickedFile != null) {
+      final proceed = await _showPreviewDialog();
+      if (!proceed) {
+        // User cancelled posting; clear the selected media
+        setState(() {
+          _selectedMediaFile = null;
+          _selectedMediaBytes = null;
+          _mediaType = '';
+          _videoAspectRatio = null;
+          _currentMediaUrl = null;
+          _message = 'Media selection cancelled.';
+        });
+      }
+    }
   }
 
   int _calculateEngagement(int likes, int comments, int shares) {
@@ -167,6 +204,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       return;
     }
 
+    // Prevent media uploads while offline. Text‑only posts can still be added offline via Firestore persistence.
+    final connectivity = context.read<ConnectivityProvider>();
+    if (!connectivity.isOnline && _selectedMediaFile != null) {
+      _showMessage('You are offline. Cannot upload media.');
+      return;
+    }
+
     String? mediaUrl = _currentMediaUrl;
     String currentMediaType = _mediaType;
 
@@ -177,13 +221,28 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       });
       try {
         String fileName = _selectedMediaFile!.name;
-        File? fileToUpload;
         Uint8List? bytesToUpload;
+        File? fileToUpload;
 
+        // Prepare bytes for upload. Compress images on non-web platforms.
         if (kIsWeb) {
+          // On web, just read bytes directly
           bytesToUpload = await _selectedMediaFile!.readAsBytes();
         } else {
-          fileToUpload = File(_selectedMediaFile!.path);
+          if (_mediaType == 'image') {
+            final originalBytes = await _selectedMediaFile!.readAsBytes();
+            final img.Image? decoded = img.decodeImage(originalBytes);
+            if (decoded != null) {
+              final compressed = img.encodeJpg(decoded, quality: 80);
+              bytesToUpload = Uint8List.fromList(compressed);
+            } else {
+              // Fallback to original file if decoding fails
+              fileToUpload = File(_selectedMediaFile!.path);
+            }
+          } else {
+            // For video, no compression; use the file directly
+            fileToUpload = File(_selectedMediaFile!.path);
+          }
         }
 
         final String fileExtension = fileName.split('.').last;
@@ -191,7 +250,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         final storageRef = FirebaseStorage.instance.ref().child(storagePath);
 
         UploadTask uploadTask;
-        if (kIsWeb && bytesToUpload != null) {
+        if (bytesToUpload != null) {
           uploadTask = storageRef.putData(bytesToUpload);
         } else if (fileToUpload != null) {
           uploadTask = storageRef.putFile(fileToUpload);
@@ -202,9 +261,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         }
 
         uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-          setState(() {
-            _uploadProgress = snapshot.bytesTransferred / snapshot.totalBytes;
-          });
+          if (mounted) {
+            setState(() {
+              _uploadProgress = snapshot.bytesTransferred / snapshot.totalBytes;
+            });
+          }
         });
 
         await uploadTask.whenComplete(() async {
@@ -289,6 +350,78 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     } catch (e) {
       _showMessage('An unexpected error occurred: $e');
     }
+  }
+
+  /// Shows a simple preview dialog allowing the user to confirm or cancel posting.
+  /// Returns true if the user chooses to proceed, false otherwise.
+  Future<bool> _showPreviewDialog() async {
+    // Avoid showing multiple preview dialogs simultaneously
+    if (_isPreviewing) return false;
+    _isPreviewing = true;
+    final proceed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Preview'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_mediaType == 'image')
+                  SizedBox(
+                    width: 300,
+                    height: 200,
+                    child: kIsWeb
+                        ? (_selectedMediaBytes != null
+                            ? Image.memory(_selectedMediaBytes!, fit: BoxFit.contain)
+                            : const SizedBox.shrink())
+                        : (_selectedMediaFile != null
+                            ? Image.file(File(_selectedMediaFile!.path), fit: BoxFit.contain)
+                            : const SizedBox.shrink()),
+                  )
+                else if (_mediaType == 'video')
+                  Container(
+                    width: 300,
+                    height: 200,
+                    color: Colors.black12,
+                    child: const Center(
+                      child: Icon(Icons.videocam, size: 64, color: Colors.grey),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                // Caption field for editing during preview
+                TextField(
+                  controller: _postContentController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Add a caption...',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
+                  ),
+                  textCapitalization: TextCapitalization.sentences,
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+            ),
+            ElevatedButton(
+              child: const Text('Post'),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+    _isPreviewing = false;
+    return proceed;
   }
 
   @override

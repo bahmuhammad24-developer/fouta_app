@@ -63,20 +63,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   void _initializePlayer() {
     if (_player != null) return;
-    
     final requestedPlayer = _playerManager.requestPlayer(widget.videoId);
-    
-    // FIX: Add a null check to handle cases where the player pool is exhausted.
+    // If the pool is exhausted, leave _player as null. The UI will show a fallback.
     if (requestedPlayer == null) {
-      // Could not get a player, do not proceed with initialization.
-      // The widget will continue to show the placeholder.
       return;
     }
-
     setState(() {
       _player = requestedPlayer;
     });
-
     _loadMedia();
   }
 
@@ -116,12 +110,29 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return _isInitialized && _controller != null && _player != null
-        ? _buildVideoPlayer()
-        : AspectRatio(
-            aspectRatio: widget.aspectRatio ?? 16 / 9,
-            child: _buildPlaceholder(),
-          );
+    if (_isInitialized && _controller != null && _player != null) {
+      return _buildVideoPlayer();
+    }
+    // If no player could be acquired, show a message instead of a spinner
+    if (_player == null) {
+      return AspectRatio(
+        aspectRatio: widget.aspectRatio ?? 16 / 9,
+        child: Container(
+          color: Colors.black,
+          alignment: Alignment.center,
+          child: const Text(
+            'Video unavailable. Please try again later.',
+            style: TextStyle(color: Colors.white70, fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+    // Otherwise, show loading spinner until initialization
+    return AspectRatio(
+      aspectRatio: widget.aspectRatio ?? 16 / 9,
+      child: _buildPlaceholder(),
+    );
   }
 
   Widget _buildPlaceholder() {

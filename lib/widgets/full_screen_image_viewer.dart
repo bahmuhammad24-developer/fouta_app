@@ -10,20 +10,21 @@ class FullScreenImageViewer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text('Image', style: TextStyle(color: Colors.white)),
-      ),
-      body: Center(
-        child: InteractiveViewer(
-          child: Image.network(
-            imageUrl,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => const Center(
-              child: Text(
-                'Could not load image.',
-                style: TextStyle(color: Colors.white),
+      // Extend behind any app bars for a truly full‑screen experience
+      extendBodyBehindAppBar: true,
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => Navigator.of(context).pop(),
+        child: Center(
+          child: InteractiveViewer(
+            child: Image.network(
+              imageUrl,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => const Center(
+                child: Text(
+                  'Could not load image.',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ),
           ),

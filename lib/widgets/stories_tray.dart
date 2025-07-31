@@ -39,7 +39,11 @@ class StoriesTray extends StatelessWidget {
               final storyDoc = storyDocs[index - 1];
               final storyData = storyDoc.data() as Map<String, dynamic>;
               
-              final bool hasUnseen = true; 
+              // Determine if the current user has unseen stories by checking the 'viewedBy' array on the story document
+              final List<dynamic> viewedBy = storyData['viewedBy'] ?? [];
+              final bool hasUnseen = currentUser != null
+                  ? !(viewedBy.contains(currentUser.uid))
+                  : true;
               
               return _StoryAvatar(
                 imageUrl: storyData['authorImageUrl'],

@@ -81,6 +81,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         final event = snapshot.data!.data() as Map<String, dynamic>;
         final eventDate = (event['eventDate'] as Timestamp).toDate();
         final List<dynamic> attendees = event['attendees'] ?? [];
+        final List<dynamic> invited = event['invitedIds'] ?? [];
         final bool isCreator = currentUser != null && event['creatorId'] == currentUser.uid;
         final bool isRsvpd = currentUser != null && attendees.contains(currentUser.uid);
         final String headerImageUrl = event['headerImageUrl'] ?? '';
@@ -172,6 +173,21 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                             ),
                           ),
                           const Divider(height: 32),
+                          // Display invited users if there are any
+                          if (invited.isNotEmpty)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Invited (${invited.length})',
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                                const SizedBox(height: 8),
+                                _buildInvitedList(invited),
+                                const Divider(height: 32),
+                              ],
+                            ),
+                          // Attendees section
                           Text(
                             'Who\'s Going (${attendees.length})',
                             style: Theme.of(context).textTheme.titleLarge,
@@ -260,6 +276,63 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       ),
                     ],
                   ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  // Build a horizontal list of invited users similar to attendees. Users can see who is invited but not yet attending.
+  Widget _buildInvitedList(List<dynamic> invited) {
+    if (invited.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text('No one invited yet.'),
+        ),
+      );
+    }
+    return SizedBox(
+      height: 80,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: invited.length,
+        itemBuilder: (context, index) {
+          final userId = invited[index];
+          return FutureBuilder<DocumentSnapshot>(
+            future: FirebaseFirestore.instance
+                .collection('artifacts/$APP_ID/public/data/users')
+                .doc(userId)
+                .get(),
+            builder: (context, userSnapshot) {
+              if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+                return const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: CircleAvatar(child: Icon(Icons.person)),
+                );
+              }
+              final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+              final profileImageUrl = userData['profileImageUrl'] as String? ?? '';
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 25,
+                      backgroundImage: profileImageUrl.isNotEmpty
+                          ? CachedNetworkImageProvider(profileImageUrl)
+                          : null,
+                      child: profileImageUrl.isEmpty ? const Icon(Icons.person) : null,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      userData['firstName'] ?? 'User',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               );
             },

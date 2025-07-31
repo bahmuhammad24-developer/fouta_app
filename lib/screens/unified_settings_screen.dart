@@ -7,6 +7,8 @@ import 'package:fouta_app/main.dart';
 import 'package:fouta_app/screens/account_settings_screen.dart';
 import 'package:fouta_app/screens/data_saver_screen.dart';
 import 'package:fouta_app/screens/privacy_settings_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:fouta_app/services/theme_provider.dart';
 
 class UnifiedSettingsScreen extends StatefulWidget {
   const UnifiedSettingsScreen({super.key});
@@ -178,6 +180,22 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
             onTap: _changePassword,
           ),
 
+          ListTile(
+            leading: const Icon(Icons.privacy_tip_outlined),
+            title: const Text('Privacy Settings'),
+            subtitle: const Text('Control who sees your profile and posts'),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacySettingsScreen()));
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.data_saver_on_outlined),
+            title: const Text('Data Saver'),
+            subtitle: const Text('Manage video autoplay settings'),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const DataSaverScreen()));
+            },
+          ),
           _buildSectionHeader('PRIVACY & DATA'),
           ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
@@ -197,6 +215,26 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
           ),
           
           _buildSectionHeader('APP'),
+
+          // Dark mode toggle using ThemeProvider. Wrap in Builder to ensure context has access to the provider.
+          Builder(
+            builder: (context) {
+              return Consumer<ThemeProvider>(
+                builder: (context, themeProvider, _) {
+                  return SwitchListTile(
+                    secondary: const Icon(Icons.dark_mode_outlined),
+                    title: const Text('Dark Mode'),
+                    subtitle: const Text('Enable dark theme'),
+                    value: themeProvider.isDarkMode,
+                    onChanged: (value) {
+                      themeProvider.toggleDarkMode(value);
+                    },
+                  );
+                },
+              );
+            },
+          ),
+
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('About Fouta'),

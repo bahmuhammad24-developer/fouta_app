@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:fouta_app/screens/event_invite_screen.dart';
 
 class CreateEventScreen extends StatefulWidget {
   const CreateEventScreen({super.key});
@@ -24,6 +25,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   TimeOfDay? _selectedTime;
   bool _isLoading = false;
   File? _headerImageFile;
+
+  // List of user IDs invited to this event (followers selected from invite screen).
+  List<String> _invitedIds = [];
 
   Future<void> _pickImage() async {
     final pickedImage = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 70);
@@ -97,6 +101,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       'eventDate': Timestamp.fromDate(eventDateTime),
       'attendees': [user.uid], // Creator automatically attends
       'creatorId': user.uid,
+      'invitedIds': _invitedIds,
     });
 
     if (mounted) {
@@ -174,6 +179,56 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       ),
                       onTap: _pickDateTime,
                     ),
+                    const SizedBox(height: 16),
+                    // Invite people button and selected count
+                    Row(
+                      children: [
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.person_add),
+                          label: const Text('Invite'),
+                          onPressed: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => EventInviteScreen(initialSelected: _invitedIds),
+                              ),
+                            );
+                            if (result != null && result is List<String>) {
+                              setState(() {
+                                _invitedIds = result;
+                              });
+                            }
+                          },
+                        ),
+                        const SizedBox(width: 16),
+                        if (_invitedIds.isNotEmpty) Text('Invited: ${_invitedIds.length}')
+                      ],
+                    ),
+                    // Display invited users as chips
+                    if (_invitedIds.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: FutureBuilder<QuerySnapshot>(
+                          future: FirebaseFirestore.instance
+                              .collection('artifacts/$APP_ID/public/data/users')
+                              .where(FieldPath.documentId, whereIn: _invitedIds)
+                              .get(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) {
+                              return const SizedBox.shrink();
+                            }
+                            final docs = snapshot.data!.docs;
+                            return Wrap(
+                              spacing: 4,
+                              children: docs.map((doc) {
+                                final data = doc.data() as Map<String, dynamic>;
+                                final name = data['displayName'] ?? 'User';
+                                return Chip(label: Text(name));
+                              }).toList(),
+                            );
+                          },
+                        ),
+                      ),
                   ],
                 ),
               ),

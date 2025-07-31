@@ -6,7 +6,8 @@ class VideoPlayerManager with ChangeNotifier {
   final int _poolSize = 3; // A pool of 3 players is a good balance.
   late final List<Player> _playerPool;
   final Map<String, Player> _activePlayers = {};
-  final List<String> _playerRequestQueue = [];
+  // Maintain LRU order of video IDs that have been assigned players.
+  final List<String> _lruOrder = [];
 
   VideoPlayerManager() {
     _playerPool = List.generate(
@@ -28,11 +29,14 @@ class VideoPlayerManager with ChangeNotifier {
   }
 
   Player? requestPlayer(String videoId) {
+    // If this video is already using a player, update its position in the LRU order
     if (_activePlayers.containsKey(videoId)) {
+      _lruOrder.remove(videoId);
+      _lruOrder.add(videoId);
       return _activePlayers[videoId];
     }
-    
-    // Find an available player that is not currently in use
+
+    // Try to find a free player in the pool
     Player? availablePlayer;
     for (final p in _playerPool) {
       if (!_activePlayers.containsValue(p)) {
@@ -41,14 +45,31 @@ class VideoPlayerManager with ChangeNotifier {
       }
     }
 
+    if (availablePlayer == null) {
+      // No free player: release the least recently used video player
+      if (_lruOrder.isNotEmpty) {
+        final lruVideoId = _lruOrder.removeAt(0);
+        releasePlayer(lruVideoId);
+        // After releasing, there should be a free player
+        for (final p in _playerPool) {
+          if (!_activePlayers.containsValue(p)) {
+            availablePlayer = p;
+            break;
+          }
+        }
+      }
+    }
+
     if (availablePlayer != null) {
       _activePlayers[videoId] = availablePlayer;
+      // Add to LRU list as most recently used
+      _lruOrder.remove(videoId);
+      _lruOrder.add(videoId);
       debugPrint('Assigned player for videoId: $videoId. Active players: ${_activePlayers.length}');
       return availablePlayer;
     }
-    
-    // If no player is available, we could implement logic to steal the least recently used one.
-    // For now, we simply deny the request if the pool is full.
+
+    // Still no player available (should not happen), return null
     debugPrint('No available players in the pool for videoId: $videoId');
     return null;
   }
@@ -58,6 +79,7 @@ class VideoPlayerManager with ChangeNotifier {
       final playerToRelease = _activePlayers[videoId];
       playerToRelease?.stop(); // Stop playback
       _activePlayers.remove(videoId);
+      _lruOrder.remove(videoId);
       debugPrint('Released player for videoId: $videoId. Active players: ${_activePlayers.length}');
     }
   }
