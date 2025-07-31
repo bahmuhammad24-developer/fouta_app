@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:fouta_app/screens/chat_details_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -29,12 +31,15 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _messageController = TextEditingController();
   String? _currentChatId;
-  
+  DocumentReference? _chatRef;
+
   XFile? _selectedMediaFile;
   Uint8List? _selectedMediaBytes;
   String _mediaType = '';
   double _uploadProgress = 0.0;
   bool _isUploading = false;
+
+  Timer? _typingTimer;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -47,6 +52,7 @@ class _ChatScreenState extends State<ChatScreen> {
     } else {
       _ensureChatDataAndRead();
     }
+     _messageController.addListener(_handleTyping);
   }
 
   Future<void> _findOrCreateChat() async {
@@ -55,7 +61,7 @@ class _ChatScreenState extends State<ChatScreen> {
     
     final participants = [currentUser.uid, widget.otherUserId!]..sort();
     final chatId = participants.join('_');
-    final chatDocRef = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/chats').doc(chatId);
+    _chatRef = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/chats').doc(chatId);
 
     if(mounted) {
       setState(() {
@@ -63,16 +69,18 @@ class _ChatScreenState extends State<ChatScreen> {
       });
     }
 
-    final doc = await chatDocRef.get();
+    final doc = await _chatRef!.get();
     if (!doc.exists) {
-      await chatDocRef.set({
+      await _chatRef!.set({
         'participants': participants,
         'isGroupChat': false,
+        'admins': [],
         'createdAt': FieldValue.serverTimestamp(),
         'unreadCounts': {
           currentUser.uid: 0,
           widget.otherUserId!: 0,
         },
+        'typingStatus': {},
       });
     }
     _markChatAsRead();
@@ -80,12 +88,18 @@ class _ChatScreenState extends State<ChatScreen> {
   
   Future<void> _ensureChatDataAndRead() async {
     if (_currentChatId == null) return;
-    final chatRef = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/chats').doc(_currentChatId!);
-    final doc = await chatRef.get();
+    _chatRef = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/chats').doc(_currentChatId!);
+    final doc = await _chatRef!.get();
 
-    // DATA MIGRATION: If old chat is missing the isGroupChat field, add it.
-    if (doc.exists && !doc.data()!.containsKey('isGroupChat')) {
-      await chatRef.update({'isGroupChat': false});
+    // DATA MIGRATION: If old chat is missing new fields, add them.
+    if (doc.exists) {
+      final data = doc.data() as Map<String, dynamic>; // FIX: Cast data to Map
+      Map<String, dynamic> updates = {};
+      if (!data.containsKey('isGroupChat')) updates['isGroupChat'] = false;
+      if (!data.containsKey('admins')) updates['admins'] = [];
+      if (!data.containsKey('typingStatus')) updates['typingStatus'] = {};
+      
+      if(updates.isNotEmpty) await _chatRef!.update(updates);
     }
     _markChatAsRead();
   }
@@ -94,19 +108,28 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_currentChatId == null) return;
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
-
-    final chatRef = FirebaseFirestore.instance
-        .collection('artifacts/$APP_ID/public/data/chats')
-        .doc(_currentChatId);
     
-    await chatRef.update({
+    await _chatRef?.update({
       'unreadCounts.${currentUser.uid}': 0,
     });
+  }
+  
+  void _handleTyping() {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null || _chatRef == null) return;
+
+    if (_typingTimer?.isActive ?? false) _typingTimer?.cancel();
+    _typingTimer = Timer(const Duration(seconds: 2), () {
+       _chatRef?.update({'typingStatus.${currentUser.uid}': false});
+    });
+    _chatRef?.update({'typingStatus.${currentUser.uid}': true});
   }
 
   @override
   void dispose() {
+    _messageController.removeListener(_handleTyping);
     _messageController.dispose();
+    _typingTimer?.cancel();
     super.dispose();
   }
 
@@ -174,9 +197,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final userDoc = await FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(currentUser.uid).get();
     final senderName = userDoc.data()?['displayName'] ?? 'Anonymous';
 
-    await FirebaseFirestore.instance
-        .collection('artifacts/$APP_ID/public/data/chats')
-        .doc(_currentChatId)
+    await _chatRef!
         .collection('messages')
         .add({
           'senderId': currentUser.uid,
@@ -185,15 +206,16 @@ class _ChatScreenState extends State<ChatScreen> {
           'mediaUrl': mediaUrl,
           'mediaType': _mediaType,
           'timestamp': FieldValue.serverTimestamp(),
-          'isRead': false,
+          'isRead': false, // Kept for simplicity, but new `readBy` is primary
+          'readBy': [currentUser.uid],
+          'reactions': {},
+          'isReply': false,
         });
 
-    await FirebaseFirestore.instance
-        .collection('artifacts/$APP_ID/public/data/chats')
-        .doc(_currentChatId)
-        .update({
+    await _chatRef!.update({
           'lastMessage': messageText.isNotEmpty ? messageText : 'Sent a $_mediaType',
           'lastMessageTimestamp': FieldValue.serverTimestamp(),
+          'typingStatus.${currentUser.uid}': false,
         });
 
     _messageController.clear();
@@ -234,6 +256,13 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
   
+  // NOTE: This is a placeholder for a more complex reaction UI
+  Widget _buildReactions(Map<String, dynamic> reactions) {
+    if (reactions.isEmpty) return const SizedBox.shrink();
+    // In a real app, this would be a row of styled emoji counts
+    return Text("Reactions: ${reactions.length}", style: const TextStyle(fontSize: 10, color: Colors.grey));
+  }
+
   Widget _buildMessageBubble(Map<String, dynamic> message, bool isMe, bool isGroupChat) {
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -256,6 +285,16 @@ class _ChatScreenState extends State<ChatScreen> {
                   style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54, fontSize: 12),
                 ),
               ),
+            // Placeholder for Reply UI
+            if (message['isReply'] == true)
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8)
+                ),
+                child: Text("Replying to: ${message['replyToContent'] ?? ''}", style: const TextStyle(fontSize: 12)),
+              ),
             if(message['mediaUrl'] != null && message['mediaUrl']!.isNotEmpty)
               _buildChatMediaDisplay(message['mediaType'] ?? '', message['mediaUrl']),
             if(message['content'] != null && message['content']!.isNotEmpty)
@@ -266,6 +305,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   style: TextStyle(color: isMe ? Colors.white : Colors.black),
                 ),
               ),
+            _buildReactions(message['reactions'] ?? {}),
           ],
         ),
       ),
@@ -329,9 +369,12 @@ class _ChatScreenState extends State<ChatScreen> {
         title: _currentChatId == null 
           ? Text(widget.otherUserName ?? 'New Chat')
           : StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/chats').doc(_currentChatId).snapshots(),
+          stream: _chatRef?.snapshots(),
           builder: (context, snapshot) {
-            if (!snapshot.hasData || !snapshot.data!.exists) return const Text('Loading...');
+            if (!snapshot.hasData || !snapshot.data!.exists) {
+              // FIX: Use the passed name as a fallback while loading
+              return Text(widget.otherUserName ?? 'Loading...');
+            }
             
             final chatData = snapshot.data!.data() as Map<String, dynamic>;
             final bool isGroup = chatData['isGroupChat'] ?? false;
@@ -339,6 +382,10 @@ class _ChatScreenState extends State<ChatScreen> {
             if(isGroup) {
               return Text(chatData['groupName'] ?? 'Group Chat');
             } else {
+              // If we already have the name, use it. Otherwise, fetch it.
+              if (widget.otherUserName != null) {
+                return Text(widget.otherUserName!);
+              }
               final otherUserId = (chatData['participants'] as List).firstWhere((id) => id != currentUser!.uid, orElse: () => '');
               return FutureBuilder<DocumentSnapshot>(
                 future: FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(otherUserId).get(),
@@ -350,6 +397,18 @@ class _ChatScreenState extends State<ChatScreen> {
             }
           }
         ),
+        actions: [
+          if (_currentChatId != null)
+            IconButton(
+              icon: const Icon(Icons.info_outline),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ChatDetailsScreen(chatId: _currentChatId!)),
+                );
+              },
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -357,10 +416,8 @@ class _ChatScreenState extends State<ChatScreen> {
             child: _currentChatId == null
               ? const Center(child: CircularProgressIndicator())
               : StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('artifacts/$APP_ID/public/data/chats')
-                  .doc(_currentChatId)
-                  .collection('messages')
+              stream: _chatRef
+                  ?.collection('messages')
                   .orderBy('timestamp', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
@@ -372,7 +429,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 }
                 
                 final messages = snapshot.data!.docs;
-                final chatDocFuture = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/chats').doc(_currentChatId!).get();
+                final chatDocFuture = _chatRef!.get();
 
                 return FutureBuilder<DocumentSnapshot>(
                   future: chatDocFuture,
@@ -396,6 +453,7 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
           ),
+          // Placeholder for Typing Indicator
           _buildMessageComposer(),
         ],
       ),

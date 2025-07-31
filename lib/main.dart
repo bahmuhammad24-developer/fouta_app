@@ -36,13 +36,13 @@ class MyApp extends StatelessWidget {
       title: 'Fouta',
       theme: ThemeData(
         primaryColor: const Color(0xFF2D5A2D),
-        scaffoldBackgroundColor: const Color(0xFFF5F5FF),
+        scaffoldBackgroundColor: const Color(0xFFF2F0E6), // UPDATED: Alabaster
         fontFamily: 'Inter',
         colorScheme: const ColorScheme.light(
           primary: Color(0xFF2D5A2D), // Primary Green
           secondary: Color(0xFFF7B731), // Accent Gold
           surface: Color(0xFFFFFFFF), // Card/Surface White
-          background: Color(0xFFF5F5F5), // Background Off-White
+          background: Color(0xFFF2F0E6), // UPDATED: Alabaster
           error: Color(0xFFD9534F), // Alert Red
           onPrimary: Colors.white,
           onSecondary: Colors.black,
@@ -51,8 +51,8 @@ class MyApp extends StatelessWidget {
           onError: Colors.white,
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF2D5A2D), // Primary Green
-          foregroundColor: Colors.white,
+          backgroundColor: Color(0xFFF5F5F5),
+          foregroundColor: Color(0xFF2D5A2D),
           elevation: 2,
         ),
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
@@ -60,7 +60,7 @@ class MyApp extends StatelessWidget {
           foregroundColor: Colors.black,
         ),
         bottomAppBarTheme: const BottomAppBarTheme(
-          color: Color(0xFF2D5A2D),
+          color: Color(0xFFF5F5F5),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
@@ -96,7 +96,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const SplashScreen(), // <-- CHANGE IS HERE
+      home: const SplashScreen(),
     );
   }
 }

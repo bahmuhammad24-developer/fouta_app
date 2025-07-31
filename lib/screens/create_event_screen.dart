@@ -4,6 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fouta_app/main.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class CreateEventScreen extends StatefulWidget {
   const CreateEventScreen({super.key});
@@ -20,6 +23,16 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   bool _isLoading = false;
+  File? _headerImageFile;
+
+  Future<void> _pickImage() async {
+    final pickedImage = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if(pickedImage != null) {
+      setState(() {
+        _headerImageFile = File(pickedImage.path);
+      });
+    }
+  }
 
   Future<void> _pickDateTime() async {
     final date = await showDatePicker(
@@ -60,6 +73,13 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     }
 
     setState(() => _isLoading = true);
+    
+    String? imageUrl;
+    if(_headerImageFile != null) {
+      final ref = FirebaseStorage.instance.ref().child('event_headers').child('${DateTime.now().millisecondsSinceEpoch}.jpg');
+      await ref.putFile(_headerImageFile!);
+      imageUrl = await ref.getDownloadURL();
+    }
 
     final eventDateTime = DateTime(
       _selectedDate!.year,
@@ -73,9 +93,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       'title': _titleController.text.trim(),
       'description': _descriptionController.text.trim(),
       'location': _locationController.text.trim(),
+      'headerImageUrl': imageUrl ?? '',
       'eventDate': Timestamp.fromDate(eventDateTime),
-      'attendees': [],
-      'creatorId': user.uid, // <-- Field added
+      'attendees': [user.uid], // Creator automatically attends
+      'creatorId': user.uid,
     });
 
     if (mounted) {
@@ -103,6 +124,30 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: Container(
+                        height: 150,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: _headerImageFile != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.file(_headerImageFile!, fit: BoxFit.cover),
+                            )
+                          : const Center(child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.camera_alt, size: 40, color: Colors.grey),
+                              Text('Add Header Image')
+                            ],
+                          )),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     TextFormField(
                       controller: _titleController,
                       decoration: const InputDecoration(labelText: 'Event Title'),

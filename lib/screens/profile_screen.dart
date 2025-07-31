@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:fouta_app/screens/post_detail_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:typed_data';
@@ -24,10 +25,10 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+// Add SingleTickerProviderStateMixin for the TabController
+class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
   final _bioController = TextEditingController();
   late bool _isEditing;
-  bool _isFollowing = false;
   String _currentProfileImageUrl = '';
   XFile? _newProfileImageFile;
   Uint8List? _newProfileImageBytes;
@@ -35,16 +36,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isUploading = false;
 
   final ImagePicker _picker = ImagePicker();
+  
+  // TAB CONTROLLER SETUP
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _isEditing = widget.initialIsEditing;
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
   void dispose() {
     _bioController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -171,7 +177,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _toggleFollow(String currentUserId, String targetUserId) async {
+  Future<void> _toggleFollow(String currentUserId, String targetUserId, bool isCurrentlyFollowing) async {
     if (currentUserId == targetUserId) {
       _showMessage('You cannot follow yourself.');
       return;
@@ -179,17 +185,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final currentUserRef = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(currentUserId);
       final targetUserRef = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(targetUserId);
-
       final currentUserDoc = await currentUserRef.get();
-      
-      if (!currentUserDoc.exists) {
-        _showMessage('User data not found for follow operation.');
-        return;
-      }
 
-      List<String> currentUserFollowing = List<String>.from(currentUserDoc.data()?['following'] ?? []);
-      
-      if (currentUserFollowing.contains(targetUserId)) {
+      if (isCurrentlyFollowing) {
         await currentUserRef.update({'following': FieldValue.arrayRemove([targetUserId])});
         await targetUserRef.update({'followers': FieldValue.arrayRemove([currentUserId])});
         if(mounted) _showMessage('Unfollowed user.');
@@ -289,6 +287,222 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return DateFormat('MMM d, yyyy').format(date);
   }
 
+  // WIDGET BUILDERS FOR UI SECTIONS
+  Widget _buildProfileHeader(Map<String, dynamic> userData, bool isMyProfile, User? currentUser) {
+    final String displayName = userData['displayName'] ?? 'No Name';
+    final String bio = userData['bio'] ?? 'No bio yet.';
+    final Timestamp? createdAt = userData['createdAt'] as Timestamp?;
+    final List<dynamic> followers = userData['followers'] ?? [];
+    final List<dynamic> following = userData['following'] ?? [];
+    final bool isFollowing = (userData['followers'] ?? []).contains(currentUser?.uid);
+    
+    if (_isEditing) {
+      _bioController.text = bio;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: isMyProfile ? () {
+              if (_isEditing) {
+                _pickProfileImage();
+              } else if (_currentProfileImageUrl.isNotEmpty) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FullScreenImageViewer(imageUrl: _currentProfileImageUrl),
+                  ),
+                );
+              }
+            } : null,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircleAvatar(
+                  radius: 60,
+                  backgroundImage: (_newProfileImageBytes != null && kIsWeb)
+                      ? MemoryImage(_newProfileImageBytes!)
+                      : (_newProfileImageFile != null && !kIsWeb)
+                          ? FileImage(File(_newProfileImageFile!.path)) as ImageProvider
+                          : (_currentProfileImageUrl.isNotEmpty ? CachedNetworkImageProvider(_currentProfileImageUrl) : null),
+                  child: (_currentProfileImageUrl.isEmpty && _newProfileImageFile == null && _newProfileImageBytes == null)
+                      ? const Icon(Icons.person, size: 60, color: Colors.white)
+                      : null,
+                  backgroundColor: Colors.grey[300],
+                ),
+                if (isMyProfile)
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: CircleAvatar(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      child: IconButton(
+                        icon: Icon(_isEditing ? Icons.check : Icons.edit, color: Colors.white),
+                        onPressed: () {
+                          if (_isEditing) {
+                            _updateProfile(_currentProfileImageUrl);
+                          } else {
+                            setState(() {
+                              _isEditing = true;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (_isUploading)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: LinearProgressIndicator(value: _uploadProgress),
+            ),
+          const SizedBox(height: 16),
+          Text(displayName, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          if (_isEditing)
+            TextField(
+              controller: _bioController,
+              maxLines: 3,
+              decoration: const InputDecoration(labelText: 'Bio'),
+              textAlign: TextAlign.center,
+            )
+          else
+            Text(bio, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+          const SizedBox(height: 16),
+          Text('Joined: ${_formatTimestamp(createdAt)}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              GestureDetector(
+                onTap: () => _showUserListDialog(context, followers, 'Followers'),
+                child: Column(
+                  children: [
+                    Text('${followers.length}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('Followers', style: TextStyle(color: Colors.grey)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 30),
+              GestureDetector(
+                onTap: () => _showUserListDialog(context, following, 'Following'),
+                child: Column(
+                  children: [
+                    Text('${following.length}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('Following', style: TextStyle(color: Colors.grey)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          if (!isMyProfile && currentUser != null && !currentUser.isAnonymous)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () => _toggleFollow(currentUser.uid, widget.userId, isFollowing),
+                  child: Text(isFollowing ? 'Unfollow' : 'Follow'),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatScreen(
+                          otherUserId: widget.userId,
+                          otherUserName: displayName,
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text('Message'),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  // WIDGET FOR POSTS LIST
+  Widget _buildPostsList(User? currentUser, bool isMyProfile) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('artifacts/$APP_ID/public/data/posts')
+          .where('authorId', isEqualTo: widget.userId)
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (snapshot.data!.docs.isEmpty) return Center(child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 32.0),
+          child: Text(isMyProfile ? 'You have no posts yet.' : 'This user has no posts yet.'),
+        ));
+        
+        return ListView.builder(
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          itemCount: snapshot.data!.docs.length,
+          itemBuilder: (context, index) {
+            final post = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+            return PostCardWidget(
+              postId: snapshot.data!.docs[index].id,
+              post: post,
+              currentUser: currentUser,
+              appId: APP_ID,
+              onMessage: _showMessage,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // WIDGET FOR MEDIA GRID
+  Widget _buildMediaGrid(User? currentUser) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('artifacts/$APP_ID/public/data/posts')
+          .where('authorId', isEqualTo: widget.userId)
+          .where('mediaType', whereIn: ['image', 'video']) // FIX: Corrected query
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 32.0),
+            child: Text('No media posted yet.'),
+          ));
+        }
+        final posts = snapshot.data!.docs;
+        return GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 4,
+            mainAxisSpacing: 4,
+          ),
+          itemCount: posts.length,
+          itemBuilder: (context, index) {
+            final post = posts[index].data() as Map<String, dynamic>;
+            return _MediaGridTile(
+              postId: posts[index].id,
+              post: post,
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -296,213 +510,120 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return widget.userId.isEmpty
         ? const Center(child: Text('User ID is missing.'))
-        : StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(widget.userId).snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (!snapshot.hasData || !snapshot.data!.exists) {
-                return const Center(child: Text('User not found.'));
-              }
-
-              final userData = snapshot.data!.data() as Map<String, dynamic>;
-              final String displayName = userData['displayName'] ?? 'No Name';
-              final String bio = userData['bio'] ?? 'No bio yet.';
-              final Timestamp? createdAt = userData['createdAt'] as Timestamp?;
-              final List<dynamic> followers = userData['followers'] ?? [];
-              final List<dynamic> following = userData['following'] ?? [];
-              
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted && _currentProfileImageUrl != (userData['profileImageUrl'] ?? '')) {
-                  setState(() {
-                    _currentProfileImageUrl = userData['profileImageUrl'] ?? '';
-                  });
+        : Scaffold(
+            body: StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(widget.userId).snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
                 }
-              });
+                if (!snapshot.hasData || !snapshot.data!.exists) {
+                  return const Center(child: Text('User not found.'));
+                }
 
-              if (_isEditing) {
-                _bioController.text = bio;
-              }
+                final userData = snapshot.data!.data() as Map<String, dynamic>;
+                
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && _currentProfileImageUrl != (userData['profileImageUrl'] ?? '')) {
+                    setState(() {
+                      _currentProfileImageUrl = userData['profileImageUrl'] ?? '';
+                    });
+                  }
+                });
 
-              if (currentUser != null && !currentUser.isAnonymous) {
-                _isFollowing = (userData['followers'] ?? []).contains(currentUser.uid);
-              }
-
-              return RefreshIndicator(
-                onRefresh: () async => setState(() {}),
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        GestureDetector(
-                          onTap: isMyProfile ? () {
-                            if (_isEditing) {
-                              _pickProfileImage();
-                            } else if (_currentProfileImageUrl.isNotEmpty) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => FullScreenImageViewer(imageUrl: _currentProfileImageUrl),
-                                ),
-                              );
-                            }
-                          } : null,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              CircleAvatar(
-                                radius: 60,
-                                backgroundImage: (_newProfileImageBytes != null && kIsWeb)
-                                    ? MemoryImage(_newProfileImageBytes!)
-                                    : (_newProfileImageFile != null && !kIsWeb)
-                                        ? FileImage(File(_newProfileImageFile!.path)) as ImageProvider
-                                        : (_currentProfileImageUrl.isNotEmpty ? CachedNetworkImageProvider(_currentProfileImageUrl) : null),
-                                child: (_currentProfileImageUrl.isEmpty && _newProfileImageFile == null && _newProfileImageBytes == null)
-                                    ? const Icon(Icons.person, size: 60, color: Colors.white)
-                                    : null,
-                                backgroundColor: Colors.grey[300],
-                              ),
-                              if (isMyProfile)
-                                Positioned(
-                                  bottom: 0,
-                                  right: 0,
-                                  child: CircleAvatar(
-                                    backgroundColor: Theme.of(context).colorScheme.primary,
-                                    child: IconButton(
-                                      icon: Icon(_isEditing ? Icons.check : Icons.edit, color: Colors.white),
-                                      onPressed: () {
-                                        if (_isEditing) {
-                                          _updateProfile(_currentProfileImageUrl);
-                                        } else {
-                                          setState(() {
-                                            _isEditing = true;
-                                          });
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                ),
+                return NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxIsScrolled) {
+                    return [
+                      SliverToBoxAdapter(
+                        child: _buildProfileHeader(userData, isMyProfile, currentUser),
+                      ),
+                      SliverPersistentHeader(
+                        delegate: _SliverTabBarDelegate(
+                          TabBar(
+                            controller: _tabController,
+                            tabs: const [
+                              Tab(icon: Icon(Icons.grid_on)),
+                              Tab(icon: Icon(Icons.photo_library)),
                             ],
                           ),
                         ),
-                        if (_isUploading)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: LinearProgressIndicator(value: _uploadProgress),
-                          ),
-                        const SizedBox(height: 16),
-                        Text(displayName, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        if (_isEditing)
-                          TextField(
-                            controller: _bioController,
-                            maxLines: 3,
-                            decoration: const InputDecoration(labelText: 'Bio'),
-                            textAlign: TextAlign.center,
-                          )
-                        else
-                          Text(bio, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, color: Colors.grey)),
-                        const SizedBox(height: 16),
-                        Text('Joined: ${_formatTimestamp(createdAt)}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            GestureDetector(
-                              onTap: () => _showUserListDialog(context, followers, 'Followers'),
-                              child: Column(
-                                children: [
-                                  Text('${followers.length}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                  const Text('Followers', style: TextStyle(color: Colors.grey)),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 30),
-                            GestureDetector(
-                              onTap: () => _showUserListDialog(context, following, 'Following'),
-                              child: Column(
-                                children: [
-                                  Text('${following.length}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                  const Text('Following', style: TextStyle(color: Colors.grey)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        if (!isMyProfile && currentUser != null && !currentUser.isAnonymous)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              ElevatedButton(
-                                onPressed: () => _toggleFollow(currentUser.uid, widget.userId),
-                                child: Text(_isFollowing ? 'Unfollow' : 'Follow'),
-                              ),
-                              const SizedBox(width: 10),
-                              ElevatedButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => ChatScreen(
-                                        otherUserId: widget.userId,
-                                        otherUserName: displayName,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: const Text('Message'),
-                              ),
-                            ],
-                          ),
-                        const Divider(height: 40),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            isMyProfile ? 'Your Posts' : '$displayName\'s Posts',
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        StreamBuilder<QuerySnapshot>(
-                          stream: FirebaseFirestore.instance
-                              .collection('artifacts/$APP_ID/public/data/posts')
-                              .where('authorId', isEqualTo: widget.userId)
-                              .orderBy('timestamp', descending: true)
-                              .snapshots(),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                            if (snapshot.data!.docs.isEmpty) return Center(child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 32.0),
-                              child: Text(isMyProfile ? 'You have no posts yet.' : 'This user has no posts yet.'),
-                            ));
-                            
-                            return ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: snapshot.data!.docs.length,
-                              itemBuilder: (context, index) {
-                                final post = snapshot.data!.docs[index].data() as Map<String, dynamic>;
-                                return PostCardWidget(
-                                  postId: snapshot.data!.docs[index].id,
-                                  post: post,
-                                  currentUser: currentUser,
-                                  appId: APP_ID,
-                                  onMessage: _showMessage,
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ],
-                    ),
+                        pinned: true,
+                      ),
+                    ];
+                  },
+                  body: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildPostsList(currentUser, isMyProfile),
+                      _buildMediaGrid(currentUser),
+                    ],
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           );
+  }
+}
+
+// MEDIA GRID TILE WIDGET
+class _MediaGridTile extends StatelessWidget {
+  final String postId;
+  final Map<String, dynamic> post;
+  const _MediaGridTile({required this.postId, required this.post});
+
+  @override
+  Widget build(BuildContext context) {
+    final String mediaUrl = post['mediaUrl'] ?? '';
+    final String mediaType = post['mediaType'] ?? '';
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context, 
+        MaterialPageRoute(builder: (_) => PostDetailScreen(postId: postId))
+      ),
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            CachedNetworkImage(
+              imageUrl: mediaUrl,
+              fit: BoxFit.cover,
+              errorWidget: (context, url, error) => const Icon(Icons.error),
+            ),
+            if(mediaType == 'video')
+              const Positioned(
+                top: 4,
+                right: 4,
+                child: Icon(Icons.play_circle_filled, color: Colors.white, size: 20),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// HELPER CLASS FOR STICKY TAB BAR
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverTabBarDelegate(this.tabBar);
+  final TabBar tabBar;
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
+    return false;
   }
 }

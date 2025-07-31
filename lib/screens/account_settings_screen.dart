@@ -129,8 +129,6 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Account Settings'),
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -208,8 +206,6 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                       onPressed: _saveAccountData,
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size.fromHeight(50),
-                        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-                        foregroundColor: Colors.white,
                       ),
                       child: const Text('Save Account Settings'),
                     ),

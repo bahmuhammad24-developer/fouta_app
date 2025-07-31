@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fouta_app/main.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class EditEventScreen extends StatefulWidget {
   final String eventId;
@@ -26,6 +30,8 @@ class _EditEventScreenState extends State<EditEventScreen> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   bool _isLoading = false;
+  File? _headerImageFile;
+  String? _currentHeaderImageUrl;
 
   @override
   void initState() {
@@ -33,11 +39,21 @@ class _EditEventScreenState extends State<EditEventScreen> {
     _titleController.text = widget.initialData['title'] ?? '';
     _descriptionController.text = widget.initialData['description'] ?? '';
     _locationController.text = widget.initialData['location'] ?? '';
+    _currentHeaderImageUrl = widget.initialData['headerImageUrl'];
     
     final Timestamp timestamp = widget.initialData['eventDate'];
     final initialDateTime = timestamp.toDate();
     _selectedDate = initialDateTime;
     _selectedTime = TimeOfDay.fromDateTime(initialDateTime);
+  }
+
+  Future<void> _pickImage() async {
+    final pickedImage = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if(pickedImage != null) {
+      setState(() {
+        _headerImageFile = File(pickedImage.path);
+      });
+    }
   }
 
   Future<void> _pickDateTime() async {
@@ -80,20 +96,40 @@ class _EditEventScreenState extends State<EditEventScreen> {
       _selectedTime!.minute,
     );
 
-    await FirebaseFirestore.instance
-        .collection('artifacts/$APP_ID/public/data/events')
-        .doc(widget.eventId)
-        .update({
+    // FIX: Refactored logic to be more robust
+    final Map<String, dynamic> dataToUpdate = {
       'title': _titleController.text.trim(),
       'description': _descriptionController.text.trim(),
       'location': _locationController.text.trim(),
       'eventDate': Timestamp.fromDate(eventDateTime),
-    });
+    };
 
-    if (mounted) {
-      // Pop twice to go back to the event list screen
-      Navigator.of(context).pop();
-      Navigator.of(context).pop();
+    try {
+      if (_headerImageFile != null) {
+        final ref = FirebaseStorage.instance.ref().child('event_headers').child('${DateTime.now().millisecondsSinceEpoch}.jpg');
+        await ref.putFile(_headerImageFile!);
+        final imageUrl = await ref.getDownloadURL();
+        dataToUpdate['headerImageUrl'] = imageUrl;
+      }
+
+      await FirebaseFirestore.instance
+          .collection('artifacts/$APP_ID/public/data/events')
+          .doc(widget.eventId)
+          .update(dataToUpdate);
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if(mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update event: $e')),
+        );
+      }
+    } finally {
+      if(mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -117,6 +153,19 @@ class _EditEventScreenState extends State<EditEventScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: Container(
+                        height: 150,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: _buildImage(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     TextFormField(
                       controller: _titleController,
                       decoration: const InputDecoration(labelText: 'Event Title'),
@@ -148,5 +197,27 @@ class _EditEventScreenState extends State<EditEventScreen> {
               ),
             ),
     );
+  }
+
+  Widget _buildImage() {
+    if (_headerImageFile != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.file(_headerImageFile!, fit: BoxFit.cover),
+      );
+    }
+    if (_currentHeaderImageUrl != null && _currentHeaderImageUrl!.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: CachedNetworkImage(imageUrl: _currentHeaderImageUrl!, fit: BoxFit.cover),
+      );
+    }
+    return const Center(child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.camera_alt, size: 40, color: Colors.grey),
+        Text('Change Header Image')
+      ],
+    ));
   }
 }

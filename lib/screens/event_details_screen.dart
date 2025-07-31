@@ -8,212 +8,311 @@ import 'package:fouta_app/screens/profile_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class EventDetailsScreen extends StatelessWidget {
+class EventDetailsScreen extends StatefulWidget {
   final String eventId;
 
   const EventDetailsScreen({super.key, required this.eventId});
 
-  Future<void> _toggleRsvp(String eventId, List<dynamic> attendees, String? currentUserId) async {
-    if (currentUserId == null) return;
-    
+  @override
+  State<EventDetailsScreen> createState() => _EventDetailsScreenState();
+}
+
+class _EventDetailsScreenState extends State<EventDetailsScreen> {
+  final TextEditingController _commentController = TextEditingController();
+
+  Future<void> _toggleRsvp(List<dynamic> attendees) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
     final eventRef = FirebaseFirestore.instance
         .collection('artifacts/$APP_ID/public/data/events')
-        .doc(eventId);
+        .doc(widget.eventId);
 
-    if (attendees.contains(currentUserId)) {
-      // User is already RSVP'd, so remove them
+    if (attendees.contains(currentUser.uid)) {
       await eventRef.update({
-        'attendees': FieldValue.arrayRemove([currentUserId])
+        'attendees': FieldValue.arrayRemove([currentUser.uid])
       });
     } else {
-      // User is not RSVP'd, so add them
       await eventRef.update({
-        'attendees': FieldValue.arrayUnion([currentUserId])
+        'attendees': FieldValue.arrayUnion([currentUser.uid])
       });
     }
+  }
+  
+  Future<void> _addComment() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final String commentText = _commentController.text.trim();
+    if(currentUser == null || commentText.isEmpty) return;
+    
+    final userDoc = await FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(currentUser.uid).get();
+    
+    await FirebaseFirestore.instance
+      .collection('artifacts/$APP_ID/public/data/events')
+      .doc(widget.eventId)
+      .collection('comments')
+      .add({
+        'content': commentText,
+        'authorId': currentUser.uid,
+        'authorDisplayName': userDoc.data()?['displayName'] ?? 'Anonymous',
+        'authorProfileImageUrl': userDoc.data()?['profileImageUrl'] ?? '',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+      _commentController.clear();
+      FocusScope.of(context).unfocus();
   }
 
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Event Details'),
-        actions: [
-          StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('artifacts/$APP_ID/public/data/events')
-                .doc(eventId)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData || !snapshot.data!.exists) {
-                return const SizedBox.shrink();
-              }
-              final event = snapshot.data!.data() as Map<String, dynamic>;
-              final isCreator = currentUser != null && event['creatorId'] == currentUser.uid;
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('artifacts/$APP_ID/public/data/events')
+          .doc(widget.eventId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const Scaffold(body: Center(child: Text('Event not found.')));
+        }
 
-              if (isCreator) {
-                return IconButton(
-                  icon: const Icon(Icons.edit),
-                  tooltip: 'Edit Event',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => EditEventScreen(
-                          eventId: eventId,
-                          initialData: event,
-                        ),
-                      ),
-                    );
-                  },
-                );
-              } else {
-                return const SizedBox.shrink();
-              }
-            },
-          ),
-        ],
-      ),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('artifacts/$APP_ID/public/data/events')
-            .doc(eventId)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text('Event not found.'));
-          }
+        final event = snapshot.data!.data() as Map<String, dynamic>;
+        final eventDate = (event['eventDate'] as Timestamp).toDate();
+        final List<dynamic> attendees = event['attendees'] ?? [];
+        final bool isCreator = currentUser != null && event['creatorId'] == currentUser.uid;
+        final bool isRsvpd = currentUser != null && attendees.contains(currentUser.uid);
+        final String headerImageUrl = event['headerImageUrl'] ?? '';
 
-          final event = snapshot.data!.data() as Map<String, dynamic>;
-          final eventDate = (event['eventDate'] as Timestamp).toDate();
-          final List<dynamic> attendees = event['attendees'] ?? [];
-          final bool isCreator = currentUser != null && event['creatorId'] == currentUser.uid;
-          final bool isRsvpd = currentUser != null && attendees.contains(currentUser.uid);
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        event['title'] ?? 'Untitled Event',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                    ),
-                    if (isCreator)
-                      Chip(
-                        avatar: Icon(Icons.star, color: Colors.grey[700]),
-                        label: const Text('My Event'),
-                        backgroundColor: Colors.yellow[100],
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                ListTile(
-                  leading: const Icon(Icons.calendar_today),
-                  title: Text(DateFormat('EEEE, MMMM d, yyyy').format(eventDate)),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.access_time),
-                  title: Text(DateFormat('hh:mm a').format(eventDate)),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.location_on),
-                  title: Text(event['location'] ?? 'No location provided'),
-                ),
-                const Divider(height: 32),
-                Text(
-                  'About this event',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 8),
-                Text(event['description'] ?? 'No description available.'),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () => _toggleRsvp(eventId, attendees, currentUser?.uid),
-                  icon: Icon(isRsvpd ? Icons.cancel : Icons.check_circle_outline),
-                  label: Text(isRsvpd ? 'Cancel RSVP' : 'RSVP'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isRsvpd ? Colors.grey : Theme.of(context).colorScheme.secondary,
-                    foregroundColor: isRsvpd ? Colors.white : Colors.black,
-                    minimumSize: const Size.fromHeight(50),
+        return Scaffold(
+          floatingActionButton: isCreator ? FloatingActionButton(
+            tooltip: 'Edit Event',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EditEventScreen(
+                    eventId: widget.eventId,
+                    initialData: event,
                   ),
                 ),
-                const Divider(height: 32),
-                Text(
-                  'Attendees (${attendees.length})',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 8),
-                attendees.isEmpty
-                    ? const Center(child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text('Be the first to RSVP!'),
-                    ))
-                    : SizedBox(
-                        height: 80,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: attendees.length,
-                          itemBuilder: (context, index) {
-                            final userId = attendees[index];
-                            return FutureBuilder<DocumentSnapshot>(
-                              future: FirebaseFirestore.instance
-                                  .collection('artifacts/$APP_ID/public/data/users')
-                                  .doc(userId)
-                                  .get(),
-                              builder: (context, userSnapshot) {
-                                if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-                                  return const Padding(
-                                    padding: EdgeInsets.all(8.0),
-                                    child: CircleAvatar(child: Icon(Icons.person)),
-                                  );
-                                }
-                                final userData = userSnapshot.data!.data() as Map<String, dynamic>;
-                                final profileImageUrl = userData['profileImageUrl'] as String? ?? '';
-                                return GestureDetector(
-                                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreen(userId: userId))),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                    child: Column(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 25,
-                                          backgroundImage: profileImageUrl.isNotEmpty
-                                              ? CachedNetworkImageProvider(profileImageUrl)
-                                              : null,
-                                          child: profileImageUrl.isEmpty
-                                              ? const Icon(Icons.person)
-                                              : null,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          userData['firstName'] ?? 'User',
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
+              );
+            },
+            child: const Icon(Icons.edit),
+          ) : null,
+          body: CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 220.0,
+                pinned: true,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: headerImageUrl.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: headerImageUrl,
+                          fit: BoxFit.cover,
+                        )
+                      : Container(
+                          color: Theme.of(context).primaryColor,
+                          child: Icon(
+                            Icons.event,
+                            size: 80,
+                            color: Colors.white.withOpacity(0.5),
+                          ),
                         ),
+                ),
+              ),
+              SliverList(
+                delegate: SliverChildListDelegate([
+                  // FIX: All event info moved into a Card below the AppBar
+                  Card(
+                    margin: const EdgeInsets.all(16.0),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            event['title'] ?? 'Event Details',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: Theme.of(context).primaryColor,
+                              fontSize: 24,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildInfoTile(
+                            Icons.calendar_today,
+                            DateFormat('EEEE, MMMM d, yyyy').format(eventDate),
+                          ),
+                          _buildInfoTile(
+                            Icons.access_time,
+                            DateFormat('hh:mm a').format(eventDate),
+                          ),
+                          _buildInfoTile(
+                            Icons.location_on,
+                            event['location'] ?? 'No location provided',
+                          ),
+                          const Divider(height: 32),
+                          Text(
+                            'About this event',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(event['description'] ?? 'No description available.'),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () => _toggleRsvp(attendees),
+                            icon: Icon(isRsvpd ? Icons.cancel : Icons.check_circle_outline),
+                            label: Text(isRsvpd ? 'Cancel RSVP' : 'RSVP'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isRsvpd ? Colors.grey : Theme.of(context).colorScheme.secondary,
+                              minimumSize: const Size.fromHeight(50),
+                            ),
+                          ),
+                          const Divider(height: 32),
+                          Text(
+                            'Who\'s Going (${attendees.length})',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 8),
+                          _buildAttendeesList(attendees),
+                          const Divider(height: 32),
+                          Text(
+                            'Discussions',
+                             style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          _buildCommentsSection(),
+                        ],
                       ),
-              ],
-            ),
+                    ),
+                  )
+                ]),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInfoTile(IconData icon, String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Icon(icon, color: Theme.of(context).primaryColor, size: 20),
+          const SizedBox(width: 16),
+          Expanded(child: Text(title, style: const TextStyle(fontSize: 16))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAttendeesList(List<dynamic> attendees) {
+    if (attendees.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text('Be the first to RSVP!'),
+        ),
+      );
+    }
+    return SizedBox(
+      height: 80,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: attendees.length,
+        itemBuilder: (context, index) {
+          final userId = attendees[index];
+          return FutureBuilder<DocumentSnapshot>(
+            future: FirebaseFirestore.instance
+                .collection('artifacts/$APP_ID/public/data/users')
+                .doc(userId)
+                .get(),
+            builder: (context, userSnapshot) {
+              if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+                return const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: CircleAvatar(child: Icon(Icons.person)),
+                );
+              }
+              final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+              final profileImageUrl = userData['profileImageUrl'] as String? ?? '';
+              return GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreen(userId: userId))),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 25,
+                        backgroundImage: profileImageUrl.isNotEmpty
+                            ? CachedNetworkImageProvider(profileImageUrl)
+                            : null,
+                        child: profileImageUrl.isEmpty ? const Icon(Icons.person) : null,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        userData['firstName'] ?? 'User',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           );
         },
       ),
+    );
+  }
+
+  Widget _buildCommentsSection() {
+    return Column(
+      children: [
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('artifacts/$APP_ID/public/data/events')
+              .doc(widget.eventId)
+              .collection('comments')
+              .orderBy('timestamp', descending: true)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if(!snapshot.hasData) return const SizedBox.shrink();
+            return ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: snapshot.data!.docs.length,
+              itemBuilder: (context, index) {
+                final comment = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundImage: (comment['authorProfileImageUrl'] != null && comment['authorProfileImageUrl'].isNotEmpty)
+                      ? CachedNetworkImageProvider(comment['authorProfileImageUrl'])
+                      : null,
+                  ),
+                  title: Text(comment['authorDisplayName'] ?? 'User'),
+                  subtitle: Text(comment['content'] ?? ''),
+                );
+              },
+            );
+          },
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _commentController,
+          decoration: InputDecoration(
+            hintText: 'Add a comment...',
+            suffixIcon: IconButton(
+              icon: Icon(Icons.send, color: Theme.of(context).primaryColor),
+              onPressed: _addComment,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

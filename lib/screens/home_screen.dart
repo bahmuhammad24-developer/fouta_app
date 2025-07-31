@@ -1,4 +1,5 @@
 // lib/screens/home_screen.dart
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fouta_app/services/video_cache_service.dart';
 import 'package:fouta_app/services/video_player_manager.dart';
@@ -8,6 +9,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fouta_app/screens/events_list_screen.dart';
 import 'package:fouta_app/screens/notifications_screen.dart';
 import 'package:fouta_app/screens/unified_settings_screen.dart';
+import 'package:fouta_app/widgets/stories_tray.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:badges/badges.dart' as badges;
@@ -34,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _unreadChatsCount = 0;
 
   final List<GlobalKey<NavigatorState>> _navigatorKeys = [
+    GlobalKey<NavigatorState>(),
     GlobalKey<NavigatorState>(),
     GlobalKey<NavigatorState>(),
     GlobalKey<NavigatorState>(),
@@ -114,6 +117,19 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+  
+  Widget _buildNewChatFab(BuildContext context) {
+    return FloatingActionButton(
+      heroTag: 'newChatFab',
+      onPressed: () async {
+        _setNavBarVisibility(false);
+        await Navigator.push(context, MaterialPageRoute(builder: (context) => const NewChatScreen()));
+        _setNavBarVisibility(true);
+      },
+      child: const Icon(Icons.message),
+      tooltip: 'Start New Chat',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,30 +145,43 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(_getAppBarTitle()),
-          actions: [
-            _NotificationsButton(unreadStream: _unreadNotificationsStream),
-            Builder(
-              builder: (context) => IconButton(
-                icon: const Icon(Icons.menu),
-                onPressed: () => Scaffold.of(context).openEndDrawer(),
+        body: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return <Widget>[
+              SliverAppBar(
+                title: Text(_getAppBarTitle()),
+                pinned: true,
+                floating: true,
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline),
+                    tooltip: 'Create Post',
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatePostScreen())),
+                  ),
+                  _NotificationsButton(unreadStream: _unreadNotificationsStream),
+                  Builder(
+                    builder: (context) => IconButton(
+                      icon: const Icon(Icons.menu),
+                      onPressed: () => Scaffold.of(context).openEndDrawer(),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+            ];
+          },
+          body: IndexedStack(
+            index: _selectedIndex,
+            children: <Widget>[
+              _buildOffstageNavigator(0, const FeedTab()),
+              _buildOffstageNavigator(1, ChatsTab(setNavBarVisibility: _setNavBarVisibility)),
+              _buildOffstageNavigator(2, const EventsListScreen()),
+              _buildOffstageNavigator(3, const PeopleTab()),
+              _buildOffstageNavigator(4, ProfileScreen(userId: currentUser?.uid ?? '')),
+            ],
+          ),
         ),
         endDrawer: _AppDrawer(showMessage: _showMessage),
-        body: IndexedStack(
-          index: _selectedIndex,
-          children: <Widget>[
-            _buildOffstageNavigator(0, const FeedTab()),
-            _buildOffstageNavigator(1, ChatsTab(setNavBarVisibility: _setNavBarVisibility)),
-            _buildOffstageNavigator(2, const PeopleTab()),
-            _buildOffstageNavigator(3, ProfileScreen(userId: currentUser?.uid ?? '')),
-          ],
-        ),
-        floatingActionButton: _isNavBarVisible ? const _CreatePostFab() : null,
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        floatingActionButton: _selectedIndex == 1 ? _buildNewChatFab(context) : null,
         bottomNavigationBar: _isNavBarVisible
             ? _BottomNavBar(
                 selectedIndex: _selectedIndex,
@@ -171,8 +200,10 @@ class _HomeScreenState extends State<HomeScreen> {
       case 1:
         return 'Chats';
       case 2:
-        return 'People';
+        return 'Events';
       case 3:
+        return 'People';
+      case 4:
         return 'Profile';
       default:
         return 'Fouta';
@@ -247,14 +278,6 @@ class _AppDrawer extends StatelessWidget {
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.event_outlined),
-            title: const Text('Events'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const EventsListScreen()));
-            },
-          ),
-          ListTile(
             leading: const Icon(Icons.settings_outlined),
             title: const Text('Settings'),
             onTap: () {
@@ -286,22 +309,6 @@ class _AppDrawer extends StatelessWidget {
   }
 }
 
-class _CreatePostFab extends StatelessWidget {
-  const _CreatePostFab();
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: "Create New Post",
-      child: FloatingActionButton(
-        heroTag: 'createPostFab',
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatePostScreen())),
-        child: const Icon(Icons.add),
-        shape: const CircleBorder(),
-      ),
-    );
-  }
-}
-
 class _BottomNavBar extends StatelessWidget {
   final int selectedIndex;
   final int unreadChatsCount;
@@ -316,8 +323,6 @@ class _BottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BottomAppBar(
-      shape: const CircularNotchedRectangle(),
-      notchMargin: 8.0,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: <Widget>[
@@ -342,17 +347,22 @@ class _BottomNavBar extends StatelessWidget {
               tooltip: 'Chats',
             ),
           ),
-          const SizedBox(width: 48), // The space for the FAB
           _BottomNavItem(
-            icon: selectedIndex == 2 ? Icons.people : Icons.people_outlined,
+            icon: selectedIndex == 2 ? Icons.event : Icons.event_outlined,
             isSelected: selectedIndex == 2,
             onTap: () => onItemTapped(2),
+            tooltip: 'Events',
+          ),
+          _BottomNavItem(
+            icon: selectedIndex == 3 ? Icons.people : Icons.people_outlined,
+            isSelected: selectedIndex == 3,
+            onTap: () => onItemTapped(3),
             tooltip: 'People',
           ),
           _BottomNavItem(
-            icon: selectedIndex == 3 ? Icons.person : Icons.person_outlined,
-            isSelected: selectedIndex == 3,
-            onTap: () => onItemTapped(3),
+            icon: selectedIndex == 4 ? Icons.person : Icons.person_outlined,
+            isSelected: selectedIndex == 4,
+            onTap: () => onItemTapped(4),
             tooltip: 'Profile',
           ),
         ],
@@ -378,7 +388,7 @@ class _BottomNavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       icon: Icon(icon),
-      color: isSelected ? Theme.of(context).colorScheme.secondary : Colors.white,
+      color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey[600],
       onPressed: onTap,
       tooltip: tooltip,
     );
@@ -472,7 +482,6 @@ class _FeedTabState extends State<FeedTab> {
         _hasMore = querySnapshot.docs.length == _postsLimit;
         _isLoading = false;
       });
-      // Start precaching after first fetch
       _precacheNextVideos(0);
     }
   }
@@ -501,9 +510,7 @@ class _FeedTabState extends State<FeedTab> {
     }
   }
 
-  // LOGIC FOR PRE-CACHING
   void _precacheNextVideos(int lastVisibleIndex) {
-    // Look ahead 3 posts from the last visible one.
     final precacheStartIndex = lastVisibleIndex + 1;
     final precacheEndIndex = precacheStartIndex + 3;
 
@@ -520,14 +527,10 @@ class _FeedTabState extends State<FeedTab> {
   }
 
   void _scrollListener() {
-    // Logic for pagination
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       _fetchMorePosts();
     }
-
-    // Logic for proactive caching
-    // This is a simple estimation. A more complex implementation could use item keys and extents.
-    double avgItemHeight = 400; // A rough estimate of post card height
+    double avgItemHeight = 400;
     int lastVisibleIndex = (_scrollController.position.pixels / avgItemHeight).floor();
     _precacheNextVideos(lastVisibleIndex);
   }
@@ -563,6 +566,7 @@ class _FeedTabState extends State<FeedTab> {
       color: Theme.of(context).colorScheme.primary,
       child: Column(
         children: [
+          const StoriesTray(),
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -574,6 +578,8 @@ class _FeedTabState extends State<FeedTab> {
                   selected: !_showFollowingFeed,
                   onSelected: (selected) => setState(() => _showFollowingFeed = !selected),
                   selectedColor: Theme.of(context).colorScheme.primary,
+                  backgroundColor: Colors.transparent,
+                  shape: StadiumBorder(side: BorderSide(color: Colors.grey.shade400)),
                   labelStyle: TextStyle(
                       color: !_showFollowingFeed ? Colors.white : Theme.of(context).textTheme.bodyMedium?.color),
                 ),
@@ -583,6 +589,8 @@ class _FeedTabState extends State<FeedTab> {
                   selected: _showFollowingFeed,
                   onSelected: (selected) => setState(() => _showFollowingFeed = selected),
                   selectedColor: Theme.of(context).colorScheme.primary,
+                  backgroundColor: Colors.transparent,
+                  shape: StadiumBorder(side: BorderSide(color: Colors.grey.shade400)),
                   labelStyle: TextStyle(
                       color: _showFollowingFeed ? Colors.white : Theme.of(context).textTheme.bodyMedium?.color),
                 ),
@@ -596,7 +604,8 @@ class _FeedTabState extends State<FeedTab> {
                     ? const Center(child: Text('No posts to display.', style: TextStyle(fontSize: 16, color: Colors.grey)))
                     : ListView.builder(
                         controller: _scrollController,
-                        padding: const EdgeInsets.fromLTRB(8, 8, 8, 80),
+                        // FIX: Removed horizontal padding to make cards wider
+                        padding: const EdgeInsets.fromLTRB(0, 8, 0, 80),
                         itemCount: filteredPosts.length + (_hasMore ? 1 : 0),
                         itemBuilder: (context, index) {
                           if (index == filteredPosts.length) {
@@ -635,6 +644,25 @@ class ChatsTab extends StatefulWidget {
 }
 
 class _ChatsTabState extends State<ChatsTab> {
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   String _formatTimestamp(Timestamp? timestamp) {
     if (timestamp == null) return 'Just now';
     final DateTime date = timestamp.toDate();
@@ -647,12 +675,27 @@ class _ChatsTabState extends State<ChatsTab> {
     if (currentUser == null || currentUser.isAnonymous) {
       return const Center(child: Text('Please log in to view your chats.'));
     }
-    return RefreshIndicator(
-      onRefresh: () async => setState(() {}),
-      color: Theme.of(context).colorScheme.primary,
-      child: Stack(
-        children: [
-          StreamBuilder<QuerySnapshot>(
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search chats...',
+              prefixIcon: const Icon(Icons.search),
+              filled: true,
+              fillColor: Colors.grey[200],
+              contentPadding: EdgeInsets.zero,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30.0),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('artifacts/$APP_ID/public/data/chats')
                 .where('participants', arrayContains: currentUser.uid)
@@ -665,9 +708,10 @@ class _ChatsTabState extends State<ChatsTab> {
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                 return const Center(child: Text('No active chats. Start a new one!'));
               }
-              return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(8, 8, 8, 80),
+              return ListView.separated(
+                padding: const EdgeInsets.fromLTRB(0, 0, 0, 80),
                 itemCount: snapshot.data!.docs.length,
+                separatorBuilder: (context, index) => const Divider(height: 1, indent: 80),
                 itemBuilder: (context, index) {
                   final chatDoc = snapshot.data!.docs[index];
                   final chat = chatDoc.data() as Map<String, dynamic>;
@@ -677,30 +721,18 @@ class _ChatsTabState extends State<ChatsTab> {
                     currentUserId: currentUser.uid,
                     setNavBarVisibility: widget.setNavBarVisibility,
                     formatTimestamp: _formatTimestamp,
+                    searchQuery: _searchQuery,
                   );
                 },
               );
             },
           ),
-          Positioned(
-            bottom: 16.0,
-            right: 16.0,
-            child: FloatingActionButton(
-              heroTag: 'newChatFab',
-              onPressed: () async {
-                widget.setNavBarVisibility(false);
-                await Navigator.push(context, MaterialPageRoute(builder: (context) => const NewChatScreen()));
-                widget.setNavBarVisibility(true);
-              },
-              child: const Icon(Icons.message),
-              tooltip: 'Start New Chat',
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
+
 
 class _ChatListItem extends StatelessWidget {
   const _ChatListItem({
@@ -709,6 +741,7 @@ class _ChatListItem extends StatelessWidget {
     required this.currentUserId,
     required this.setNavBarVisibility,
     required this.formatTimestamp,
+    required this.searchQuery,
   });
 
   final Map<String, dynamic> chat;
@@ -716,69 +749,165 @@ class _ChatListItem extends StatelessWidget {
   final String currentUserId;
   final Function(bool) setNavBarVisibility;
   final String Function(Timestamp?) formatTimestamp;
+  final String searchQuery;
 
   @override
   Widget build(BuildContext context) {
     final bool isGroupChat = chat['isGroupChat'] ?? false;
     final unreadCounts = chat['unreadCounts'] as Map<String, dynamic>? ?? {};
-    final unreadCount = (unreadCounts[currentUserId] as int?) ?? 0;
-
-    Widget titleWidget;
-    Widget avatarWidget;
+    final int unreadCount = (unreadCounts[currentUserId] as int?) ?? 0;
+    
+    final Map<String, dynamic> typingStatus = chat['typingStatus'] ?? {};
+    final otherTypingUsers = typingStatus.entries
+      .where((entry) => entry.key != currentUserId && entry.value == true)
+      .map((entry) => entry.key)
+      .toList();
+    final bool isSomeoneTyping = otherTypingUsers.isNotEmpty;
 
     if (isGroupChat) {
-      titleWidget = Text(chat['groupName'] ?? 'Group Chat', style: const TextStyle(fontWeight: FontWeight.bold));
-      avatarWidget = CircleAvatar(
-        backgroundImage: (chat['groupImageUrl'] != null && chat['groupImageUrl']!.isNotEmpty)
-            ? NetworkImage(chat['groupImageUrl'])
-            : null,
-        child: (chat['groupImageUrl'] == null || chat['groupImageUrl']!.isEmpty) ? const Icon(Icons.group) : null,
-      );
-    } else {
-      final otherUserId = (List<String>.from(chat['participants'])).firstWhere((uid) => uid != currentUserId, orElse: () => '');
-      if (otherUserId.isEmpty) return const SizedBox.shrink();
-
-      titleWidget = FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(otherUserId).get(),
-        builder: (context, userSnapshot) {
-          if (!userSnapshot.hasData) return const Text('Loading...');
-          return Text(userSnapshot.data!['displayName'] ?? 'User', style: const TextStyle(fontWeight: FontWeight.bold));
-        },
-      );
-      avatarWidget = FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(otherUserId).get(),
-        builder: (context, userSnapshot) {
-          if (!userSnapshot.hasData) return const CircleAvatar(child: Icon(Icons.person));
-          final profileImageUrl = userSnapshot.data!['profileImageUrl'] ?? '';
-          return CircleAvatar(
-            backgroundImage: profileImageUrl.isNotEmpty ? NetworkImage(profileImageUrl) : null,
-            child: profileImageUrl.isEmpty ? const Icon(Icons.person) : null,
-          );
-        },
-      );
-    }
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      child: ListTile(
-        leading: avatarWidget,
-        title: titleWidget,
-        subtitle: Text(chat['lastMessage'] ?? 'No messages yet', maxLines: 1, overflow: TextOverflow.ellipsis),
-        trailing: unreadCount > 0
-            ? badges.Badge(
-                badgeStyle: badges.BadgeStyle(badgeColor: Theme.of(context).colorScheme.secondary),
-                badgeContent: Text('$unreadCount', style: const TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
-              )
-            : Text(formatTimestamp(chat['lastMessageTimestamp'] as Timestamp?)),
+      final String groupName = chat['groupName'] ?? 'Group Chat';
+      if (searchQuery.isNotEmpty && !groupName.toLowerCase().contains(searchQuery.toLowerCase())) {
+        return const SizedBox.shrink();
+      }
+      return _buildTile(
+        context: context,
+        title: groupName,
+        subtitle: isSomeoneTyping ? "typing..." : (chat['lastMessage'] ?? '...'),
+        imageUrl: chat['groupImageUrl'],
+        isGroup: true,
+        unreadCount: unreadCount,
+        timestamp: formatTimestamp(chat['lastMessageTimestamp'] as Timestamp?),
         onTap: () async {
           setNavBarVisibility(false);
           await Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(chatId: chatDocId)));
           setNavBarVisibility(true);
         },
+      );
+    } else {
+      final otherUserId = (List<String>.from(chat['participants'])).firstWhere((uid) => uid != currentUserId, orElse: () => '');
+      if (otherUserId.isEmpty) return const SizedBox.shrink();
+
+      return FutureBuilder<DocumentSnapshot>(
+        future: FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(otherUserId).get(),
+        builder: (context, userSnapshot) {
+          if (!userSnapshot.hasData) return const SizedBox.shrink(); // Or a loading shimmer
+          final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+          final String displayName = userData['displayName'] ?? 'User';
+          
+          if (searchQuery.isNotEmpty && !displayName.toLowerCase().contains(searchQuery.toLowerCase())) {
+            return const SizedBox.shrink();
+          }
+
+          return _buildTile(
+            context: context,
+            title: displayName,
+            subtitle: isSomeoneTyping ? "typing..." : (chat['lastMessage'] ?? '...'),
+            imageUrl: userData['profileImageUrl'],
+            isOnline: userData['isOnline'] ?? false,
+            showOnlineStatus: userData['showOnlineStatus'] ?? false,
+            unreadCount: unreadCount,
+            timestamp: formatTimestamp(chat['lastMessageTimestamp'] as Timestamp?),
+            onTap: () async {
+              setNavBarVisibility(false);
+              await Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(chatId: chatDocId, otherUserId: otherUserId, otherUserName: displayName)));
+              setNavBarVisibility(true);
+            },
+          );
+        },
+      );
+    }
+  }
+
+  Widget _buildTile({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    String? imageUrl,
+    bool isGroup = false,
+    bool isOnline = false,
+    bool showOnlineStatus = false,
+    required int unreadCount,
+    required String timestamp,
+    required VoidCallback onTap,
+  }) {
+    return Dismissible(
+      key: Key(chatDocId),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        color: Colors.grey[700],
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        child: const Icon(Icons.archive_outlined, color: Colors.white),
+      ),
+      secondaryBackground: Container(
+        color: Colors.blue,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        child: const Icon(Icons.volume_mute_outlined, color: Colors.white),
+      ),
+      confirmDismiss: (direction) async {
+        // Placeholder for future functionality
+        if (direction == DismissDirection.endToStart) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Archive not implemented yet.')));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mute not implemented yet.')));
+        }
+        return false;
+      },
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+        leading: Stack(
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundImage: (imageUrl != null && imageUrl.isNotEmpty) ? CachedNetworkImageProvider(imageUrl) : null,
+              child: (imageUrl == null || imageUrl.isEmpty) ? Icon(isGroup ? Icons.group : Icons.person) : null,
+            ),
+            if (!isGroup && isOnline && showOnlineStatus)
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 3),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(
+          subtitle, 
+          maxLines: 1, 
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: subtitle == "typing..." ? Theme.of(context).primaryColor : Colors.grey[600]),
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(timestamp, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+            const SizedBox(height: 4),
+            if (unreadCount > 0)
+              CircleAvatar(
+                radius: 10,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                child: Text('$unreadCount', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+              )
+            else 
+              const SizedBox(height: 20),
+          ],
+        ),
+        onTap: onTap,
       ),
     );
   }
 }
+
 
 class PeopleTab extends StatefulWidget {
   const PeopleTab({super.key});
@@ -789,85 +918,135 @@ class PeopleTab extends StatefulWidget {
 
 class _PeopleTabState extends State<PeopleTab> {
   final TextEditingController _userSearchController = TextEditingController();
-
+  
   @override
   void dispose() {
     _userSearchController.dispose();
     super.dispose();
   }
+  
+  void _toggleFollow(String currentUserId, String targetUserId, bool isFollowing) async {
+    final currentUserRef = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(currentUserId);
+    final targetUserRef = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(targetUserId);
 
+    if (isFollowing) {
+      await currentUserRef.update({'following': FieldValue.arrayRemove([targetUserId])});
+      await targetUserRef.update({'followers': FieldValue.arrayRemove([currentUserId])});
+    } else {
+      await currentUserRef.update({'following': FieldValue.arrayUnion([targetUserId])});
+      await targetUserRef.update({'followers': FieldValue.arrayUnion([currentUserId])});
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null || currentUser.isAnonymous) {
       return const Center(child: Text('Please log in to view other users.'));
     }
-    return RefreshIndicator(
-      onRefresh: () async => setState(() {}),
-      color: Theme.of(context).colorScheme.primary,
+    
+    return DefaultTabController(
+      length: 3,
       child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
               controller: _userSearchController,
-              decoration: const InputDecoration(hintText: 'Search users by name...', prefixIcon: Icon(Icons.search)),
+              decoration: const InputDecoration(hintText: 'Search all users...', prefixIcon: Icon(Icons.search)),
               onChanged: (value) => setState(() {}),
             ),
           ),
+          const TabBar(
+            tabs: [
+              Tab(text: 'Suggestions'),
+              Tab(text: 'Following'),
+              Tab(text: 'Followers'),
+            ],
+          ),
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('artifacts/$APP_ID/public/data/users')
-                  .where('isDiscoverable', isEqualTo: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text('No other users found.'));
-                }
-                final searchText = _userSearchController.text.toLowerCase().trim();
-                final filteredDocs = snapshot.data!.docs.where((doc) {
-                  final userData = doc.data() as Map<String, dynamic>;
-                  final displayName = (userData['displayName'] ?? '').toLowerCase();
-                  return doc.id != currentUser.uid && displayName.contains(searchText);
-                }).toList();
-
-                if (filteredDocs.isEmpty) {
-                  return const Center(child: Text('No matching users found.'));
-                }
-                return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 80),
-                  itemCount: filteredDocs.length,
-                  itemBuilder: (context, index) {
-                    final userDoc = filteredDocs[index];
-                    final userData = userDoc.data() as Map<String, dynamic>;
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: (userData['profileImageUrl'] != null && userData['profileImageUrl'].isNotEmpty)
-                              ? NetworkImage(userData['profileImageUrl'])
-                              : null,
-                          child: (userData['profileImageUrl'] == null || userData['profileImageUrl'].isEmpty)
-                              ? const Icon(Icons.person, color: Colors.white)
-                              : null,
-                          backgroundColor: Colors.grey[300],
-                        ),
-                        title: Text(userData['displayName'] ?? 'Unknown User', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(userData['bio'] ?? 'No bio', maxLines: 1, overflow: TextOverflow.ellipsis),
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen(userId: userDoc.id))),
-                      ),
-                    );
-                  },
-                );
-              },
+            child: TabBarView(
+              children: [
+                _buildUserList(context, 'suggestions', currentUser, _userSearchController.text),
+                _buildUserList(context, 'following', currentUser, _userSearchController.text),
+                _buildUserList(context, 'followers', currentUser, _userSearchController.text),
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildUserList(BuildContext context, String type, User currentUser, String searchQuery) {
+    // This is a simplified implementation for demonstration. 
+    // A real app would have more complex queries and state management.
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+
+        // Client-side filtering (for demonstration)
+        List<DocumentSnapshot> users = snapshot.data!.docs;
+        List<String> myFollowing = [];
+        List<String> myFollowers = [];
+
+        var myUserDoc = users.firstWhere((doc) => doc.id == currentUser.uid);
+        myFollowing = List<String>.from(myUserDoc.get('following') ?? []);
+        myFollowers = List<String>.from(myUserDoc.get('followers') ?? []);
+        
+        if (type == 'following') {
+          users = users.where((doc) => myFollowing.contains(doc.id)).toList();
+        } else if (type == 'followers') {
+          users = users.where((doc) => myFollowers.contains(doc.id)).toList();
+        } else { // Suggestions
+          users = users.where((doc) => !myFollowing.contains(doc.id) && doc.id != currentUser.uid).toList();
+        }
+        
+        if (searchQuery.isNotEmpty) {
+          users = users.where((doc) {
+            final userData = doc.data() as Map<String, dynamic>;
+            return (userData['displayName'] ?? '').toLowerCase().contains(searchQuery.toLowerCase());
+          }).toList();
+        }
+        
+        if (users.isEmpty) return Center(child: Text('No users found in this category.'));
+
+        return ListView.builder(
+          itemCount: users.length,
+          itemBuilder: (context, index) {
+            final userDoc = users[index];
+            final userData = userDoc.data() as Map<String, dynamic>;
+            final bool isFollowing = myFollowing.contains(userDoc.id);
+
+            return Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+              child: ListTile(
+                leading: GestureDetector(
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen(userId: userDoc.id))),
+                  child: CircleAvatar(
+                    backgroundImage: (userData['profileImageUrl'] != null && userData['profileImageUrl']!.isNotEmpty)
+                        ? CachedNetworkImageProvider(userData['profileImageUrl'])
+                        : null,
+                    child: (userData['profileImageUrl'] == null || userData['profileImageUrl']!.isEmpty) ? const Icon(Icons.person) : null,
+                  ),
+                ),
+                title: Text(userData['displayName'] ?? 'Unknown'),
+                subtitle: Text(userData['bio'] ?? '', maxLines: 1),
+                trailing: ElevatedButton(
+                  onPressed: () => _toggleFollow(currentUser.uid, userDoc.id, isFollowing),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isFollowing ? Colors.grey : Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text(isFollowing ? 'Unfollow' : 'Follow'),
+                ),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen(userId: userDoc.id))),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

@@ -16,6 +16,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
   String? _message;
   bool _isDiscoverable = true;
   String _postVisibility = 'everyone';
+  bool _showOnlineStatus = true; 
   bool _isLoading = true;
 
   @override
@@ -54,6 +55,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
         setState(() {
           _isDiscoverable = userData['isDiscoverable'] ?? true;
           _postVisibility = userData['postVisibility'] ?? 'everyone';
+          _showOnlineStatus = userData['showOnlineStatus'] ?? true; 
         });
       }
     } on FirebaseException catch (e) {
@@ -82,6 +84,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
       await FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(user.uid).update({
         'isDiscoverable': _isDiscoverable,
         'postVisibility': _postVisibility,
+        'showOnlineStatus': _showOnlineStatus, 
       });
       _showMessage('Privacy settings saved successfully!');
     } on FirebaseException catch (e) {
@@ -103,8 +106,6 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Privacy Settings'),
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -138,18 +139,26 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
-                    ListTile(
+                    SwitchListTile(
                       title: const Text('Appear in People tab'),
-                      subtitle: const Text('Allow other users to find you in the "People" tab.'),
-                      trailing: Switch(
-                        value: _isDiscoverable,
-                        onChanged: (bool value) {
-                          setState(() {
-                            _isDiscoverable = value;
-                          });
-                        },
-                        activeColor: Theme.of(context).appBarTheme.backgroundColor,
-                      ),
+                      subtitle: const Text('Allow other users to find you.'),
+                      value: _isDiscoverable,
+                      onChanged: (bool value) {
+                        setState(() {
+                          _isDiscoverable = value;
+                        });
+                      },
+                    ),
+                    const Divider(),
+                    SwitchListTile(
+                      title: const Text('Show your online status'),
+                      subtitle: const Text('Allow others to see when you are active.'),
+                      value: _showOnlineStatus,
+                      onChanged: (bool value) {
+                        setState(() {
+                          _showOnlineStatus = value;
+                        });
+                      },
                     ),
                     const Divider(),
                     const Text(
@@ -183,8 +192,6 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                       onPressed: _savePrivacySettings,
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size.fromHeight(50),
-                        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-                        foregroundColor: Colors.white,
                       ),
                       child: const Text('Save Privacy Settings'),
                     ),

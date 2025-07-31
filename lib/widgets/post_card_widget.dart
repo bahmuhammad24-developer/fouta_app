@@ -38,7 +38,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
   final TextEditingController _commentInputController = TextEditingController();
   bool _showComments = false;
   bool _showVideoControls = false;
-  bool _isPostVisible = false; // New state for visibility
+  bool _isPostVisible = false;
 
   late bool _isLiked;
   late int _likeCount;
@@ -55,6 +55,70 @@ class _PostCardWidgetState extends State<PostCardWidget> {
   void dispose() {
     _commentInputController.dispose();
     super.dispose();
+  }
+
+  Future<void> _editSharedPost(String postId, String currentContent) async {
+    final String? updatedContent = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return SharePostDialog(
+          originalPostData: widget.post,
+          initialContent: currentContent,
+        );
+      },
+    );
+
+    if (updatedContent != null) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('artifacts/${widget.appId}/public/data/posts')
+            .doc(postId)
+            .update({'content': updatedContent});
+        widget.onMessage('Post updated successfully!');
+      } on FirebaseException catch (e) {
+        widget.onMessage('Failed to update post: ${e.message}');
+      }
+    }
+  }
+
+  Future<void> _deleteSharedPost(String postId, String originalPostId) async {
+    bool confirmDelete = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Shared Post'),
+          content: const Text('Are you sure you want to delete this shared post? The original post will not be affected.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+              child: const Text('Delete'),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+
+    if (!confirmDelete) return;
+
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final sharedPostRef = firestore.collection('artifacts/${widget.appId}/public/data/posts').doc(postId);
+      final originalPostRef = firestore.collection('artifacts/${widget.appId}/public/data/posts').doc(originalPostId);
+
+      await firestore.runTransaction((transaction) async {
+        transaction.delete(sharedPostRef);
+        transaction.update(originalPostRef, {'shares': FieldValue.increment(-1)});
+      });
+
+      widget.onMessage('Shared post deleted successfully!');
+    } on FirebaseException catch (e) {
+      widget.onMessage('Failed to delete shared post: ${e.message}');
+    }
   }
 
   // <editor-fold desc="All other methods like _toggleLike, _addComment, etc. remain the same">
@@ -529,7 +593,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
               videoId: widget.postId,
               aspectRatio: aspectRatio,
               areControlsVisible: _showVideoControls,
-              shouldInitialize: _isPostVisible, // Pass visibility signal
+              shouldInitialize: _isPostVisible,
             )
           ),
         );
@@ -629,7 +693,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
       key: Key(widget.postId),
       onVisibilityChanged: (info) {
         if (!mounted) return;
-        final isVisible = info.visibleFraction > 0.1; // A small threshold
+        final isVisible = info.visibleFraction > 0.1;
         if (isVisible != _isPostVisible) {
           setState(() {
             _isPostVisible = isVisible;
@@ -637,7 +701,9 @@ class _PostCardWidgetState extends State<PostCardWidget> {
         }
       },
       child: Card(
-        margin: const EdgeInsets.only(bottom: 16.0),
+        // FIX: Added sharp corners and removed bottom margin
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -707,35 +773,58 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                     _formatTimestamp(widget.post['timestamp'] as Timestamp?),
                     style: const TextStyle(color: Colors.grey, fontSize: 12),
                   ),
-                  if (isMyPost && postType != 'shared')
+                  if (isMyPost)
                     PopupMenuButton<String>(
                       onSelected: (value) {
-                        if (value == 'edit') {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => CreatePostScreen(
-                                postId: widget.postId,
-                                initialContent: widget.post['content'],
-                                initialMediaUrl: widget.post['mediaUrl'],
-                                initialMediaType: widget.post['mediaType'],
+                        if (postType == 'shared') {
+                          if (value == 'edit_shared') {
+                            _editSharedPost(widget.postId, widget.post['content'] ?? '');
+                          } else if (value == 'delete_shared') {
+                            _deleteSharedPost(widget.postId, widget.post['originalPostId']);
+                          }
+                        } else {
+                           if (value == 'edit_original') {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CreatePostScreen(
+                                  postId: widget.postId,
+                                  initialContent: widget.post['content'],
+                                  initialMediaUrl: widget.post['mediaUrl'],
+                                  initialMediaType: widget.post['mediaType'],
+                                ),
                               ),
-                            ),
-                          );
-                        } else if (value == 'delete') {
-                          _deletePost(widget.postId, widget.post['mediaUrl']);
+                            );
+                          } else if (value == 'delete_original') {
+                            _deletePost(widget.postId, widget.post['mediaUrl']);
+                          }
                         }
                       },
-                      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                        const PopupMenuItem<String>(
-                          value: 'edit',
-                          child: Text('Edit Post'),
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'delete',
-                          child: Text('Delete Post'),
-                        ),
-                      ],
+                      itemBuilder: (BuildContext context) {
+                        if (postType == 'shared') {
+                          return <PopupMenuEntry<String>>[
+                            const PopupMenuItem<String>(
+                              value: 'edit_shared',
+                              child: Text('Edit Shared Post'),
+                            ),
+                            const PopupMenuItem<String>(
+                              value: 'delete_shared',
+                              child: Text('Delete Shared Post'),
+                            ),
+                          ];
+                        } else {
+                          return <PopupMenuEntry<String>>[
+                            const PopupMenuItem<String>(
+                              value: 'edit_original',
+                              child: Text('Edit Post'),
+                            ),
+                            const PopupMenuItem<String>(
+                              value: 'delete_original',
+                              child: Text('Delete Post'),
+                            ),
+                          ];
+                        }
+                      },
                     ),
                 ],
               ),

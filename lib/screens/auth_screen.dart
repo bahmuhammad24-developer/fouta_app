@@ -67,11 +67,13 @@ class _AuthScreenState extends State<AuthScreen> {
             'profileImageUrl': '',
             'followers': [],
             'following': [],
+            'blockedUsers': [], // New field
             'createdAt': FieldValue.serverTimestamp(),
             'isDiscoverable': true,
             'postVisibility': 'everyone',
             'unreadMessageCount': 0,
-            'dataSaver': true, // Default setting for new users
+            'dataSaver': true,
+            'showOnlineStatus': true,
           });
         }
         _showMessage('Registration successful!');
@@ -97,20 +99,25 @@ class _AuthScreenState extends State<AuthScreen> {
               'profileImageUrl': '',
               'followers': [],
               'following': [],
+              'blockedUsers': [], // New field
               'createdAt': FieldValue.serverTimestamp(),
               'isDiscoverable': true,
               'postVisibility': 'everyone',
               'unreadMessageCount': 0,
-              'dataSaver': true, // Default setting for new users
+              'dataSaver': true,
+              'showOnlineStatus': true,
             };
             await userDocRef.set(updateData);
           } else {
             final existingData = userDoc.data()!;
             bool needsUpdate = false;
 
-            // Retroactively add dataSaver field if it doesn't exist
             if (!existingData.containsKey('dataSaver')) {
               updateData['dataSaver'] = true;
+              needsUpdate = true;
+            }
+            if (!existingData.containsKey('showOnlineStatus')) {
+              updateData['showOnlineStatus'] = true;
               needsUpdate = true;
             }
             if (needsUpdate) {

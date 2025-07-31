@@ -47,11 +47,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void didUpdateWidget(VideoPlayerWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // If the widget is now told to initialize and wasn't before (and isn't already), start it.
     if (widget.shouldInitialize && !oldWidget.shouldInitialize && ! _isInitialized) {
       _initializePlayer();
     }
-    // If the widget is now told to de-initialize
     if (!widget.shouldInitialize && oldWidget.shouldInitialize) {
       _releasePlayer();
     }
@@ -64,13 +62,21 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   void _initializePlayer() {
-    if (_player != null) return; // Already has a player instance, don't re-assign
+    if (_player != null) return;
     
+    final requestedPlayer = _playerManager.requestPlayer(widget.videoId);
+    
+    // FIX: Add a null check to handle cases where the player pool is exhausted.
+    if (requestedPlayer == null) {
+      // Could not get a player, do not proceed with initialization.
+      // The widget will continue to show the placeholder.
+      return;
+    }
+
     setState(() {
-      _player = _playerManager.requestPlayer(widget.videoId);
+      _player = requestedPlayer;
     });
 
-    // We can't await this here, just kick it off.
     _loadMedia();
   }
 
@@ -137,7 +143,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 controller: _controller!,
                 controls: null,
               ),
-              // Play icon appears when paused and controls are hidden
               StreamBuilder<bool>(
                 stream: _player!.stream.playing,
                 builder: (context, snapshot) {

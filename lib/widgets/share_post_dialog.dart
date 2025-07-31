@@ -3,8 +3,13 @@ import 'package:flutter/material.dart';
 
 class SharePostDialog extends StatefulWidget {
   final Map<String, dynamic> originalPostData;
+  final String? initialContent;
 
-  const SharePostDialog({super.key, required this.originalPostData});
+  const SharePostDialog({
+    super.key, 
+    required this.originalPostData,
+    this.initialContent,
+  });
 
   @override
   State<SharePostDialog> createState() => _SharePostDialogState();
@@ -12,6 +17,14 @@ class SharePostDialog extends StatefulWidget {
 
 class _SharePostDialogState extends State<SharePostDialog> {
   final TextEditingController _shareContentController = TextEditingController();
+  late bool _isEditing;
+
+  @override
+  void initState() {
+    super.initState();
+    _isEditing = widget.initialContent != null;
+    _shareContentController.text = widget.initialContent ?? '';
+  }
 
   @override
   void dispose() {
@@ -26,7 +39,7 @@ class _SharePostDialogState extends State<SharePostDialog> {
           borderRadius: BorderRadius.circular(8.0),
           child: Image.network(
             mediaUrl,
-            width: double.infinity, // This is fine if parent provides finite width
+            width: double.infinity,
             height: 150,
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) => Container(
@@ -38,7 +51,7 @@ class _SharePostDialogState extends State<SharePostDialog> {
         );
       case 'video':
         return Container(
-          width: double.infinity, // This is fine if parent provides finite width
+          width: double.infinity,
           height: 150,
           color: Colors.black,
           child: const Center(
@@ -69,28 +82,27 @@ class _SharePostDialogState extends State<SharePostDialog> {
     final String originalPostAuthorDisplayName = widget.originalPostData['authorDisplayName'] ?? 'Original Author';
 
     return AlertDialog(
-      title: const Text('Share Post'),
-      // Applying a more robust ConstrainedBox to control the overall size of the dialog content
+      title: Text(_isEditing ? 'Edit Post' : 'Share Post'),
       content: ConstrainedBox(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.6, // Max 60% of screen height
-          minHeight: MediaQuery.of(context).size.height * 0.3, // Min 30% of screen height
-          maxWidth: MediaQuery.of(context).size.width * 0.8, // Max 80% of screen width
+          maxHeight: MediaQuery.of(context).size.height * 0.6,
+          minHeight: MediaQuery.of(context).size.height * 0.3,
+          maxWidth: MediaQuery.of(context).size.width * 0.8,
         ),
         child: SingleChildScrollView(
-          // Use a SizedBox to explicitly give the content a finite width
           child: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.75, // Explicitly set width, slightly less than dialog maxWidth
+            width: MediaQuery.of(context).size.width * 0.75,
             child: Column(
-              mainAxisSize: MainAxisSize.min, // Ensure column takes minimum space required by its children
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextField(
                   controller: _shareContentController,
                   maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Add your thoughts (optional)',
-                    border: OutlineInputBorder(),
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: _isEditing ? 'Edit your thoughts' : 'Add your thoughts (optional)',
+                    border: const OutlineInputBorder(),
                   ),
                   textCapitalization: TextCapitalization.sentences,
                 ),
@@ -136,7 +148,7 @@ class _SharePostDialogState extends State<SharePostDialog> {
           },
         ),
         ElevatedButton(
-          child: const Text('Share'),
+          child: Text(_isEditing ? 'Save' : 'Share'),
           onPressed: () {
             Navigator.of(context).pop(_shareContentController.text.trim());
           },
