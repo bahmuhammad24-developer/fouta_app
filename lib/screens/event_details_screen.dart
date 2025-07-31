@@ -87,26 +87,30 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         final String headerImageUrl = event['headerImageUrl'] ?? '';
 
         return Scaffold(
-          floatingActionButton: isCreator ? FloatingActionButton(
-            tooltip: 'Edit Event',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => EditEventScreen(
-                    eventId: widget.eventId,
-                    initialData: event,
-                  ),
-                ),
-              );
-            },
-            child: const Icon(Icons.edit),
-          ) : null,
+          // Move edit button into the app bar actions to avoid overlaying the comment field
           body: CustomScrollView(
             slivers: [
               SliverAppBar(
                 expandedHeight: 220.0,
                 pinned: true,
+                actions: [
+                  if (isCreator)
+                    IconButton(
+                      tooltip: 'Edit Event',
+                      icon: const Icon(Icons.edit),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EditEventScreen(
+                              eventId: widget.eventId,
+                              initialData: event,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                ],
                 flexibleSpace: FlexibleSpaceBar(
                   background: headerImageUrl.isNotEmpty
                       ? CachedNetworkImage(

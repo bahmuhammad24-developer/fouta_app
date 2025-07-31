@@ -1,7 +1,7 @@
 // lib/screens/home_screen.dart
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/rendering.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:fouta_app/services/video_cache_service.dart';
 import 'package:fouta_app/services/video_player_manager.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +14,9 @@ import 'package:fouta_app/widgets/stories_tray.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:badges/badges.dart' as badges;
+// Explicitly import ScrollDirection enum for userScrollDirection checks
+// Import ScrollDirection from widgets to compare user scroll direction
+import 'package:flutter/widgets.dart' show ScrollDirection;
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/chat_screen.dart';
@@ -149,7 +152,10 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       child: Scaffold(
         endDrawer: _AppDrawer(showMessage: _showMessage),
-        floatingActionButton: _selectedIndex == 1 ? _buildNewChatFab(context) : null,
+        // Show the New Chat FAB only when on the chat tab root (the chat list) and not inside a nested chat screen.
+        floatingActionButton: (_selectedIndex == 1 && !(_navigatorKeys[_selectedIndex].currentState?.canPop() ?? false))
+            ? _buildNewChatFab(context)
+            : null,
         bottomNavigationBar: _isNavBarVisible
             ? _BottomNavBar(
                 selectedIndex: _selectedIndex,
@@ -606,32 +612,31 @@ class _FeedTabState extends State<FeedTab> {
           const StoriesTray(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ChoiceChip(
-                  label: const Text('Explore'),
-                  selected: !_showFollowingFeed,
-                  onSelected: (selected) => setState(() => _showFollowingFeed = !selected),
-                  selectedColor: Theme.of(context).colorScheme.primary,
-                  backgroundColor: Colors.transparent,
-                  shape: StadiumBorder(side: BorderSide(color: Colors.grey.shade400)),
-                  labelStyle: TextStyle(
-                      color: !_showFollowingFeed ? Colors.white : Theme.of(context).textTheme.bodyMedium?.color),
-                ),
-                const SizedBox(width: 10),
-                ChoiceChip(
-                  label: const Text('Following'),
-                  selected: _showFollowingFeed,
-                  onSelected: (selected) => setState(() => _showFollowingFeed = selected),
-                  selectedColor: Theme.of(context).colorScheme.primary,
-                  backgroundColor: Colors.transparent,
-                  shape: StadiumBorder(side: BorderSide(color: Colors.grey.shade400)),
-                  labelStyle: TextStyle(
-                      color: _showFollowingFeed ? Colors.white : Theme.of(context).textTheme.bodyMedium?.color),
-                ),
-              ],
-            ),
+          // Reverted segmented control back to ChoiceChips for feed toggle
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ChoiceChip(
+                label: const Text('Explore'),
+                selected: !_showFollowingFeed,
+                onSelected: (selected) {
+                  setState(() {
+                    _showFollowingFeed = false;
+                  });
+                },
+              ),
+              const SizedBox(width: 8),
+              ChoiceChip(
+                label: const Text('Following'),
+                selected: _showFollowingFeed,
+                onSelected: (selected) {
+                  setState(() {
+                    _showFollowingFeed = true;
+                  });
+                },
+              ),
+            ],
+          ),
           ),
           Expanded(
             child: (_posts.isEmpty && _isLoading)

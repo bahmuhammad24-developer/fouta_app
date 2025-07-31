@@ -13,6 +13,7 @@ import 'package:fouta_app/screens/create_post_screen.dart';
 import 'package:fouta_app/screens/profile_screen.dart';
 import 'package:fouta_app/widgets/full_screen_image_viewer.dart';
 import 'package:fouta_app/widgets/share_post_dialog.dart';
+import 'package:fouta_app/widgets/fouta_card.dart';
 
 class PostCardWidget extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -700,15 +701,11 @@ class _PostCardWidgetState extends State<PostCardWidget> {
           });
         }
       },
-      child: Card(
-        // FIX: Added sharp corners and removed bottom margin
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      child: FoutaCard(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
               if (postType == 'shared')
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),
@@ -1060,7 +1057,6 @@ class _PostCardWidgetState extends State<PostCardWidget> {
             ],
           ),
         ),
-      ),
     );
   }
 }

@@ -11,6 +11,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:image/image.dart' as img;
 import 'package:provider/provider.dart';
 import 'package:fouta_app/services/connectivity_provider.dart';
+import 'package:fouta_app/widgets/fouta_button.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 
@@ -508,14 +509,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _isUploading ? null : _handlePostSubmission,
-              icon: _isUploading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Icon(Icons.send),
-              label: Text(widget.postId == null ? 'Post to Fouta' : 'Save Changes'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
+            // Use FoutaButton for submission to match the new design system
+            SizedBox(
+              width: double.infinity,
+              child: FoutaButton(
+                label: widget.postId == null ? 'Post to Fouta' : 'Save Changes',
+                onPressed: _isUploading ? () {} : _handlePostSubmission,
+                primary: true,
+                expanded: true,
               ),
             ),
             const SizedBox(height: 10),
