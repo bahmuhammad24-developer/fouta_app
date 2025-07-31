@@ -1,0 +1,54 @@
+# .github/workflows/build.yml
+name: Fouta iOS Build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Clean project
+        run: flutter clean
+
+      - name: Get Flutter dependencies
+        run: flutter pub get
+        
+      # Prepare iOS for build without checking for code signing
+      - name: Prepare iOS for build
+        run: flutter build ios --config-only --no-codesign
+
+      - name: Install CocoaPods dependencies
+        run: |
+          cd ios
+          pod install --repo-update
+
+      # This step handles the actual code signing
+      - name: Import Apple Code Signing
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+
+      # Build the final .ipa without checking for code signing
+      - name: Build and sign .ipa
+        run: |
+          flutter build ipa --release --no-codesign --export-options-plist=ios/ExportOptions.plist
+          
+      - name: Upload .ipa artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fouta-ipa
+          path: build/ios/ipa/*.ipa
