@@ -1,59 +1,66 @@
 import 'package:flutter/material.dart';
 
-/// Defines the central theme for the Fouta application.
+/// Defines the theme for the "Diaspora Connection" update.
 ///
-/// This class consolidates all colour, typography, shape, and spacing values
-/// into a pair of [ThemeData] objects for light and dark modes. The values
-/// reflect the "Minimalist nature" concept adopted in the July 2025 design
-/// update. See the design brief for guidance on usage and ratios.
-class FoutaTheme {
-  // Core colour tokens
-  static const Color primaryColor = Color(0xFF2D5A2D); // Forest green
-  static const Color accentColor = Color(0xFFF7B731); // Accent gold
-  static const Color backgroundColor = Color(0xFFF2F0E6); // Alabaster
-  static const Color surfaceColor = Colors.white; // Surface white for cards
-  static const Color errorColor = Color(0xFFD9534F); // Error red
-  static const Color onPrimaryColor = Colors.white;
-  static const Color onSecondaryColor = Colors.black;
-  static const Color textColor = Color(0xFF333333);
-  static const double cardRadius = 12.0;
-  static const double buttonRadius = 8.0;
+/// This theme builds on the original Minimalist nature palette but introduces
+/// lighter, more airy tones for light mode and deeper greens and indigo
+/// accents for dark mode.  It is designed to accompany the community‑centred
+/// redesign by emphasising warmth, openness and cultural richness.  See the
+/// design specification for details on how these colours and shapes should be
+/// used across the app.
+class FoutaThemeDiaspora {
+  // Core colours for the Diaspora palette
+  static const Color lightPrimary = Color(0xFF3C7548); // softer green
+  static const Color lightSecondary = Color(0xFFF4D87B); // soft gold
+  static const Color lightBackground = Color(0xFFF7F5EF); // light alabaster
+  static const Color lightSurface = Colors.white;
+  static const Color lightError = Color(0xFFD9534F);
 
-  /// Returns the light [ThemeData] configured for Fouta.
+  static const Color darkPrimary = Color(0xFF2A4930); // deep green
+  static const Color darkSecondary = Color(0xFFB38A40); // muted gold
+  static const Color darkBackground = Color(0xFF1F2620); // near‑black green
+  static const Color darkSurface = Color(0xFF2D362D);
+  static const Color darkError = Color(0xFFD9534F);
+  static const Color darkText = Color(0xFFE5E5E5);
+
+  static const double cardRadius = 12.0;
+  static const double buttonRadius = 10.0;
+
+  /// Returns the light [ThemeData] for the Diaspora palette.
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: false,
-      primaryColor: primaryColor,
-      scaffoldBackgroundColor: backgroundColor,
+      primaryColor: lightPrimary,
+      scaffoldBackgroundColor: lightBackground,
       fontFamily: 'Inter',
       colorScheme: const ColorScheme.light(
-        primary: primaryColor,
-        secondary: accentColor,
-        surface: surfaceColor,
-        background: backgroundColor,
-        error: errorColor,
-        onPrimary: onPrimaryColor,
-        onSecondary: onSecondaryColor,
-        onSurface: textColor,
-        onBackground: textColor,
+        primary: lightPrimary,
+        secondary: lightSecondary,
+        surface: lightSurface,
+        background: lightBackground,
+        error: lightError,
+        onPrimary: Colors.white,
+        onSecondary: Colors.black,
+        onSurface: Color(0xFF333333),
+        onBackground: Color(0xFF333333),
         onError: Colors.white,
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: surfaceColor,
-        foregroundColor: primaryColor,
+        backgroundColor: lightSurface,
+        foregroundColor: lightPrimary,
         elevation: 1,
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: accentColor,
+        backgroundColor: lightSecondary,
         foregroundColor: Colors.black,
       ),
       bottomAppBarTheme: const BottomAppBarTheme(
-        color: surfaceColor,
+        color: lightSurface,
         elevation: 0,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: accentColor,
+          backgroundColor: lightSecondary,
           foregroundColor: Colors.black,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(buttonRadius),
@@ -68,43 +75,34 @@ class FoutaTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(buttonRadius),
-          borderSide: const BorderSide(color: primaryColor, width: 2.0),
+          borderSide: const BorderSide(color: lightPrimary, width: 2.0),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
       textTheme: const TextTheme(
-        // Corresponds to the display style in the design brief
-        headlineLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor),
-        // Corresponds to headline style
-        headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: textColor),
-        // Body text
-        bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.normal, color: textColor),
-        // Caption text
-        bodySmall: TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: textColor),
+        headlineLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+        headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF333333)),
+        bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.normal, color: Color(0xFF333333)),
+        bodySmall: TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: Color(0xFF333333)),
       ),
-      iconTheme: const IconThemeData(color: textColor, size: 24),
-      // CardTheme is omitted because custom FoutaCard widget handles card styling.
+      iconTheme: const IconThemeData(color: Color(0xFF333333), size: 24),
     );
   }
 
-  /// Returns the dark [ThemeData] configured for Fouta.
+  /// Returns the dark [ThemeData] for the Diaspora palette.
   static ThemeData get darkTheme {
-    // Dark mode colours based on Minimalist nature palette
-    const Color darkBackground = Color(0xFF1A1A1A);
-    const Color darkSurface = Color(0xFF2D2D2D);
-    const Color darkText = Color(0xFFE5E5E5);
     return ThemeData(
       useMaterial3: false,
       brightness: Brightness.dark,
-      primaryColor: primaryColor,
+      primaryColor: darkPrimary,
       scaffoldBackgroundColor: darkBackground,
       fontFamily: 'Inter',
       colorScheme: const ColorScheme.dark(
-        primary: primaryColor,
-        secondary: accentColor,
+        primary: darkPrimary,
+        secondary: darkSecondary,
         background: darkBackground,
         surface: darkSurface,
-        error: errorColor,
+        error: darkError,
         onPrimary: Colors.white,
         onSecondary: Colors.black,
         onSurface: darkText,
@@ -113,11 +111,11 @@ class FoutaTheme {
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: darkSurface,
-        foregroundColor: accentColor,
+        foregroundColor: darkSecondary,
         elevation: 1,
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: accentColor,
+        backgroundColor: darkSecondary,
         foregroundColor: Colors.black,
       ),
       bottomAppBarTheme: const BottomAppBarTheme(
@@ -126,7 +124,7 @@ class FoutaTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: accentColor,
+          backgroundColor: darkSecondary,
           foregroundColor: Colors.black,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(buttonRadius),
@@ -141,18 +139,17 @@ class FoutaTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(buttonRadius),
-          borderSide: const BorderSide(color: primaryColor, width: 2.0),
+          borderSide: const BorderSide(color: darkPrimary, width: 2.0),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
-      textTheme: const TextTheme(
+      textTheme: TextTheme(
         headlineLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: darkText),
         headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: darkText),
         bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.normal, color: darkText),
         bodySmall: TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: darkText),
       ),
-      iconTheme: const IconThemeData(color: darkText, size: 24),
-      // CardTheme is omitted because custom FoutaCard widget handles card styling.
+      iconTheme: IconThemeData(color: darkText, size: 24),
     );
   }
 }

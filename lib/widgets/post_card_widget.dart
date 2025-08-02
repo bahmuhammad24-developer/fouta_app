@@ -7,11 +7,13 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:fouta_app/widgets/video_player_widget.dart';
 import 'package:intl/intl.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:fouta_app/utils/date_utils.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/create_post_screen.dart';
 import 'package:fouta_app/screens/profile_screen.dart';
-import 'package:fouta_app/widgets/full_screen_image_viewer.dart';
+// Use the unified MediaViewer instead of separate full screen image/video widgets
+import 'package:fouta_app/widgets/media_viewer.dart';
 import 'package:fouta_app/widgets/share_post_dialog.dart';
 import 'package:fouta_app/widgets/fouta_card.dart';
 
@@ -543,64 +545,102 @@ class _PostCardWidgetState extends State<PostCardWidget> {
   String _formatTimestamp(Timestamp? timestamp) {
     if (timestamp == null) return 'Just now';
     final DateTime date = timestamp.toDate();
-    return DateFormat('MMM d, yyyy HH:mm').format(date);
+    // Use a relative format for timestamps. This helper returns strings like
+    // "Just now", "5 mins ago", "Yesterday", or a short date depending on
+    // how long ago the event occurred【335098120425566†L238-L260】.
+    return DateUtilsHelper.formatRelative(date);
   }
   //</editor-fold>
 
-  Widget _buildMediaDisplay(String mediaType, String mediaUrl, {double? aspectRatio}) {
-    switch (mediaType) {
+  /// Builds a thumbnail for a single media attachment.  Tapping the thumbnail
+  /// opens a full‑screen [MediaViewer] with all attachments for this post.
+  Widget _buildAttachmentThumbnail(List<dynamic> attachments) {
+    if (attachments.isEmpty) return const SizedBox.shrink();
+    final Map<String, dynamic> first = attachments.first as Map<String, dynamic>;
+    final String type = first['type'] ?? 'image';
+    final String url = first['url'] ?? '';
+    final double? aspectRatio = first['aspectRatio'] as double?;
+    Widget thumb;
+    switch (type) {
       case 'image':
-        return GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => FullScreenImageViewer(imageUrl: mediaUrl),
-              ),
-            );
-          },
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8.0),
-            child: CachedNetworkImage(
-              imageUrl: mediaUrl,
-              placeholder: (context, url) => AspectRatio(
-                aspectRatio: 16/9,
-                child: Container(
-                  color: Colors.grey[300],
-                  child: const Center(child: CircularProgressIndicator()),
-                ),
-              ),
-              errorWidget: (context, url, error) => Container(
-                height: 200,
+        thumb = ClipRRect(
+          borderRadius: BorderRadius.circular(8.0),
+          child: CachedNetworkImage(
+            imageUrl: url,
+            placeholder: (context, url) => AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Container(
                 color: Colors.grey[300],
-                child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 50)),
+                child: const Center(child: CircularProgressIndicator()),
               ),
-              width: double.infinity,
-              fit: BoxFit.contain,
+            ),
+            errorWidget: (context, url, error) => Container(
+              height: 200,
+              color: Colors.grey[300],
+              child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 50)),
+            ),
+            width: double.infinity,
+            fit: BoxFit.cover,
+          ),
+        );
+        break;
+      case 'video':
+        thumb = ClipRRect(
+          borderRadius: BorderRadius.circular(8.0),
+          child: AspectRatio(
+            aspectRatio: aspectRatio ?? 16 / 9,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Thumbnail placeholder for video.  Currently we just show a dark
+                // container with a play icon overlay.  In the future, we can
+                // generate actual video thumbnails during upload.
+                Container(color: Colors.black54),
+                const Center(
+                  child: Icon(Icons.play_circle_fill, color: Colors.white70, size: 56),
+                ),
+              ],
             ),
           ),
         );
-      case 'video':
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              _showVideoControls = !_showVideoControls;
-            });
-          },
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8.0),
-            child: VideoPlayerWidget(
-              videoUrl: mediaUrl,
-              videoId: widget.postId,
-              aspectRatio: aspectRatio,
-              areControlsVisible: _showVideoControls,
-              shouldInitialize: _isPostVisible,
-            )
+        break;
+      default:
+        thumb = const SizedBox.shrink();
+    }
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MediaViewer(
+              mediaList: attachments.cast<Map<String, dynamic>>(),
+              initialIndex: 0,
+            ),
           ),
         );
-      default:
-        return const SizedBox.shrink();
-    }
+      },
+      child: Stack(
+        children: [
+          thumb,
+          if (attachments.length > 1)
+            Positioned(
+              right: 8,
+              bottom: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '+${attachments.length - 1}',
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   void _showLikesDialog(BuildContext context, List<dynamic> likerIds) {
@@ -689,6 +729,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
     final String originalPostAuthorDisplayName = widget.post['originalPostAuthorDisplayName'] ?? 'Original Author';
     
     final double? aspectRatio = widget.post['aspectRatio'] as double?;
+    final List<dynamic> attachments = (widget.post['media'] ?? []) as List<dynamic>;
 
     return VisibilityDetector(
       key: Key(widget.postId),
@@ -856,7 +897,12 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                       ),
                       const SizedBox(height: 8),
                       if (originalPostMediaUrl.isNotEmpty)
-                        _buildMediaDisplay(originalPostMediaType, originalPostMediaUrl),
+                        _buildAttachmentThumbnail([
+                          {
+                            'type': originalPostMediaType,
+                            'url': originalPostMediaUrl,
+                          }
+                        ]),
                       if (originalPostMediaUrl.isNotEmpty) const SizedBox(height: 8),
                       if (originalPostContent.isNotEmpty)
                         Text(
@@ -871,9 +917,21 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                   widget.post['content'],
                   style: const TextStyle(fontSize: 16),
                 ),
-              if (postType == 'original' && widget.post['mediaUrl'] != null && widget.post['mediaUrl'].isNotEmpty)
-                _buildMediaDisplay(mediaType, widget.post['mediaUrl'], aspectRatio: aspectRatio),
-              if (postType == 'original' && widget.post['mediaUrl'] != null && widget.post['mediaUrl'].isNotEmpty) const SizedBox(height: 12),
+              // Display attachments if present.  Fall back to legacy single media for
+              // backwards compatibility.
+              if (postType == 'original' && attachments.isNotEmpty)
+                _buildAttachmentThumbnail(attachments),
+              if (postType == 'original' && attachments.isNotEmpty) const SizedBox(height: 12),
+              if (postType == 'original' && attachments.isEmpty && widget.post['mediaUrl'] != null && widget.post['mediaUrl'].isNotEmpty)
+                _buildAttachmentThumbnail([
+                  {
+                    'type': mediaType,
+                    'url': widget.post['mediaUrl'],
+                    'aspectRatio': aspectRatio,
+                  }
+                ]),
+              if (postType == 'original' && attachments.isEmpty && widget.post['mediaUrl'] != null && widget.post['mediaUrl'].isNotEmpty)
+                const SizedBox(height: 12),
               const Divider(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -887,13 +945,16 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                             _isLiked ? Icons.favorite : Icons.favorite_border,
                             color: _isLiked ? Theme.of(context).colorScheme.error : Colors.grey,
                           ),
-                          onPressed: _toggleLike,
+                        onPressed: _toggleLike,
                         ),
+                        const SizedBox(width: 4),
                         GestureDetector(
                           onTap: () => _showLikesDialog(context, widget.post['likes'] ?? []),
                           child: Text(
-                            '$_likeCount Likes',
-                            style: const TextStyle(decoration: TextDecoration.underline),
+                            '$_likeCount',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
                         ),
                       ],
@@ -909,7 +970,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.comment, color: Colors.grey),
+                          Icon(Icons.comment, color: Theme.of(context).iconTheme.color),
                           const SizedBox(width: 4),
                           StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance
@@ -921,7 +982,13 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                               if (commentSnapshot.connectionState == ConnectionState.waiting) {
                                 return const Text('...');
                               }
-                              return Text('${commentSnapshot.data?.docs.length ?? 0} Comments');
+                              final int commentCount = commentSnapshot.data?.docs.length ?? 0;
+                              return Text(
+                                '$commentCount',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
+                              );
                             },
                           ),
                         ],
@@ -934,9 +1001,14 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.share, color: Colors.grey),
+                          Icon(Icons.share, color: Theme.of(context).iconTheme.color),
                           const SizedBox(width: 4),
-                          Text('$sharesCount Shares'),
+                          Text(
+                            '$sharesCount',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
                         ],
                       ),
                     ),

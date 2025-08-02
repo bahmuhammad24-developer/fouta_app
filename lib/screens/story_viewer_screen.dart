@@ -144,8 +144,16 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
   }
 
   void _onTapUp(TapUpDetails details) {
+    // Detect taps on the left or right half of the screen. Previously this
+    // check used one third of the width, which sometimes caused a tap on
+    // the left half to jump back an entire story. Using half of the
+    // screen for navigation ensures that tapping on the left restarts or
+    // moves to the previous slide and tapping on the right advances to
+    // the next slide. This provides a more intuitive experience where
+    // tapping the left half restarts the current clip rather than
+    // restarting the entire story chain.
     final width = MediaQuery.of(context).size.width;
-    if (details.globalPosition.dx < width / 3) {
+    if (details.globalPosition.dx < width / 2) {
       _previousSlide();
     } else {
       _nextSlide();

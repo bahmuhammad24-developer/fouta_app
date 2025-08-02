@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fouta_app/theme/fouta_theme.dart';
+import 'package:fouta_app/theme/fouta_theme_diaspora.dart';
 
 /// A simple segmented control used to toggle between multiple options. This
 /// widget replaces chip rows or ad‑hoc toggles with a unified component.

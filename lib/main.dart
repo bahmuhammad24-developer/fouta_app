@@ -11,7 +11,8 @@ import 'package:provider/provider.dart';
 import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/services/theme_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fouta_app/theme/fouta_theme.dart';
+// Use the Diaspora Connection theme instead of the original Baobab theme
+import 'package:fouta_app/theme/fouta_theme_diaspora.dart';
 import 'firebase_options.dart';
 
 // Define a global constant for the app ID.
@@ -47,9 +48,9 @@ class MyApp extends StatelessWidget {
       builder: (context, themeProvider, _) {
         return MaterialApp(
           title: 'Fouta',
-          // Use the central FoutaTheme definitions for light and dark modes
-          theme: FoutaTheme.lightTheme,
-          darkTheme: FoutaTheme.darkTheme,
+          // Use the Diaspora Connection theme definitions for light and dark modes
+          theme: FoutaThemeDiaspora.lightTheme,
+          darkTheme: FoutaThemeDiaspora.darkTheme,
           themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
           home: const SplashScreen(),
         );

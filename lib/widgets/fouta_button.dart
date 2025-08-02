@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:fouta_app/theme/fouta_theme.dart';
+// Removed direct dependency on FoutaTheme constants. The button colours
+// are now derived from the current theme's colour scheme. This allows
+// the button to adapt automatically to both the Minimalist nature and
+// Diaspora Connection themes.
+// We no longer rely on FoutaTheme; instead, we use a fixed radius and
+// theme-based colours to ensure the button adapts to any app theme.
 
 /// A reusable button for Fouta that conforms to the Minimalist nature
 /// design guidelines. It supports primary (filled) and secondary (outlined)
@@ -20,13 +25,18 @@ class FoutaButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Use the theme's colour scheme instead of hard-coded palette values.
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    // Use a fixed radius to avoid depending on FoutaTheme. This radius
+    // reflects the guidelines from the design system (10dp).
+    const double radius = 10.0;
     final Widget button = primary
         ? ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: FoutaTheme.accentColor,
-              foregroundColor: FoutaTheme.onSecondaryColor,
+              backgroundColor: scheme.secondary,
+              foregroundColor: scheme.onSecondary,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(FoutaTheme.buttonRadius),
+                borderRadius: BorderRadius.circular(radius),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             ),
@@ -35,16 +45,16 @@ class FoutaButton extends StatelessWidget {
               label,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: scheme.onSecondary,
                   ),
             ),
           )
         : OutlinedButton(
             style: OutlinedButton.styleFrom(
-              foregroundColor: FoutaTheme.primaryColor,
-              side: const BorderSide(color: FoutaTheme.primaryColor, width: 1.5),
+              foregroundColor: scheme.primary,
+              side: BorderSide(color: scheme.primary, width: 1.5),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(FoutaTheme.buttonRadius),
+                borderRadius: BorderRadius.circular(radius),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             ),
@@ -53,7 +63,7 @@ class FoutaButton extends StatelessWidget {
               label,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: FoutaTheme.primaryColor,
+                    color: scheme.primary,
                   ),
             ),
           );

@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fouta_app/main.dart';
 import 'package:fouta_app/models/story_model.dart';
 import 'package:fouta_app/screens/story_creation_screen.dart';
+import 'package:fouta_app/screens/story_camera_screen.dart';
 import 'package:fouta_app/screens/story_viewer_screen.dart';
 
 class StoriesTray extends StatelessWidget {
@@ -20,37 +21,71 @@ class StoriesTray extends StatelessWidget {
       child: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('artifacts/$APP_ID/public/data/stories')
+            // Order by lastUpdated so the newest stories appear first. We'll filter
+            // out expired stories on the client because some documents may not
+            // have an `expiresAt` field (e.g. older data). Filtering client‑side
+            // prevents unintentionally excluding those records.
             .orderBy('lastUpdated', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: SizedBox.shrink());
           }
-          final storyDocs = snapshot.data!.docs;
+          // Filter out any expired stories. Stories missing `expiresAt` are included.
+          final originalDocs = snapshot.data!.docs;
+          final List<QueryDocumentSnapshot> filteredDocs = originalDocs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final expiresAt = data['expiresAt'];
+            if (expiresAt == null) return true;
+            try {
+              final ts = expiresAt as Timestamp;
+              return ts.toDate().isAfter(DateTime.now());
+            } catch (_) {
+              return true;
+            }
+          }).toList();
+          // Separate docs into unseen and seen based on whether the current user UID
+          // appears in the 'viewedBy' array. Unseen stories should be shown first.
+          final List<QueryDocumentSnapshot> unseenDocs = [];
+          final List<QueryDocumentSnapshot> seenDocs = [];
+          for (final doc in filteredDocs) {
+            final data = doc.data() as Map<String, dynamic>;
+            final List<dynamic> viewedBy = data['viewedBy'] ?? [];
+            final bool hasUnseen = currentUser != null
+                ? !viewedBy.contains(currentUser!.uid)
+                : true;
+            if (hasUnseen) {
+              unseenDocs.add(doc);
+            } else {
+              seenDocs.add(doc);
+            }
+          }
+          final List<QueryDocumentSnapshot> sortedDocs = [...unseenDocs, ...seenDocs];
 
           return ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            itemCount: storyDocs.length + 1, // +1 for the "Your Story" button
+            itemCount: sortedDocs.length + 1, // +1 for the "Your Story" button
             itemBuilder: (context, index) {
               if (index == 0) {
                 return _buildYourStoryAvatar(context, currentUser);
               }
-              final storyDoc = storyDocs[index - 1];
+              final storyDoc = sortedDocs[index - 1];
               final storyData = storyDoc.data() as Map<String, dynamic>;
-              
+
               // Determine if the current user has unseen stories by checking the 'viewedBy' array on the story document
               final List<dynamic> viewedBy = storyData['viewedBy'] ?? [];
               final bool hasUnseen = currentUser != null
                   ? !(viewedBy.contains(currentUser.uid))
                   : true;
-              
+
               return _StoryAvatar(
                 imageUrl: storyData['authorImageUrl'],
                 userName: storyData['authorName'],
                 hasUnseen: hasUnseen,
                 onTap: () {
-                   final stories = storyDocs.map((doc) {
+                  // Build the list of Story models preserving the same order as sortedDocs.
+                  final stories = sortedDocs.map((doc) {
                     final data = doc.data() as Map<String, dynamic>;
                     return Story(
                       userId: doc.id,
@@ -59,7 +94,6 @@ class StoriesTray extends StatelessWidget {
                       slides: [],
                     );
                   }).toList();
-
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -83,7 +117,8 @@ class StoriesTray extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
       child: GestureDetector(
         onTap: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const StoryCreationScreen()));
+          // Navigate to the camera interface for capturing a new story.
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const StoryCameraScreen()));
         },
         child: Column(
           children: [

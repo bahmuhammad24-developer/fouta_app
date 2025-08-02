@@ -35,14 +35,16 @@ class CreatePostScreen extends StatefulWidget {
 
 class _CreatePostScreenState extends State<CreatePostScreen> {
   final _postContentController = TextEditingController();
-  XFile? _selectedMediaFile;
-  Uint8List? _selectedMediaBytes;
-  String _mediaType = '';
-  double? _videoAspectRatio;
+  // Support multiple media attachments
+  final List<XFile> _selectedMediaFiles = [];
+  final List<Uint8List?> _selectedMediaBytesList = [];
+  final List<String> _mediaTypesList = [];
+  final List<double?> _videoAspectRatios = [];
   double _uploadProgress = 0.0;
   bool _isUploading = false;
   String? _message;
-  String? _currentMediaUrl;
+  // Existing media for editing posts (list of maps with url and type)
+  List<Map<String, dynamic>>? _existingMedia;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -58,8 +60,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     super.initState();
     if (widget.postId != null) {
       _postContentController.text = widget.initialContent ?? '';
-      _currentMediaUrl = widget.initialMediaUrl;
-      _mediaType = widget.initialMediaType ?? '';
+      // Prepare existing media for editing
+      if (widget.initialMediaUrl != null && widget.initialMediaUrl!.isNotEmpty) {
+        _existingMedia = [
+          {
+            'url': widget.initialMediaUrl,
+            'type': widget.initialMediaType ?? '',
+            'aspectRatio': null,
+          }
+        ];
+      }
     }
   }
 
@@ -98,9 +108,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       return;
     }
 
-    // Validate video size and duration constraints for non-web platforms
+    if (pickedFile == null) {
+      _showMessage('No media selected.');
+      return;
+    }
+
+    // Validate video size and duration for videos on non-web platforms
     double? aspectRatio;
-    if (isVideo && pickedFile != null && !kIsWeb) {
+    if (isVideo && !kIsWeb) {
       final fileSize = File(pickedFile.path).lengthSync();
       if (fileSize > _maxVideoFileSize) {
         _showMessage('Video is too large. Please select a video under 15 MB.');
@@ -109,14 +124,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       final player = Player();
       await player.open(Media(pickedFile.path));
       final duration = player.state.duration;
-      // Wait for width to be available to compute aspect ratio
       await player.stream.width.firstWhere((width) => width != null);
       final width = player.state.width;
       final height = player.state.height;
       if (width != null && height != null && height > 0) {
         aspectRatio = width / height;
       }
-      // Validate duration
       if (duration.inSeconds > _maxVideoDurationSeconds) {
         await player.dispose();
         _showMessage('Video is too long. Please select a video under 60 seconds.');
@@ -125,44 +138,35 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       await player.dispose();
     }
 
-    setState(() {
-      if (pickedFile != null) {
-        _selectedMediaFile = pickedFile;
-        _message = null;
-        _mediaType = isVideo ? 'video' : 'image';
-        _videoAspectRatio = aspectRatio;
-        _currentMediaUrl = null;
+    // Read bytes if on web for preview
+    Uint8List? bytesForPreview;
+    if (kIsWeb) {
+      bytesForPreview = await pickedFile.readAsBytes();
+    }
 
-        if (kIsWeb) {
-          pickedFile.readAsBytes().then((bytes) {
-            setState(() {
-              _selectedMediaBytes = bytes;
-            });
-          });
-        }
-      } else {
-        _selectedMediaFile = null;
-        _selectedMediaBytes = null;
-        _mediaType = '';
-        _videoAspectRatio = null;
-        _message = 'No media selected.';
-      }
+    // Add to lists temporarily for preview; if cancelled, remove later
+    setState(() {
+      _selectedMediaFiles.add(pickedFile!);
+      _mediaTypesList.add(isVideo ? 'video' : 'image');
+      _videoAspectRatios.add(aspectRatio);
+      _selectedMediaBytesList.add(bytesForPreview);
     });
 
-    // If a new media file was selected, show preview dialog and allow user to confirm or cancel.
-    if (pickedFile != null) {
-      final proceed = await _showPreviewDialog();
-      if (!proceed) {
-        // User cancelled posting; clear the selected media
-        setState(() {
-          _selectedMediaFile = null;
-          _selectedMediaBytes = null;
-          _mediaType = '';
-          _videoAspectRatio = null;
-          _currentMediaUrl = null;
-          _message = 'Media selection cancelled.';
-        });
-      }
+    // Show preview for the latest media and ask for confirmation
+    final proceed = await _showPreviewDialog();
+    if (!proceed) {
+      // Remove the last added media if user cancels
+      setState(() {
+        _selectedMediaFiles.removeLast();
+        _mediaTypesList.removeLast();
+        _videoAspectRatios.removeLast();
+        _selectedMediaBytesList.removeLast();
+        _message = 'Media selection cancelled.';
+      });
+    } else {
+      setState(() {
+        _message = null;
+      });
     }
   }
 
@@ -200,54 +204,58 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       return;
     }
 
-    if (_postContentController.text.trim().isEmpty && _selectedMediaFile == null && _currentMediaUrl == null) {
+    if (_postContentController.text.trim().isEmpty && _selectedMediaFiles.isEmpty && (_existingMedia == null || _existingMedia!.isEmpty)) {
       _showMessage('Post cannot be empty without text, image, or video.');
       return;
     }
 
     // Prevent media uploads while offline. Text‑only posts can still be added offline via Firestore persistence.
     final connectivity = context.read<ConnectivityProvider>();
-    if (!connectivity.isOnline && _selectedMediaFile != null) {
+    if (!connectivity.isOnline && _selectedMediaFiles.isNotEmpty) {
       _showMessage('You are offline. Cannot upload media.');
       return;
     }
 
-    String? mediaUrl = _currentMediaUrl;
-    String currentMediaType = _mediaType;
+    // Upload each selected media and build attachments list
+    List<Map<String, dynamic>> attachments = [];
+    // Include existing media (if editing) so that they persist
+    if (_existingMedia != null) {
+      attachments.addAll(_existingMedia!);
+    }
 
-    if (_selectedMediaFile != null) {
+    if (_selectedMediaFiles.isNotEmpty) {
       setState(() {
         _isUploading = true;
         _uploadProgress = 0.0;
       });
-      try {
-        String fileName = _selectedMediaFile!.name;
+      int uploadedCount = 0;
+      for (int i = 0; i < _selectedMediaFiles.length; i++) {
+        final XFile file = _selectedMediaFiles[i];
+        final String type = _mediaTypesList[i];
+        final double? aspect = _videoAspectRatios[i];
+        String fileName = file.name;
         Uint8List? bytesToUpload;
         File? fileToUpload;
 
-        // Prepare bytes for upload. Compress images on non-web platforms.
         if (kIsWeb) {
-          // On web, just read bytes directly
-          bytesToUpload = await _selectedMediaFile!.readAsBytes();
+          bytesToUpload = await file.readAsBytes();
         } else {
-          if (_mediaType == 'image') {
-            final originalBytes = await _selectedMediaFile!.readAsBytes();
+          if (type == 'image') {
+            final originalBytes = await file.readAsBytes();
             final img.Image? decoded = img.decodeImage(originalBytes);
             if (decoded != null) {
               final compressed = img.encodeJpg(decoded, quality: 80);
               bytesToUpload = Uint8List.fromList(compressed);
             } else {
-              // Fallback to original file if decoding fails
-              fileToUpload = File(_selectedMediaFile!.path);
+              fileToUpload = File(file.path);
             }
           } else {
-            // For video, no compression; use the file directly
-            fileToUpload = File(_selectedMediaFile!.path);
+            fileToUpload = File(file.path);
           }
         }
 
         final String fileExtension = fileName.split('.').last;
-        final String storagePath = '${_mediaType}s/${user.uid}/${DateTime.now().millisecondsSinceEpoch}_${user.uid}.$fileExtension';
+        final String storagePath = '${type}s/${user.uid}/${DateTime.now().millisecondsSinceEpoch}_${user.uid}_$i.$fileExtension';
         final storageRef = FirebaseStorage.instance.ref().child(storagePath);
 
         UploadTask uploadTask;
@@ -261,30 +269,39 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           return;
         }
 
+        // Update overall progress based on each file
         uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
           if (mounted) {
             setState(() {
-              _uploadProgress = snapshot.bytesTransferred / snapshot.totalBytes;
+              // Average progress across all uploads
+              _uploadProgress = ((uploadedCount + snapshot.bytesTransferred / snapshot.totalBytes) / _selectedMediaFiles.length);
             });
           }
         });
 
-        await uploadTask.whenComplete(() async {
-          mediaUrl = await storageRef.getDownloadURL();
-          currentMediaType = _mediaType;
-          _showMessage('${_mediaType == 'image' ? 'Image' : 'Video'} uploaded successfully!');
-        });
-      } on FirebaseException catch (e) {
-        _showMessage('Media upload failed: ${e.message}');
-        setState(() {
-          _isUploading = false;
-        });
-        return;
-      } finally {
-        setState(() {
-          _isUploading = false;
-        });
+        String? url;
+        try {
+          await uploadTask;
+          url = await storageRef.getDownloadURL();
+        } on FirebaseException catch (e) {
+          _showMessage('Media upload failed: ${e.message}');
+          setState(() { _isUploading = false; });
+          return;
+        }
+        if (url != null) {
+          attachments.add({
+            'url': url,
+            'type': type,
+            if (type == 'video') 'aspectRatio': aspect,
+          });
+        }
+        uploadedCount++;
       }
+      // Reset uploading state after all uploads
+      setState(() {
+        _isUploading = false;
+        _uploadProgress = 0.0;
+      });
     }
 
     String authorDisplayName = user.email?.split('@')[0] ?? 'Anonymous';
@@ -303,10 +320,20 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
     try {
       if (widget.postId == null) {
+        // Determine summary media for backward compatibility (first attachment)
+        String? summaryUrl;
+        String? summaryType;
+        double? summaryAspect;
+        if (attachments.isNotEmpty) {
+          summaryUrl = attachments.first['url'] as String;
+          summaryType = attachments.first['type'] as String;
+          summaryAspect = attachments.first['aspectRatio'] as double?;
+        }
         final postData = {
           'content': _postContentController.text.trim(),
-          'mediaUrl': mediaUrl,
-          'mediaType': currentMediaType,
+          'media': attachments,
+          'mediaUrl': summaryUrl,
+          'mediaType': summaryType,
           'authorId': user.uid,
           'authorDisplayName': authorDisplayName,
           'authorProfileImageUrl': authorProfileImageUrl,
@@ -316,7 +343,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           'calculatedEngagement': _calculateEngagement(0, 0, 0),
           'type': 'original',
           'postVisibility': postVisibility,
-          if (currentMediaType == 'video') 'aspectRatio': _videoAspectRatio,
+          if (summaryType == 'video') 'aspectRatio': summaryAspect,
         };
         final newPostRef = await FirebaseFirestore.instance
             .collection('artifacts/$APP_ID/public/data/posts')
@@ -324,13 +351,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         _showMessage('Post added successfully!');
         _updateEngagementScore(newPostRef.id);
       } else {
+        // For editing, update content and append new attachments while preserving existing ones
         await FirebaseFirestore.instance
             .collection('artifacts/$APP_ID/public/data/posts')
             .doc(widget.postId)
             .update({
           'content': _postContentController.text.trim(),
-          'mediaUrl': mediaUrl,
-          'mediaType': currentMediaType,
+          'media': attachments,
         });
         _showMessage('Post updated successfully!');
         _updateEngagementScore(widget.postId!);
@@ -338,12 +365,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
       _postContentController.clear();
       setState(() {
-        _selectedMediaFile = null;
-        _selectedMediaBytes = null;
-        _mediaType = '';
-        _currentMediaUrl = null;
+        _selectedMediaFiles.clear();
+        _selectedMediaBytesList.clear();
+        _mediaTypesList.clear();
+        _videoAspectRatios.clear();
+        _existingMedia = null;
         _uploadProgress = 0.0;
-        _videoAspectRatio = null;
       });
       if (mounted) Navigator.pop(context);
     } on FirebaseException catch (e) {
@@ -369,27 +396,42 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (_mediaType == 'image')
-                  SizedBox(
-                    width: 300,
-                    height: 200,
-                    child: kIsWeb
-                        ? (_selectedMediaBytes != null
-                            ? Image.memory(_selectedMediaBytes!, fit: BoxFit.contain)
-                            : const SizedBox.shrink())
-                        : (_selectedMediaFile != null
-                            ? Image.file(File(_selectedMediaFile!.path), fit: BoxFit.contain)
-                            : const SizedBox.shrink()),
-                  )
-                else if (_mediaType == 'video')
-                  Container(
-                    width: 300,
-                    height: 200,
-                    color: Colors.black12,
-                    child: const Center(
-                      child: Icon(Icons.videocam, size: 64, color: Colors.grey),
-                    ),
-                  ),
+                // Display preview for the last selected media
+                Builder(builder: (context) {
+                  if (_selectedMediaFiles.isNotEmpty) {
+                    final int idx = _selectedMediaFiles.length - 1;
+                    final String type = _mediaTypesList[idx];
+                    if (type == 'image') {
+                      if (kIsWeb) {
+                        final bytes = _selectedMediaBytesList[idx];
+                        return SizedBox(
+                          width: 300,
+                          height: 200,
+                          child: bytes != null
+                              ? Image.memory(bytes, fit: BoxFit.contain)
+                              : const SizedBox.shrink(),
+                        );
+                      } else {
+                        final file = File(_selectedMediaFiles[idx].path);
+                        return SizedBox(
+                          width: 300,
+                          height: 200,
+                          child: Image.file(file, fit: BoxFit.contain),
+                        );
+                      }
+                    } else if (type == 'video') {
+                      return Container(
+                        width: 300,
+                        height: 200,
+                        color: Colors.black12,
+                        child: const Center(
+                          child: Icon(Icons.videocam, size: 64, color: Colors.grey),
+                        ),
+                      );
+                    }
+                  }
+                  return const SizedBox.shrink();
+                }),
                 const SizedBox(height: 16),
                 // Caption field for editing during preview
                 TextField(
@@ -463,29 +505,31 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               textCapitalization: TextCapitalization.sentences,
             ),
             const SizedBox(height: 16),
-            if (_selectedMediaBytes != null && kIsWeb)
-              _buildMediaPreviewWeb(_mediaType, _selectedMediaBytes!)
-            else if (_selectedMediaFile != null && !kIsWeb)
-              _buildMediaPreviewMobile(_mediaType, _selectedMediaFile!.path)
-            else if (_currentMediaUrl != null && _currentMediaUrl!.isNotEmpty)
-              _buildMediaDisplayExisting(_mediaType, _currentMediaUrl!),
-            if ((_selectedMediaFile != null || _currentMediaUrl != null) && !_isUploading)
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _selectedMediaFile = null;
-                      _selectedMediaBytes = null;
-                      _mediaType = '';
-                      _currentMediaUrl = null;
-                      _videoAspectRatio = null;
-                      _message = 'Media cleared.';
-                    });
-                  },
-                  icon: const Icon(Icons.clear, size: 18),
-                  label: const Text('Clear Media'),
-                ),
+            // Show previews for selected and existing media
+            if ((_selectedMediaFiles.isNotEmpty || (_existingMedia != null && _existingMedia!.isNotEmpty)))
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildMediaPreviewList(),
+                  if (!_isUploading)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _selectedMediaFiles.clear();
+                            _selectedMediaBytesList.clear();
+                            _mediaTypesList.clear();
+                            _videoAspectRatios.clear();
+                            _existingMedia = null;
+                            _message = 'Media cleared.';
+                          });
+                        },
+                        icon: const Icon(Icons.clear, size: 18),
+                        label: const Text('Clear Media'),
+                      ),
+                    ),
+                ],
               ),
             if (_isUploading)
               LinearProgressIndicator(
@@ -639,5 +683,64 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       default:
         return const SizedBox.shrink();
     }
+  }
+
+  /// Builds a horizontal list of media previews for both existing and newly selected media.
+  Widget _buildMediaPreviewList() {
+    final List<Widget> items = [];
+    // Add existing media previews first
+    if (_existingMedia != null) {
+      for (final media in _existingMedia!) {
+        final String type = media['type'] ?? '';
+        final String url = media['url'] ?? '';
+        items.add(Padding(
+          padding: const EdgeInsets.only(right: 8.0),
+          child: SizedBox(
+            width: 150,
+            height: 150,
+            child: _buildMediaDisplayExisting(type, url),
+          ),
+        ));
+      }
+    }
+    // Add new selected media previews
+    for (int i = 0; i < _selectedMediaFiles.length; i++) {
+      final type = _mediaTypesList[i];
+      Widget preview;
+      if (type == 'image') {
+        if (kIsWeb) {
+          final bytes = _selectedMediaBytesList[i];
+          preview = bytes != null
+              ? Image.memory(bytes, width: 150, height: 150, fit: BoxFit.cover)
+              : const SizedBox.shrink();
+        } else {
+          final file = File(_selectedMediaFiles[i].path);
+          preview = Image.file(file, width: 150, height: 150, fit: BoxFit.cover);
+        }
+      } else {
+        preview = Container(
+          width: 150,
+          height: 150,
+          color: Colors.black,
+          child: const Center(
+            child: Icon(Icons.play_circle_fill, color: Colors.white, size: 50),
+          ),
+        );
+      }
+      items.add(Padding(
+        padding: const EdgeInsets.only(right: 8.0),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8.0),
+          child: preview,
+        ),
+      ));
+    }
+    return SizedBox(
+      height: 170,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: items,
+      ),
+    );
   }
 }

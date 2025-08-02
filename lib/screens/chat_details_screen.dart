@@ -90,6 +90,9 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
 
   SliverAppBar _buildGroupAppBar(BuildContext context, Map<String, dynamic> chatData) {
     final List<dynamic> participants = chatData['participants'] ?? [];
+    // Only admins should see the add-member button. Determine if current user is an admin.
+    final List<dynamic> admins = chatData['admins'] ?? [];
+    final bool amIAdmin = _currentUser != null && admins.contains(_currentUser!.uid);
     return SliverAppBar(
       expandedHeight: 220.0,
       pinned: true,
@@ -109,7 +112,7 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Text(
-                    chatData['groupName'] ?? 'Group Chat', 
+                    chatData['groupName'] ?? 'Group Chat',
                     style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                     maxLines: 2,
@@ -121,9 +124,10 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: participants.length + 1, // +1 for the add button
+                    itemCount: amIAdmin ? participants.length + 1 : participants.length,
                     itemBuilder: (context, index) {
-                      if (index == participants.length) {
+                      // Show the add button only for admins as the last item
+                      if (amIAdmin && index == participants.length) {
                         return _buildAddMemberButton(context, chatData);
                       }
                       return _buildParticipantAvatar(context, participants[index]);
@@ -202,6 +206,7 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
   }
 
   Widget _buildAddMemberButton(BuildContext context, Map<String, dynamic> chatData) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Column(
@@ -213,14 +218,14 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
                  currentMemberIds: List<String>.from(chatData['participants'] ?? []),
                )));
             },
-            child: const CircleAvatar(
+            child: CircleAvatar(
               radius: 25,
-              backgroundColor: Colors.white54,
-              child: Icon(Icons.add, color: Colors.white),
+              backgroundColor: scheme.secondary.withOpacity(0.8),
+              child: Icon(Icons.add, color: scheme.onSecondary),
             ),
           ),
           const SizedBox(height: 4),
-          const Text('Add', style: TextStyle(color: Colors.white, fontSize: 12)),
+          Text('Add', style: TextStyle(color: scheme.onSecondary, fontSize: 12)),
         ],
       ),
     );

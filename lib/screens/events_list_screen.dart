@@ -18,6 +18,10 @@ class EventsListScreen extends StatefulWidget {
 class _EventsListScreenState extends State<EventsListScreen> {
   final User? currentUser = FirebaseAuth.instance.currentUser;
 
+  // Filtering and sorting state. By default, show all upcoming events and sort by date ascending.
+  String _timeFilter = 'all'; // options: all, today, thisWeek, upcoming, past
+  String _sortOption = 'date'; // options: date, popularity
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -26,6 +30,12 @@ class _EventsListScreenState extends State<EventsListScreen> {
         appBar: AppBar(
           automaticallyImplyLeading: false, // Handled by root navigator
           // FIX: Title removed to prevent duplication with the main SliverAppBar
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.filter_list),
+              onPressed: _showFilterDialog,
+            ),
+          ],
           bottom: const TabBar(
             tabs: [
               Tab(text: 'For You'),
@@ -57,23 +67,125 @@ class _EventsListScreenState extends State<EventsListScreen> {
 
   Query _getForYouQuery() {
     // Placeholder for a real algorithm. For now, just shows all upcoming events.
-    return FirebaseFirestore.instance
+    return _buildQuery(baseCollection: FirebaseFirestore.instance
         .collection('artifacts/$APP_ID/public/data/events')
-        .where('eventDate', isGreaterThanOrEqualTo: Timestamp.now())
-        .orderBy('eventDate', descending: false);
+        .where('eventDate', isGreaterThanOrEqualTo: Timestamp.now()));
   }
 
   Query _getMyEventsQuery() {
-    return FirebaseFirestore.instance
+    return _buildQuery(baseCollection: FirebaseFirestore.instance
         .collection('artifacts/$APP_ID/public/data/events')
-        .where('attendees', arrayContains: currentUser?.uid ?? '')
-        .orderBy('eventDate', descending: false);
+        .where('attendees', arrayContains: currentUser?.uid ?? ''));
   }
 
   Query _getBrowseQuery() {
-    return FirebaseFirestore.instance
-        .collection('artifacts/$APP_ID/public/data/events')
-        .orderBy('eventDate', descending: false);
+    return _buildQuery(baseCollection: FirebaseFirestore.instance
+        .collection('artifacts/$APP_ID/public/data/events'));
+  }
+
+  /// Builds a query based on the current filters and sort options.
+  Query _buildQuery({required Query baseCollection}) {
+    Query query = baseCollection;
+    final now = Timestamp.now();
+    final nowDate = DateTime.now();
+    if (_timeFilter == 'today') {
+      final startOfDay = Timestamp.fromDate(DateTime(nowDate.year, nowDate.month, nowDate.day));
+      final endOfDay = Timestamp.fromDate(DateTime(nowDate.year, nowDate.month, nowDate.day, 23, 59, 59));
+      query = query
+          .where('eventDate', isGreaterThanOrEqualTo: startOfDay)
+          .where('eventDate', isLessThanOrEqualTo: endOfDay);
+    } else if (_timeFilter == 'thisWeek') {
+      final startOfWeek = Timestamp.fromDate(nowDate.subtract(Duration(days: nowDate.weekday - 1)));
+      final endOfWeek = Timestamp.fromDate(startOfWeek.toDate().add(const Duration(days: 7)));
+      query = query
+          .where('eventDate', isGreaterThanOrEqualTo: startOfWeek)
+          .where('eventDate', isLessThanOrEqualTo: endOfWeek);
+    } else if (_timeFilter == 'upcoming') {
+      query = query.where('eventDate', isGreaterThanOrEqualTo: now);
+    } else if (_timeFilter == 'past') {
+      query = query.where('eventDate', isLessThan: now);
+    }
+    // Sorting
+    if (_sortOption == 'popularity') {
+      query = query.orderBy('attendeesCount', descending: true);
+    } else {
+      // default: date ascending
+      query = query.orderBy('eventDate', descending: false);
+    }
+    return query;
+  }
+
+  /// Shows a bottom sheet allowing users to select filters and sort options for events.
+  void _showFilterDialog() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        String tempFilter = _timeFilter;
+        String tempSort = _sortOption;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Filter Events', style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 12),
+                  Text('Timeframe', style: Theme.of(context).textTheme.titleMedium),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      _buildFilterChip('All', 'all', tempFilter, setState, (val) => tempFilter = val),
+                      _buildFilterChip('Today', 'today', tempFilter, setState, (val) => tempFilter = val),
+                      _buildFilterChip('This Week', 'thisWeek', tempFilter, setState, (val) => tempFilter = val),
+                      _buildFilterChip('Upcoming', 'upcoming', tempFilter, setState, (val) => tempFilter = val),
+                      _buildFilterChip('Past', 'past', tempFilter, setState, (val) => tempFilter = val),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text('Sort by', style: Theme.of(context).textTheme.titleMedium),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      _buildFilterChip('Date', 'date', tempSort, setState, (val) => tempSort = val),
+                      _buildFilterChip('Popularity', 'popularity', tempSort, setState, (val) => tempSort = val),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        setState(() {
+                          _timeFilter = tempFilter;
+                          _sortOption = tempSort;
+                        });
+                      },
+                      child: const Text('Apply'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterChip(String label, String value, String groupValue, StateSetter setState, Function(String) onSelected) {
+    final bool isSelected = value == groupValue;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) {
+        setState(() {
+          onSelected(value);
+        });
+      },
+    );
   }
 
   Widget _buildEventsList(BuildContext context, Query query) {

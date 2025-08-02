@@ -1,161 +1,185 @@
-// lib/screens/story_creation_screen.dart
-import 'dart:io';
+// lib/widgets/stories_tray.dart
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fouta_app/main.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:fouta_app/models/story_model.dart';
+import 'package:fouta_app/screens/story_creation_screen.dart';
+import 'package:fouta_app/screens/story_camera_screen.dart';
+import 'package:fouta_app/screens/story_viewer_screen.dart';
 
-class StoryCreationScreen extends StatefulWidget {
-  const StoryCreationScreen({super.key});
-
-  @override
-  State<StoryCreationScreen> createState() => _StoryCreationScreenState();
-}
-
-class _StoryCreationScreenState extends State<StoryCreationScreen> {
-  File? _mediaFile;
-  bool _isUploading = false;
-  final ImagePicker _picker = ImagePicker();
-  bool _isVideo = false;
-
-  Future<void> _pickImage(ImageSource source) async {
-    try {
-      final pickedFile = await _picker.pickImage(source: source);
-      if (pickedFile != null) {
-        setState(() {
-          _mediaFile = File(pickedFile.path);
-          _isVideo = false;
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
-    }
-  }
-
-  Future<void> _pickVideo(ImageSource source) async {
-    try {
-      final pickedFile = await _picker.pickVideo(source: source);
-      if (pickedFile != null) {
-        setState(() {
-          _mediaFile = File(pickedFile.path);
-          _isVideo = true;
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error picking video: $e')));
-    }
-  }
-
-  Future<void> _postStory() async {
-    if (_mediaFile == null) return;
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    setState(() => _isUploading = true);
-
-    try {
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child('stories_media/${user.uid}/${DateTime.now().millisecondsSinceEpoch}${_isVideo ? '.mp4' : '.jpg'}');
-      
-      final uploadTask = storageRef.putFile(_mediaFile!);
-      final snapshot = await uploadTask.whenComplete(() {});
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-
-      final userDoc = await FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(user.uid).get();
-      final userData = userDoc.data();
-
-      final storyRef = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/stories').doc(user.uid);
-      final storySlideRef = storyRef.collection('slides').doc();
-
-      final batch = FirebaseFirestore.instance.batch();
-
-      batch.set(storyRef, {
-        'authorName': userData?['displayName'] ?? 'User',
-        'authorImageUrl': userData?['profileImageUrl'] ?? '',
-        'lastUpdated': FieldValue.serverTimestamp(),
-        'viewedBy': [],
-      }, SetOptions(merge: true));
-
-      batch.set(storySlideRef, {
-        'mediaUrl': downloadUrl,
-        'mediaType': _isVideo ? 'video' : 'image',
-        'createdAt': FieldValue.serverTimestamp(),
-        'viewers': [],
-      });
-      
-      await batch.commit();
-
-      if(mounted) Navigator.of(context).pop();
-
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to post story: $e')));
-    } finally {
-      if(mounted) setState(() => _isUploading = false);
-    }
-  }
+class StoriesTray extends StatelessWidget {
+  const StoriesTray({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    return Container(
+      height: 100.0,
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('artifacts/$APP_ID/public/data/stories')
+            .orderBy('lastUpdated', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: SizedBox.shrink());
+          }
+          final storyDocs = snapshot.data!.docs;
+
+          return ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            itemCount: storyDocs.length + 1, // +1 for the "Your Story" button
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return _buildYourStoryAvatar(context, currentUser);
+              }
+              final storyDoc = storyDocs[index - 1];
+              final storyData = storyDoc.data() as Map<String, dynamic>;
+              
+              // Determine if the current user has unseen stories by checking the 'viewedBy' array on the story document
+              final List<dynamic> viewedBy = storyData['viewedBy'] ?? [];
+              final bool hasUnseen = currentUser != null
+                  ? !(viewedBy.contains(currentUser.uid))
+                  : true;
+              
+              return _StoryAvatar(
+                imageUrl: storyData['authorImageUrl'],
+                userName: storyData['authorName'],
+                hasUnseen: hasUnseen,
+                onTap: () {
+                   final stories = storyDocs.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    return Story(
+                      userId: doc.id,
+                      userName: data['authorName'] ?? 'User',
+                      userImageUrl: data['authorImageUrl'] ?? '',
+                      slides: [],
+                    );
+                  }).toList();
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => StoryViewerScreen(
+                        stories: stories,
+                        initialStoryIndex: index - 1,
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
       ),
-      body: Center(
-        child: _mediaFile == null
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.photo_library, color: Colors.white, size: 60),
-                    onPressed: () => _pickImage(ImageSource.gallery),
-                  ),
-                  const Text('Pick Image from Gallery', style: TextStyle(color: Colors.white)),
-                  const SizedBox(height: 20),
-                  IconButton(
-                    icon: const Icon(Icons.camera_alt, color: Colors.white, size: 60),
-                    onPressed: () => _pickImage(ImageSource.camera),
-                  ),
-                  const Text('Take Photo', style: TextStyle(color: Colors.white)),
-                  const SizedBox(height: 20),
-                  IconButton(
-                    icon: const Icon(Icons.videocam, color: Colors.white, size: 60),
-                    onPressed: () => _pickVideo(ImageSource.gallery),
-                  ),
-                    const Text('Pick Video from Gallery', style: TextStyle(color: Colors.white)),
-                ],
-              )
-            : Stack(
-              fit: StackFit.expand,
+    );
+  }
+
+  Widget _buildYourStoryAvatar(BuildContext context, User? currentUser) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: GestureDetector(
+        onTap: () {
+          // Navigate to the camera interface for capturing a new story.
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const StoryCameraScreen()));
+        },
+        child: Column(
+          children: [
+            Stack(
+              alignment: Alignment.bottomRight,
               children: [
-                // Show preview depending on media type
-                _isVideo
-                    ? Container(
-                        color: Colors.black,
-                        child: const Center(child: Icon(Icons.videocam, color: Colors.white70, size: 80)),
-                      )
-                    : Image.file(_mediaFile!, fit: BoxFit.contain),
-                if(_isUploading) const Center(child: CircularProgressIndicator()),
-                Positioned(
-                  bottom: 20,
-                  right: 20,
-                  child: ElevatedButton.icon(
-                    onPressed: _isUploading ? null : _postStory,
-                    icon: const Icon(Icons.send),
-                    label: const Text('Post Story'),
+                const CircleAvatar(
+                  radius: 32.0,
+                  backgroundColor: Colors.grey,
+                  child: Icon(Icons.person, color: Colors.white, size: 32),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.add_circle,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 22.0,
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 2.0),
+            // FIX: Explicitly constrain height to prevent overflow
+            SizedBox(
+              height: 14,
+              child: Text(
+                'Your Story', 
+                style: const TextStyle(fontSize: 11),
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StoryAvatar extends StatelessWidget {
+  final String imageUrl;
+  final String userName;
+  final bool hasUnseen;
+  final VoidCallback onTap;
+
+  const _StoryAvatar({
+    required this.imageUrl,
+    required this.userName,
+    required this.hasUnseen,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(2.0),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: hasUnseen ? Theme.of(context).colorScheme.secondary : Colors.grey,
+                  width: 2.0,
+                ),
+              ),
+              child: CircleAvatar(
+                radius: 30.0,
+                backgroundImage: imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
+                child: imageUrl.isEmpty ? const Icon(Icons.person) : null,
+              ),
+            ),
+            const SizedBox(height: 2.0),
+            // FIX: Explicitly constrain height to prevent overflow
+            SizedBox(
+              height: 14,
+              width: 64,
+              child: Text(
+                userName, 
+                style: const TextStyle(fontSize: 11),
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
