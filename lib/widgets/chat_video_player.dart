@@ -8,7 +8,7 @@ import 'package:fouta_app/utils/video_controller_extensions.dart';
 
 class ChatVideoPlayer extends StatefulWidget {
   final String videoUrl;
-  const ChatVideoPlayer({Key? key, required this.videoUrl})
+  ChatVideoPlayer({Key? key, required this.videoUrl})
       : super(key: key ?? ValueKey(videoUrl));
 
   @override
