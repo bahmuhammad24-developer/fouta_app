@@ -88,8 +88,10 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
     }
   }
 
-  SliverAppBar _buildGroupAppBar(BuildContext context, Map<String, dynamic> chatData) {
-    final List<dynamic> participants = chatData['participants'] ?? [];
+  SliverAppBar _buildGroupAppBar(
+      BuildContext context, Map<String, dynamic> chatData) {
+    final List<String> participants =
+        List<String>.from(chatData['participants'] ?? []);
     // Only admins should see the add-member button. Determine if current user is an admin.
     final List<dynamic> admins = chatData['admins'] ?? [];
     final bool amIAdmin = _currentUser != null && admins.contains(_currentUser!.uid);
@@ -124,7 +126,8 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: amIAdmin ? participants.length + 1 : participants.length,
+                    itemCount:
+                        amIAdmin ? participants.length + 1 : participants.length,
                     itemBuilder: (context, index) {
                       // Show the add button only for admins as the last item
                       if (amIAdmin && index == participants.length) {
@@ -231,9 +234,11 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
     );
   }
   
-  Widget _buildBody(BuildContext context, Map<String, dynamic> chatData, bool isGroupChat) {
-    final List<dynamic> participants = chatData['participants'] ?? [];
-    final List<dynamic> admins = chatData['admins'] ?? [];
+  Widget _buildBody(
+      BuildContext context, Map<String, dynamic> chatData, bool isGroupChat) {
+    final List<String> participants =
+        List<String>.from(chatData['participants'] ?? []);
+    final List<String> admins = List<String>.from(chatData['admins'] ?? []);
     final bool amIAdmin = _currentUser != null && admins.contains(_currentUser!.uid);
     final otherUserId = isGroupChat ? null : participants.firstWhere((id) => id != _currentUser!.uid);
 
@@ -303,7 +308,7 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
               if (isGroupChat) {
                 _leaveGroup();
               } else {
-                _blockUser(otherUserId);
+                _blockUser(otherUserId!);
               }
             },
           ),

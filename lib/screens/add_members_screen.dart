@@ -22,6 +22,7 @@ class _AddMembersScreenState extends State<AddMembersScreen> {
   List<String> _selectedMemberIds = [];
   List<Map<String, dynamic>> _eligibleFollowers = [];
   bool _isLoading = true;
+  bool _hasFollowers = true;
 
   @override
   void initState() {
@@ -39,26 +40,36 @@ class _AddMembersScreenState extends State<AddMembersScreen> {
         .get();
 
     if (userDoc.exists) {
-      final List<String> followingIds = List<String>.from(userDoc.data()?['following'] ?? []);
-      
-      if (followingIds.isNotEmpty) {
+      final List<String> followingIds =
+          List<String>.from(userDoc.data()?['following'] ?? []);
+      _hasFollowers = followingIds.isNotEmpty;
+
+      if (_hasFollowers) {
         final usersSnapshot = await FirebaseFirestore.instance
-          .collection('artifacts/$APP_ID/public/data/users')
-          .where(FieldPath.documentId, whereIn: followingIds)
-          .get();
-        
+            .collection('artifacts/$APP_ID/public/data/users')
+            .where(FieldPath.documentId, whereIn: followingIds)
+            .get();
+
         setState(() {
           _eligibleFollowers = usersSnapshot.docs
-            .map((doc) => {'id': doc.id, ...doc.data()})
-            .where((user) => !widget.currentMemberIds.contains(user['id']))
-            .toList();
+              .map((doc) => {'id': doc.id, ...doc.data()})
+              .where(
+                  (user) => !widget.currentMemberIds.contains(user['id']))
+              .toList();
           _isLoading = false;
         });
       } else {
-        setState(() => _isLoading = false);
+        setState(() {
+          _eligibleFollowers = [];
+          _isLoading = false;
+        });
       }
     } else {
-      setState(() => _isLoading = false);
+      setState(() {
+        _eligibleFollowers = [];
+        _hasFollowers = false;
+        _isLoading = false;
+      });
     }
   }
 
@@ -108,7 +119,11 @@ class _AddMembersScreenState extends State<AddMembersScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _eligibleFollowers.isEmpty
-              ? const Center(child: Text('All your followers are already in this group.'))
+              ? Center(
+                  child: Text(_hasFollowers
+                      ? 'All your followers are already in this group.'
+                      : 'You need to follow users to add them to a group.'),
+                )
               : ListView.builder(
                   itemCount: _eligibleFollowers.length,
                   itemBuilder: (context, index) {

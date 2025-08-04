@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 // Import the story creation screen widget used after capturing media.
 import 'package:fouta_app/screens/story_creation_screen.dart';
@@ -16,12 +17,45 @@ class StoryCameraScreen extends StatefulWidget {
 
 class _StoryCameraScreenState extends State<StoryCameraScreen> {
   final ImagePicker _picker = ImagePicker();
+  CameraController? _controller;
+  List<CameraDescription> _cameras = [];
+  int _currentCamera = 0;
   bool _isRecording = false;
-  DateTime? _recordStart;
+
+  @override
+  void initState() {
+    super.initState();
+    _initCamera();
+  }
+
+  Future<void> _initCamera() async {
+    try {
+      _cameras = await availableCameras();
+      if (_cameras.isEmpty) return;
+      _controller = CameraController(
+        _cameras[_currentCamera],
+        ResolutionPreset.high,
+        enableAudio: true,
+      );
+      await _controller!.initialize();
+      if (mounted) setState(() {});
+    } catch (e) {
+      // If the camera cannot be initialized, remain with a blank preview.
+      debugPrint('Camera init error: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
 
   Future<void> _takePhoto() async {
-    final XFile? file = await _picker.pickImage(source: ImageSource.camera);
-    if (file != null && mounted) {
+    if (_controller == null || !_controller!.value.isInitialized) return;
+    try {
+      final XFile file = await _controller!.takePicture();
+      if (!mounted) return;
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -31,15 +65,25 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
           ),
         ),
       );
+    } catch (e) {
+      debugPrint('Take photo error: $e');
     }
   }
 
-  Future<void> _takeVideo() async {
-    final XFile? file = await _picker.pickVideo(
-      source: ImageSource.camera,
-      maxDuration: const Duration(seconds: 15),
-    );
-    if (file != null && mounted) {
+  Future<void> _startVideoRecording() async {
+    if (_controller == null || !_controller!.value.isInitialized) return;
+    try {
+      await _controller!.startVideoRecording();
+    } catch (e) {
+      debugPrint('Start recording error: $e');
+    }
+  }
+
+  Future<void> _stopVideoRecording() async {
+    if (_controller == null || !_controller!.value.isRecordingVideo) return;
+    try {
+      final XFile file = await _controller!.stopVideoRecording();
+      if (!mounted) return;
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -49,6 +93,8 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
           ),
         ),
       );
+    } catch (e) {
+      debugPrint('Stop recording error: $e');
     }
   }
 
@@ -67,15 +113,25 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
     }
   }
 
+  void _switchCamera() {
+    if (_cameras.length < 2) return;
+    _currentCamera = (_currentCamera + 1) % _cameras.length;
+    _controller?.dispose();
+    _controller = null;
+    setState(() {});
+    _initCamera();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // TODO: integrate live camera preview using the camera package.
           Positioned.fill(
-            child: Container(color: Colors.black),
+            child: (_controller != null && _controller!.value.isInitialized)
+                ? CameraPreview(_controller!)
+                : Container(color: Colors.black),
           ),
           // Top controls: flash, switch camera (placeholders)
           Positioned(
@@ -91,7 +147,7 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.cameraswitch, color: Colors.white),
-                  onPressed: () {},
+                  onPressed: _switchCamera,
                 ),
               ],
             ),
@@ -118,16 +174,13 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
                 GestureDetector(
                   onTap: _takePhoto,
                   onLongPressStart: (_) {
-                    setState(() {
-                      _isRecording = true;
-                      _recordStart = DateTime.now();
-                    });
+                    setState(() => _isRecording = true);
+                    _startVideoRecording();
                   },
                   onLongPressEnd: (_) async {
-                    // Only trigger video recording if press lasted > 0.2 seconds
                     if (_isRecording) {
                       setState(() => _isRecording = false);
-                      await _takeVideo();
+                      await _stopVideoRecording();
                     }
                   },
                   child: Container(

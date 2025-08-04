@@ -11,7 +11,7 @@ import 'package:fouta_app/screens/events_list_screen.dart';
 import 'package:fouta_app/screens/notifications_screen.dart';
 import 'package:fouta_app/screens/unified_settings_screen.dart';
 import 'package:fouta_app/widgets/stories_tray.dart';
-import 'package:intl/intl.dart';
+import 'package:fouta_app/utils/date_utils.dart';
 import 'dart:async';
 import 'package:badges/badges.dart' as badges;
 // Explicitly import ScrollDirection enum for userScrollDirection checks
@@ -621,9 +621,17 @@ class _FeedTabState extends State<FeedTab> {
       color: Theme.of(context).colorScheme.primary,
       child: Column(
         children: [
-          const StoriesTray(),
+          // Prevent users from vertically dragging to hide the stories tray
+          GestureDetector(
+            onVerticalDragDown: (_) {},
+            onVerticalDragStart: (_) {},
+            onVerticalDragUpdate: (_) {},
+            onVerticalDragEnd: (_) {},
+            child: const StoriesTray(),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+
             child: Material(
               type: MaterialType.transparency,
               child: Row(
@@ -650,6 +658,7 @@ class _FeedTabState extends State<FeedTab> {
                   ),
                 ],
               ),
+
             ),
           ),
           Expanded(
@@ -719,9 +728,9 @@ class _ChatsTabState extends State<ChatsTab> {
   }
 
   String _formatTimestamp(Timestamp? timestamp) {
-    if (timestamp == null) return 'Just now';
-    final DateTime date = timestamp.toDate();
-    return DateFormat('HH:mm').format(date);
+    final date = timestamp?.toDate();
+    if (date == null) return 'Just now';
+    return DateUtilsHelper.formatRelative(date);
   }
 
   @override
@@ -1052,8 +1061,11 @@ class _PeopleTabState extends State<PeopleTab> {
               onChanged: (value) => setState(() {}),
             ),
           ),
-          const TabBar(
-            tabs: [
+          TabBar(
+            labelColor: Theme.of(context).colorScheme.onSurface,
+            unselectedLabelColor:
+                Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            tabs: const [
               Tab(text: 'Suggestions'),
               Tab(text: 'Following'),
               Tab(text: 'Followers'),
