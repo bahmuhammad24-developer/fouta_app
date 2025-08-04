@@ -49,7 +49,9 @@ android {
         // IMPORTANT: Change this to a unique package name for your app.
         // Example: "com.yourcompany.foutaapp" or "com.fouta.appname"
         applicationId = "com.fouta.foutaapp" // Changed from "com.example.fouta_app"
-        minSdk = flutter.minSdkVersion.toInt()
+        // The record_android plugin requires a minimum SDK version of 23.
+        // Override Flutter's default minSdkVersion (usually 21) to satisfy this requirement.
+        minSdk = maxOf(flutter.minSdkVersion.toInt(), 23)
         targetSdk = flutter.targetSdkVersion.toInt()
         versionCode = flutter.versionCode.toInt()
         versionName = flutter.versionName
