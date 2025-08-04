@@ -269,22 +269,29 @@ class _NotificationsButton extends StatelessWidget {
       stream: unreadStream,
       builder: (context, snapshot) {
         final unreadCount = snapshot.data ?? 0;
-        return badges.Badge(
-          showBadge: unreadCount > 0,
-          badgeStyle: badges.BadgeStyle(badgeColor: Theme.of(context).colorScheme.error),
-          badgeContent: Text(
-            unreadCount > 99 ? '99+' : '$unreadCount',
-            style: const TextStyle(color: Colors.white, fontSize: 10),
+        return IconButton(
+          icon: badges.Badge(
+            showBadge: unreadCount > 0,
+            badgeStyle: badges.BadgeStyle(
+              badgeColor: Theme.of(context).colorScheme.error,
+            ),
+            badgeContent: Text(
+              unreadCount > 99 ? '99+' : '$unreadCount',
+              style: const TextStyle(color: Colors.white, fontSize: 10),
+            ),
+            position: badges.BadgePosition.topEnd(top: 0, end: 3),
+            child: const Icon(Icons.notifications_outlined),
           ),
-          position: badges.BadgePosition.topEnd(top: 0, end: 3),
-          child: IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            tooltip: 'Notifications',
-            onPressed: () {
-              _markNotificationsAsRead(context);
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsScreen()));
-            },
-          ),
+          tooltip: 'Notifications',
+          onPressed: () {
+            _markNotificationsAsRead(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const NotificationsScreen(),
+              ),
+            );
+          },
         );
       },
     );
