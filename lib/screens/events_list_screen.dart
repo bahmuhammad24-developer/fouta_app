@@ -36,8 +36,11 @@ class _EventsListScreenState extends State<EventsListScreen> {
               onPressed: _showFilterDialog,
             ),
           ],
-          bottom: const TabBar(
-            tabs: [
+          bottom: TabBar(
+            labelColor: Theme.of(context).colorScheme.onSurface,
+            unselectedLabelColor:
+                Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            tabs: const [
               Tab(text: 'For You'),
               Tab(text: 'My Events'),
               Tab(text: 'Browse'),

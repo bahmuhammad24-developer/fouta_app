@@ -1050,8 +1050,11 @@ class _PeopleTabState extends State<PeopleTab> {
               onChanged: (value) => setState(() {}),
             ),
           ),
-          const TabBar(
-            tabs: [
+          TabBar(
+            labelColor: Theme.of(context).colorScheme.onSurface,
+            unselectedLabelColor:
+                Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            tabs: const [
               Tab(text: 'Suggestions'),
               Tab(text: 'Following'),
               Tab(text: 'Followers'),
