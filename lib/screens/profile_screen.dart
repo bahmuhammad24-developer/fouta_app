@@ -15,6 +15,8 @@ import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/chat_screen.dart';
 import 'package:fouta_app/widgets/full_screen_image_viewer.dart';
 import 'package:fouta_app/widgets/post_card_widget.dart';
+import 'package:fouta_app/widgets/fouta_button.dart';
+import 'package:fouta_app/screens/create_post_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userId;
@@ -440,10 +442,33 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-        if (snapshot.data!.docs.isEmpty) return Center(child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 32.0),
-          child: Text(isMyProfile ? 'You have no posts yet.' : 'This user has no posts yet.'),
-        ));
+        if (snapshot.data!.docs.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(isMyProfile ? 'You have no posts yet.' : 'This user has no posts yet.'),
+                  if (isMyProfile) ...[
+                    const SizedBox(height: 16),
+                    FoutaButton(
+                      label: 'Create Post',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const CreatePostScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        }
         
         return ListView.builder(
           physics: const NeverScrollableScrollPhysics(),
@@ -478,10 +503,32 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           return const Center(child: CircularProgressIndicator());
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 32.0),
-            child: Text('No media posted yet.'),
-          ));
+          final bool isMyProfile = currentUser != null && currentUser.uid == widget.userId;
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('No media posted yet.'),
+                  if (isMyProfile) ...[
+                    const SizedBox(height: 16),
+                    FoutaButton(
+                      label: 'Add Media',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const CreatePostScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
         }
         final posts = snapshot.data!.docs;
         return GridView.builder(

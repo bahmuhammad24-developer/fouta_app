@@ -6,6 +6,7 @@ import 'package:fouta_app/screens/group_member_selection_screen.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/chat_screen.dart';
+import 'package:fouta_app/widgets/fouta_button.dart';
 
 class NewChatScreen extends StatefulWidget {
   const NewChatScreen({super.key});
@@ -56,7 +57,19 @@ class _NewChatScreenState extends State<NewChatScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text('No other users found.'));
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('No other users found.'),
+                        const SizedBox(height: 16),
+                        FoutaButton(
+                          label: 'Refresh',
+                          onPressed: () => setState(() {}),
+                        ),
+                      ],
+                    ),
+                  );
                 }
 
                 return ListView.builder(

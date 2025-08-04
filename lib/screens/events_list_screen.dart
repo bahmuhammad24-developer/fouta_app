@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fouta_app/main.dart';
 import 'package:fouta_app/screens/create_event_screen.dart';
 import 'package:fouta_app/screens/event_details_screen.dart';
+import 'package:fouta_app/widgets/fouta_button.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -199,7 +200,26 @@ class _EventsListScreenState extends State<EventsListScreen> {
           return const Center(child: CircularProgressIndicator());
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('No events found.'));
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('No events found.'),
+                const SizedBox(height: 16),
+                FoutaButton(
+                  label: 'Create Event',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CreateEventScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
         }
         final events = snapshot.data!.docs;
         return ListView.builder(

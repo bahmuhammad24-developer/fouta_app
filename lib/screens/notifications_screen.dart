@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fouta_app/main.dart';
 import 'package:fouta_app/screens/post_detail_screen.dart';
 import 'package:fouta_app/screens/profile_screen.dart';
+import 'package:fouta_app/screens/create_post_screen.dart';
+import 'package:fouta_app/widgets/fouta_button.dart';
 import 'package:intl/intl.dart';
 
 class NotificationsScreen extends StatelessWidget {
@@ -36,7 +38,26 @@ class NotificationsScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('No notifications yet.'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('No notifications yet.'),
+                  const SizedBox(height: 16),
+                  FoutaButton(
+                    label: 'Create Post',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CreatePostScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            );
           }
 
           final notifications = snapshot.data!.docs;
