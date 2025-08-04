@@ -11,7 +11,7 @@ import 'package:fouta_app/screens/events_list_screen.dart';
 import 'package:fouta_app/screens/notifications_screen.dart';
 import 'package:fouta_app/screens/unified_settings_screen.dart';
 import 'package:fouta_app/widgets/stories_tray.dart';
-import 'package:intl/intl.dart';
+import 'package:fouta_app/utils/date_utils.dart';
 import 'dart:async';
 import 'package:badges/badges.dart' as badges;
 // Explicitly import ScrollDirection enum for userScrollDirection checks
@@ -717,9 +717,9 @@ class _ChatsTabState extends State<ChatsTab> {
   }
 
   String _formatTimestamp(Timestamp? timestamp) {
-    if (timestamp == null) return 'Just now';
-    final DateTime date = timestamp.toDate();
-    return DateFormat('HH:mm').format(date);
+    final date = timestamp?.toDate();
+    if (date == null) return 'Just now';
+    return DateUtilsHelper.formatRelative(date);
   }
 
   @override
