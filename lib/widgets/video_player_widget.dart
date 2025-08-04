@@ -97,6 +97,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   
   void _releasePlayer() {
     if (_player != null) {
+      _controller?.dispose();
       _playerManager.releasePlayer(widget.videoId);
       if (mounted) {
         setState(() {

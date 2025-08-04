@@ -56,6 +56,7 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
 
   @override
   void dispose() {
+    _controller?.dispose();
     _player.dispose();
     SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.manual,

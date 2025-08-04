@@ -164,6 +164,7 @@ class _MediaFilePageState extends State<_MediaFilePage> {
 
   @override
   void dispose() {
+    _controller?.dispose();
     _player?.dispose();
     super.dispose();
   }
