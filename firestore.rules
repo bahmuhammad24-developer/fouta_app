@@ -12,5 +12,12 @@ service cloud.firestore {
       );
 
     }
+
+    // Allow chat participants to read chat documents so Storage rules
+    // can verify membership before granting access to chat media.
+    match /artifacts/{project}/public/data/chats/{chatId} {
+      allow read: if request.auth != null &&
+        resource.data.participants.hasAny([request.auth.uid]);
+    }
   }
 }
