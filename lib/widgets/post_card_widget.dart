@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:fouta_app/widgets/video_player_widget.dart';
-import 'package:intl/intl.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:fouta_app/utils/date_utils.dart';
 
@@ -23,6 +22,8 @@ class PostCardWidget extends StatefulWidget {
   final User? currentUser;
   final String appId;
   final Function(String) onMessage;
+  final bool isDataSaverOn;
+  final bool isOnMobileData;
 
   const PostCardWidget({
     super.key,
@@ -31,6 +32,8 @@ class PostCardWidget extends StatefulWidget {
     required this.currentUser,
     required this.appId,
     required this.onMessage,
+    required this.isDataSaverOn,
+    required this.isOnMobileData,
   });
 
   @override
@@ -40,7 +43,6 @@ class PostCardWidget extends StatefulWidget {
 class _PostCardWidgetState extends State<PostCardWidget> {
   final TextEditingController _commentInputController = TextEditingController();
   bool _showComments = false;
-  bool _showVideoControls = false;
   bool _isPostVisible = false;
 
   late bool _isLiked;
@@ -560,6 +562,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
     final String type = first['type'] ?? 'image';
     final String url = first['url'] ?? '';
     final double? aspectRatio = first['aspectRatio'] as double?;
+    final bool allowAutoplay = !widget.isDataSaverOn || !widget.isOnMobileData;
     Widget thumb;
     switch (type) {
       case 'image':
@@ -585,24 +588,37 @@ class _PostCardWidgetState extends State<PostCardWidget> {
         );
         break;
       case 'video':
-        thumb = ClipRRect(
-          borderRadius: BorderRadius.circular(8.0),
-          child: AspectRatio(
-            aspectRatio: aspectRatio ?? 16 / 9,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Thumbnail placeholder for video.  Currently we just show a dark
-                // container with a play icon overlay.  In the future, we can
-                // generate actual video thumbnails during upload.
-                Container(color: Colors.black54),
-                const Center(
-                  child: Icon(Icons.play_circle_fill, color: Colors.white70, size: 56),
-                ),
-              ],
+        if (allowAutoplay) {
+          thumb = ClipRRect(
+            borderRadius: BorderRadius.circular(8.0),
+            child: VideoPlayerWidget(
+              videoUrl: url,
+              videoId: widget.postId,
+              aspectRatio: aspectRatio,
+              areControlsVisible: false,
+              shouldInitialize: _isPostVisible,
             ),
-          ),
-        );
+          );
+        } else {
+          thumb = ClipRRect(
+            borderRadius: BorderRadius.circular(8.0),
+            child: AspectRatio(
+              aspectRatio: aspectRatio ?? 16 / 9,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Thumbnail placeholder for video.  Currently we just show a dark
+                  // container with a play icon overlay.  In the future, we can
+                  // generate actual video thumbnails during upload.
+                  Container(color: Colors.black54),
+                  const Center(
+                    child: Icon(Icons.play_circle_fill, color: Colors.white70, size: 56),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
         break;
       default:
         thumb = const SizedBox.shrink();
