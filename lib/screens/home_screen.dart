@@ -631,32 +631,31 @@ class _FeedTabState extends State<FeedTab> {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Container(
-              color: Colors.transparent,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ChoiceChip(
-                    label: const Text('Explore'),
-                    selected: !_showFollowingFeed,
-                    onSelected: (selected) {
-                      setState(() {
-                        _showFollowingFeed = false;
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  ChoiceChip(
-                    label: const Text('Following'),
-                    selected: _showFollowingFeed,
-                    onSelected: (selected) {
-                      setState(() {
-                        _showFollowingFeed = true;
-                      });
-                    },
-                  ),
-                ],
-              ),
+
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ChoiceChip(
+                  label: const Text('Explore'),
+                  selected: !_showFollowingFeed,
+                  onSelected: (selected) {
+                    setState(() {
+                      _showFollowingFeed = false;
+                    });
+                  },
+                ),
+                const SizedBox(width: 8),
+                ChoiceChip(
+                  label: const Text('Following'),
+                  selected: _showFollowingFeed,
+                  onSelected: (selected) {
+                    setState(() {
+                      _showFollowingFeed = true;
+                    });
+                  },
+                ),
+              ],
+
             ),
           ),
           Expanded(
