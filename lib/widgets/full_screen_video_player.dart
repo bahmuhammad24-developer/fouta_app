@@ -11,10 +11,10 @@ class FullScreenVideoPlayer extends StatefulWidget {
   final Duration initialPosition;
 
   const FullScreenVideoPlayer({
-    super.key,
+    Key? key,
     required this.videoUrl,
     required this.initialPosition,
-  });
+  }) : super(key: key ?? ValueKey(videoUrl));
 
   @override
   State<FullScreenVideoPlayer> createState() => _FullScreenVideoPlayerState();
@@ -80,7 +80,11 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
               child: _isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
                   : (_controller != null)
-                      ? Video(controller: _controller!, controls: AdaptiveVideoControls)
+                      ? Video(
+                          key: ValueKey(widget.videoUrl),
+                          controller: _controller!,
+                          controls: AdaptiveVideoControls,
+                        )
                       : const Text("Error loading video.", style: TextStyle(color: Colors.white)),
             ),
             // Close button overlay

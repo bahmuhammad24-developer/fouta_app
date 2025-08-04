@@ -73,6 +73,7 @@ class _MediaViewerState extends State<MediaViewer> {
                 final String url = media['url'] ?? '';
                 final double? aspectRatio = media['aspectRatio'] as double?;
                 return _MediaFilePage(
+                  key: ValueKey(url),
                   url: url,
                   type: type,
                   aspectRatio: aspectRatio,
@@ -116,7 +117,12 @@ class _MediaFilePage extends StatefulWidget {
   final String type;
   final double? aspectRatio;
 
-  const _MediaFilePage({required this.url, required this.type, this.aspectRatio});
+  const _MediaFilePage({
+    Key? key,
+    required this.url,
+    required this.type,
+    this.aspectRatio,
+  }) : super(key: key ?? ValueKey(url));
 
   @override
   State<_MediaFilePage> createState() => _MediaFilePageState();
@@ -199,6 +205,7 @@ class _MediaFilePageState extends State<_MediaFilePage> {
           AspectRatio(
             aspectRatio: widget.aspectRatio ?? 16 / 9,
             child: Video(
+              key: ValueKey(widget.url),
               controller: _controller!,
               controls: AdaptiveVideoControls,
             ),

@@ -17,13 +17,13 @@ class VideoPlayerWidget extends StatefulWidget {
   final bool shouldInitialize; // New property to trigger loading
 
   const VideoPlayerWidget({
-    super.key,
+    Key? key,
     required this.videoUrl,
     required this.videoId,
     this.aspectRatio,
     required this.areControlsVisible,
     required this.shouldInitialize,
-  });
+  }) : super(key: key ?? ValueKey(videoId));
 
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
@@ -153,6 +153,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             alignment: Alignment.center,
             children: [
               Video(
+                key: ValueKey(widget.videoId),
                 controller: _controller!,
                 controls: null,
               ),

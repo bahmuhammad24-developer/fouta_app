@@ -8,7 +8,8 @@ import 'package:fouta_app/utils/video_controller_extensions.dart';
 
 class ChatVideoPlayer extends StatefulWidget {
   final String videoUrl;
-  const ChatVideoPlayer({super.key, required this.videoUrl});
+  const ChatVideoPlayer({Key? key, required this.videoUrl})
+      : super(key: key ?? ValueKey(videoUrl));
 
   @override
   State<ChatVideoPlayer> createState() => _ChatVideoPlayerState();
@@ -82,6 +83,7 @@ class _ChatVideoPlayerState extends State<ChatVideoPlayer> {
     return GestureDetector(
       onTap: () => _player.playOrPause(),
       child: Video(
+        key: ValueKey(widget.videoUrl),
         controller: _controller!,
         width: 150,
         height: 150,

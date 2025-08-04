@@ -17,10 +17,10 @@ class StoryViewerScreen extends StatefulWidget {
   final int initialStoryIndex;
 
   const StoryViewerScreen({
-    super.key,
+    Key? key,
     required this.stories,
     required this.initialStoryIndex,
-  });
+  }) : super(key: key ?? ValueKey(initialStoryIndex));
 
   @override
   State<StoryViewerScreen> createState() => _StoryViewerScreenState();
@@ -230,6 +230,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                     Center(
                       child: _videoController != null
                           ? Video(
+                              key: ValueKey(currentSlide.id),
                               controller: _videoController!,
                               fit: BoxFit.contain,
                             )

@@ -17,10 +17,10 @@ class StoryCreationScreen extends StatefulWidget {
   final bool isVideo;
 
   const StoryCreationScreen({
-    super.key,
+    Key? key,
     required this.initialMediaPath,
     required this.isVideo,
-  });
+  }) : super(key: key ?? ValueKey(initialMediaPath));
 
   @override
   State<StoryCreationScreen> createState() => _StoryCreationScreenState();
@@ -65,6 +65,7 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
     if (widget.isVideo) {
       preview = (_controller != null)
           ? Video(
+              key: ValueKey(widget.initialMediaPath),
               controller: _controller!,
               fit: BoxFit.contain,
             )
