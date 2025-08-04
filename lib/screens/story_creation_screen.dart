@@ -1,8 +1,12 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:fouta_app/utils/firestore_paths.dart';
 import 'package:fouta_app/utils/video_controller_extensions.dart';
 
 /// Screen used to create and post a story.
@@ -29,6 +33,7 @@ class StoryCreationScreen extends StatefulWidget {
 class _StoryCreationScreenState extends State<StoryCreationScreen> {
   Player? _player;
   VideoController? _controller;
+  bool _isUploading = false;
 
   @override
   void initState() {
@@ -82,16 +87,89 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
         title: const Text('Create Story'),
       ),
       backgroundColor: Colors.black,
-      body: Center(child: preview),
+      body: Center(
+        child: _isUploading
+            ? const CircularProgressIndicator(color: Colors.white)
+            : preview,
+      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // In a full implementation this would upload the story and then
-          // navigate away. For now it simply pops back to the previous screen.
-          Navigator.pop(context);
-        },
+        onPressed: _isUploading ? null : _uploadStory,
         child: const Icon(Icons.send),
       ),
     );
+  }
+
+  Future<void> _uploadStory() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please log in to post stories')),
+        );
+      }
+      return;
+    }
+
+    setState(() => _isUploading = true);
+    try {
+      final mediaFile = File(widget.initialMediaPath);
+      final String ext = widget.isVideo ? 'mp4' : 'jpg';
+      final String storagePath =
+          'stories/${user.uid}/${DateTime.now().millisecondsSinceEpoch}.$ext';
+      final ref = FirebaseStorage.instance.ref().child(storagePath);
+      final metadata = SettableMetadata(
+        contentType: widget.isVideo ? 'video/mp4' : 'image/jpeg',
+      );
+      final uploadTask = ref.putFile(mediaFile, metadata);
+      await uploadTask;
+      final mediaUrl = await ref.getDownloadURL();
+
+      // Fetch author details for display in story tray
+      String displayName = user.email?.split('@')[0] ?? 'User';
+      String imageUrl = '';
+      try {
+        final userDoc = await FirebaseFirestore.instance
+            .collection(FirestorePaths.users())
+            .doc(user.uid)
+            .get();
+        if (userDoc.exists) {
+          final data = userDoc.data()!;
+          displayName = data['displayName'] ?? displayName;
+          imageUrl = data['profileImageUrl'] ?? '';
+        }
+      } catch (_) {}
+
+      final storiesRef =
+          FirebaseFirestore.instance.collection(FirestorePaths.stories());
+      final storyDoc = storiesRef.doc(user.uid);
+
+      await storyDoc.set({
+        'authorName': displayName,
+        'authorImageUrl': imageUrl,
+        'lastUpdated': FieldValue.serverTimestamp(),
+        'expiresAt': Timestamp.fromDate(
+            DateTime.now().add(const Duration(hours: 24))),
+        'viewedBy': [],
+      }, SetOptions(merge: true));
+
+      await storyDoc.collection('slides').add({
+        'mediaUrl': mediaUrl,
+        'mediaType': widget.isVideo ? 'video' : 'image',
+        'createdAt': FieldValue.serverTimestamp(),
+        'viewers': [],
+      });
+
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      debugPrint('Error uploading story: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to upload story')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
   }
 }
 
