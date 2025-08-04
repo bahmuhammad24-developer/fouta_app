@@ -45,6 +45,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   StreamSubscription? _unreadChatsSubscription;
   Stream<int>? _unreadNotificationsStream;
   int _unreadChatsCount = 0;
+  bool _showNewChatFab = true;
 
   final List<GlobalKey<NavigatorState>> _navigatorKeys = [
     GlobalKey<NavigatorState>(),
@@ -115,6 +116,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
+  void _setShowNewChatFab(bool show) {
+    if (_showNewChatFab == show) return;
+    setState(() {
+      _showNewChatFab = show;
+    });
+  }
+
   void _onItemTapped(int index) {
     if (_selectedIndex == index) {
       _navigatorKeys[index].currentState?.popUntil((route) => route.isFirst);
@@ -143,9 +151,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return FloatingActionButton(
       heroTag: 'newChatFab',
       onPressed: () async {
+        _setShowNewChatFab(false);
         _setNavBarVisibility(false);
         await Navigator.push(context, MaterialPageRoute(builder: (context) => const NewChatScreen()));
         _setNavBarVisibility(true);
+        _setShowNewChatFab(true);
       },
       child: const Icon(Icons.message),
       tooltip: 'Start New Chat',
@@ -167,8 +177,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       },
         child: Scaffold(
           endDrawer: _AppDrawer(showMessage: _showMessage),
-          // Show the New Chat FAB only when on the chat tab root (the chat list) and not inside a nested chat screen.
-          floatingActionButton: (_selectedIndex == 1 && !(_navigatorKeys[_selectedIndex].currentState?.canPop() ?? false))
+          // Show the New Chat FAB only on the chats list screen
+          floatingActionButton: (_selectedIndex == 1 && _showNewChatFab)
               ? _buildNewChatFab(context)
               : null,
           bottomNavigationBar: AnimatedBuilder(
@@ -244,7 +254,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         _buildOffstageNavigator(
                             0, FeedTab(setNavBarVisibility: _setNavBarVisibility)),
                         _buildOffstageNavigator(
-                            1, ChatsTab(setNavBarVisibility: _setNavBarVisibility)),
+                            1, ChatsTab(setNavBarVisibility: _setNavBarVisibility, setShowNewChatFab: _setShowNewChatFab)),
                         _buildOffstageNavigator(
                             2, const EventsListScreen()),
                         _buildOffstageNavigator(3, const PeopleTab()),
@@ -795,7 +805,8 @@ class _FeedTabState extends State<FeedTab> {
 
 class ChatsTab extends StatefulWidget {
   final Function(bool) setNavBarVisibility;
-  const ChatsTab({super.key, required this.setNavBarVisibility});
+  final Function(bool) setShowNewChatFab;
+  const ChatsTab({super.key, required this.setNavBarVisibility, required this.setShowNewChatFab});
 
   @override
   State<ChatsTab> createState() => _ChatsTabState();
@@ -899,6 +910,7 @@ class _ChatsTabState extends State<ChatsTab> {
                     chatDocId: chatDoc.id,
                     currentUserId: currentUser.uid,
                     setNavBarVisibility: widget.setNavBarVisibility,
+                    setShowNewChatFab: widget.setShowNewChatFab,
                     formatTimestamp: _formatTimestamp,
                     searchQuery: _searchQuery,
                   );
@@ -919,6 +931,7 @@ class _ChatListItem extends StatelessWidget {
     required this.chatDocId,
     required this.currentUserId,
     required this.setNavBarVisibility,
+    required this.setShowNewChatFab,
     required this.formatTimestamp,
     required this.searchQuery,
   });
@@ -927,6 +940,7 @@ class _ChatListItem extends StatelessWidget {
   final String chatDocId;
   final String currentUserId;
   final Function(bool) setNavBarVisibility;
+  final Function(bool) setShowNewChatFab;
   final String Function(Timestamp?) formatTimestamp;
   final String searchQuery;
 
@@ -958,7 +972,9 @@ class _ChatListItem extends StatelessWidget {
         timestamp: formatTimestamp(chat['lastMessageTimestamp'] as Timestamp?),
         onTap: () async {
           setNavBarVisibility(false);
+          setShowNewChatFab(false);
           await Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(chatId: chatDocId)));
+          setShowNewChatFab(true);
           setNavBarVisibility(true);
         },
       );
@@ -992,7 +1008,9 @@ class _ChatListItem extends StatelessWidget {
             timestamp: formatTimestamp(chat['lastMessageTimestamp'] as Timestamp?),
             onTap: () async {
               setNavBarVisibility(false);
+              setShowNewChatFab(false);
               await Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(chatId: chatDocId, otherUserId: null, otherUserName: displayName)));
+              setShowNewChatFab(true);
               setNavBarVisibility(true);
             },
           );
@@ -1024,7 +1042,9 @@ class _ChatListItem extends StatelessWidget {
             timestamp: formatTimestamp(chat['lastMessageTimestamp'] as Timestamp?),
             onTap: () async {
               setNavBarVisibility(false);
+              setShowNewChatFab(false);
               await Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(chatId: chatDocId, otherUserId: otherUserId, otherUserName: displayName)));
+              setShowNewChatFab(true);
               setNavBarVisibility(true);
             },
           );
