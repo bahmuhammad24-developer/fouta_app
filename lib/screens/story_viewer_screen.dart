@@ -88,10 +88,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     // Mark story as viewed by current user
     _markStoryViewed(widget.stories[storyIndex].userId);
 
-    _playStorySlide();
+    await _playStorySlide();
   }
 
-  void _playStorySlide() {
+  Future<void> _playStorySlide() async {
     if (_slides.isEmpty) return;
     final StorySlide slide = _slides[_currentSlideIndex];
     // Record that the current user has viewed this slide
@@ -102,10 +102,15 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     }
     if (slide.mediaType == 'video') {
       _isCurrentSlideVideo = true;
-      _initializeVideo(slide);
+      await _initializeVideo(slide);
     } else {
       _isCurrentSlideVideo = false;
       _disposeVideo();
+      try {
+        await precacheImage(CachedNetworkImageProvider(slide.url), context);
+      } catch (_) {
+        // Ignore precache errors and still advance
+      }
       _animationController.duration = const Duration(seconds: 5);
       _animationController.forward(from: 0);
     }
@@ -115,7 +120,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     setState(() {
       if (_currentSlideIndex + 1 < _slides.length) {
         _currentSlideIndex++;
-        _playStorySlide();
+        unawaited(_playStorySlide());
       } else {
         _nextStory();
       }
@@ -126,12 +131,22 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     setState(() {
       if (_currentSlideIndex - 1 >= 0) {
         _currentSlideIndex--;
-        _playStorySlide();
+        unawaited(_playStorySlide());
       } else {
         // If on the first slide, restart the timer
-        _playStorySlide();
+        unawaited(_playStorySlide());
       }
     });
+  }
+
+  void _restartCurrentSlide() {
+    _animationController.stop();
+    _animationController.reset();
+    if (_isCurrentSlideVideo && _videoPlayer != null) {
+      _videoPlayer!.seek(Duration.zero);
+      _videoPlayer!.play();
+    }
+    _animationController.forward(from: 0);
   }
   
   void _nextStory() {
@@ -156,7 +171,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     // restarting the entire story chain.
     final width = MediaQuery.of(context).size.width;
     if (details.globalPosition.dx < width / 2) {
-      _previousSlide();
+      if (_animationController.value > 0.05) {
+        _restartCurrentSlide();
+      } else {
+        _previousSlide();
+      }
     } else {
       _nextSlide();
     }
@@ -309,8 +328,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
         _videoController = VideoController(_videoPlayer!);
       });
       _videoPlayer!.setPlaylistMode(PlaylistMode.single);
-      _videoPlayer!.play();
-      // Mirror video length in the story progress bar
+      await _videoPlayer!.play();
+      // Mirror video length in the story progress bar only after playback starts
       _animationController.duration = effectiveDuration;
       _animationController.forward(from: 0);
       // Advance to next slide when video completes
