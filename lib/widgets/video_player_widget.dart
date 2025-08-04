@@ -6,6 +6,7 @@ import 'package:fouta_app/widgets/full_screen_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:fouta_app/utils/video_controller_extensions.dart';
 import 'package:provider/provider.dart';
 
 class VideoPlayerWidget extends StatefulWidget {
@@ -16,13 +17,13 @@ class VideoPlayerWidget extends StatefulWidget {
   final bool shouldInitialize; // New property to trigger loading
 
   const VideoPlayerWidget({
-    super.key,
+    Key? key,
     required this.videoUrl,
     required this.videoId,
     this.aspectRatio,
     required this.areControlsVisible,
     required this.shouldInitialize,
-  });
+  }) : super(key: key ?? ValueKey(videoId));
 
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
@@ -97,6 +98,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   
   void _releasePlayer() {
     if (_player != null) {
+      _controller?.dispose();
       _playerManager.releasePlayer(widget.videoId);
       if (mounted) {
         setState(() {
@@ -151,6 +153,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             alignment: Alignment.center,
             children: [
               Video(
+                key: ValueKey(widget.videoId),
                 controller: _controller!,
                 controls: null,
               ),

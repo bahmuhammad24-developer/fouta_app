@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:fouta_app/services/video_cache_service.dart';
+import 'package:fouta_app/utils/video_controller_extensions.dart';
 
 /// A unified full‑screen media viewer that can display a list of images and
 /// videos.  Users can swipe between items, pinch to zoom on photos, and
@@ -72,6 +73,7 @@ class _MediaViewerState extends State<MediaViewer> {
                 final String url = media['url'] ?? '';
                 final double? aspectRatio = media['aspectRatio'] as double?;
                 return _MediaFilePage(
+                  key: ValueKey(url),
                   url: url,
                   type: type,
                   aspectRatio: aspectRatio,
@@ -115,7 +117,12 @@ class _MediaFilePage extends StatefulWidget {
   final String type;
   final double? aspectRatio;
 
-  const _MediaFilePage({required this.url, required this.type, this.aspectRatio});
+  const _MediaFilePage({
+    Key? key,
+    required this.url,
+    required this.type,
+    this.aspectRatio,
+  }) : super(key: key ?? ValueKey(url));
 
   @override
   State<_MediaFilePage> createState() => _MediaFilePageState();
@@ -164,6 +171,7 @@ class _MediaFilePageState extends State<_MediaFilePage> {
 
   @override
   void dispose() {
+    _controller?.dispose();
     _player?.dispose();
     super.dispose();
   }
@@ -197,6 +205,7 @@ class _MediaFilePageState extends State<_MediaFilePage> {
           AspectRatio(
             aspectRatio: widget.aspectRatio ?? 16 / 9,
             child: Video(
+              key: ValueKey(widget.url),
               controller: _controller!,
               controls: AdaptiveVideoControls,
             ),

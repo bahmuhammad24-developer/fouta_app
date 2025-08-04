@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:fouta_app/utils/video_controller_extensions.dart';
 
 /// Screen used to create and post a story.
 ///
@@ -16,10 +17,10 @@ class StoryCreationScreen extends StatefulWidget {
   final bool isVideo;
 
   const StoryCreationScreen({
-    super.key,
+    Key? key,
     required this.initialMediaPath,
     required this.isVideo,
-  });
+  }) : super(key: key ?? ValueKey(initialMediaPath));
 
   @override
   State<StoryCreationScreen> createState() => _StoryCreationScreenState();
@@ -53,6 +54,7 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
 
   @override
   void dispose() {
+    _controller?.dispose();
     _player?.dispose();
     super.dispose();
   }
@@ -63,6 +65,7 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
     if (widget.isVideo) {
       preview = (_controller != null)
           ? Video(
+              key: ValueKey(widget.initialMediaPath),
               controller: _controller!,
               fit: BoxFit.contain,
             )
