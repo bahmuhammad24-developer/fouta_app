@@ -379,8 +379,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
   Future<void> _markSlideViewed(String storyUserId, StorySlide slide) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
-    // Avoid duplicate writes if user already in viewers list
-    if (slide.viewers.contains(currentUser.uid)) return;
     try {
       await FirebaseFirestore.instance
           .collection('artifacts/$APP_ID/public/data/stories')
@@ -390,8 +388,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
           .update({
         'viewers': FieldValue.arrayUnion([currentUser.uid])
       });
-      // Update local state to include this viewer
-      slide.viewers.add(currentUser.uid);
     } catch (_) {
       // ignore errors
     }
