@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 /// relative manner. These helpers convert a [DateTime] into strings like
 /// "Just now", "5 mins ago", "Yesterday", or a formatted date. The
 /// thresholds are based on common UX guidelines that recommend relative
-/// timestamps until about seven days after the event【335098120425566†L238-L260】.
+/// timestamps until about seven days after the event.
 class DateUtilsHelper {
   /// Returns a human‑friendly relative string for the given [date].
   ///
@@ -18,6 +18,30 @@ class DateUtilsHelper {
   static String formatRelative(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
+
+    // Handle future dates by flipping the difference and using "in" phrasing.
+    if (difference.isNegative) {
+      final futureDiff = date.difference(now);
+      if (futureDiff.inMinutes < 1) {
+        return 'In a moment';
+      }
+      if (futureDiff.inMinutes < 60) {
+        final mins = futureDiff.inMinutes;
+        return 'In ${mins} min${mins == 1 ? '' : 's'}';
+      }
+      if (futureDiff.inHours < 24) {
+        final hours = futureDiff.inHours;
+        return 'In ${hours} hour${hours == 1 ? '' : 's'}';
+      }
+      if (futureDiff.inDays == 1) {
+        return 'Tomorrow';
+      }
+      if (futureDiff.inDays < 7) {
+        return DateFormat('EEEE').format(date);
+      }
+      return DateFormat('MM/dd/yyyy').format(date);
+    }
+
     // Less than 1 minute.
     if (difference.inMinutes < 1) {
       return 'Just now';

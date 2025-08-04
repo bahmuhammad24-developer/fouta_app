@@ -547,7 +547,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
     final DateTime date = timestamp.toDate();
     // Use a relative format for timestamps. This helper returns strings like
     // "Just now", "5 mins ago", "Yesterday", or a short date depending on
-    // how long ago the event occurred【335098120425566†L238-L260】.
+    // how long ago the event occurred.
     return DateUtilsHelper.formatRelative(date);
   }
   //</editor-fold>
