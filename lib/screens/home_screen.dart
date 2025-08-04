@@ -28,6 +28,7 @@ import 'package:fouta_app/screens/profile_screen.dart';
 import 'package:fouta_app/widgets/post_card_widget.dart';
 import 'package:fouta_app/utils/firestore_paths.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
+import 'package:fouta_app/widgets/fouta_card.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -661,11 +662,18 @@ class _FeedTabState extends State<FeedTab> {
             onVerticalDragStart: (_) {},
             onVerticalDragUpdate: (_) {},
             onVerticalDragEnd: (_) {},
-            child: FoutaCard(
-              padding: EdgeInsets.zero,
-              child: const StoriesTray(),
+              child: FoutaCard(
+                padding: EdgeInsets.zero,
+                // FoutaCard previously expected a [Row] child. Wrapping the
+                // stories tray in a Row maintains that contract while letting
+                // the tray widget handle its own layout.
+                child: const Row(
+                  children: [
+                    Expanded(child: StoriesTray()),
+                  ],
+                ),
+              ),
             ),
-          ),
           FoutaCard(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Row(
