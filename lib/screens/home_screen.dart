@@ -1208,13 +1208,39 @@ class _PeopleTabState extends State<PeopleTab> {
                   return (data['displayName'] ?? '').toLowerCase().contains(searchQuery.toLowerCase());
                 }).toList();
               }
-              if (docs.isEmpty) return Center(child: Text('No users found in this category.'));
+              if (docs.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('No users found in this category.'),
+                      const SizedBox(height: 16),
+                      FoutaButton(
+                        label: 'Refresh',
+                        onPressed: () => setState(() {}),
+                      ),
+                    ],
+                  ),
+                );
+              }
               return _buildUserListView(docs, myFollowing, context, currentUser);
             },
           );
         } else {
           if (targetIds.isEmpty) {
-            return Center(child: Text('No users found in this category.'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('No users found in this category.'),
+                  const SizedBox(height: 16),
+                  FoutaButton(
+                    label: 'Refresh',
+                    onPressed: () => setState(() {}),
+                  ),
+                ],
+              ),
+            );
           }
           // Firestore whereIn supports up to 10 elements; chunk if necessary
           final List<Future<QuerySnapshot>> futures = [];
@@ -1234,7 +1260,21 @@ class _PeopleTabState extends State<PeopleTab> {
                   return (data['displayName'] ?? '').toLowerCase().contains(searchQuery.toLowerCase());
                 }).toList();
               }
-              if (docs.isEmpty) return Center(child: Text('No users found in this category.'));
+              if (docs.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('No users found in this category.'),
+                      const SizedBox(height: 16),
+                      FoutaButton(
+                        label: 'Refresh',
+                        onPressed: () => setState(() {}),
+                      ),
+                    ],
+                  ),
+                );
+              }
               return _buildUserListView(docs, myFollowing, context, currentUser);
             },
           );

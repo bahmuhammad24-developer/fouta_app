@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fouta_app/main.dart';
 import 'package:fouta_app/screens/edit_event_screen.dart';
+import 'package:fouta_app/screens/event_invite_screen.dart';
 import 'package:fouta_app/screens/profile_screen.dart';
+import 'package:fouta_app/widgets/fouta_button.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -177,20 +179,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                             ),
                           ),
                           const Divider(height: 32),
-                          // Display invited users if there are any
-                          if (invited.isNotEmpty)
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Invited (${invited.length})',
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                ),
-                                const SizedBox(height: 8),
-                                _buildInvitedList(invited),
-                                const Divider(height: 32),
-                              ],
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Invited (${invited.length})',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const SizedBox(height: 8),
+                              _buildInvitedList(invited, isCreator),
+                              const Divider(height: 32),
+                            ],
+                          ),
                           // Attendees section
                           Text(
                             'Who\'s Going (${attendees.length})',
@@ -232,10 +232,17 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   Widget _buildAttendeesList(List<dynamic> attendees) {
     if (attendees.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Text('Be the first to RSVP!'),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('Be the first to RSVP!'),
+            const SizedBox(height: 16),
+            FoutaButton(
+              label: 'RSVP',
+              onPressed: () => _toggleRsvp(attendees),
+            ),
+          ],
         ),
       );
     }
@@ -290,12 +297,36 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   // Build a horizontal list of invited users similar to attendees. Users can see who is invited but not yet attending.
-  Widget _buildInvitedList(List<dynamic> invited) {
+  Widget _buildInvitedList(List<dynamic> invited, bool isCreator) {
     if (invited.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Text('No one invited yet.'),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('No one invited yet.'),
+            if (isCreator) ...[
+              const SizedBox(height: 16),
+              FoutaButton(
+                label: 'Invite People',
+                onPressed: () async {
+                  final selected = await Navigator.push<List<String>>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EventInviteScreen(
+                        initialSelected: invited.cast<String>(),
+                      ),
+                    ),
+                  );
+                  if (selected != null) {
+                    await FirebaseFirestore.instance
+                        .collection('artifacts/$APP_ID/public/data/events')
+                        .doc(widget.eventId)
+                        .update({'invitedIds': selected});
+                  }
+                },
+              ),
+            ],
+          ],
         ),
       );
     }
