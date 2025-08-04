@@ -1,10 +1,31 @@
 // lib/widgets/full_screen_image_viewer.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-class FullScreenImageViewer extends StatelessWidget {
+class FullScreenImageViewer extends StatefulWidget {
   final String imageUrl;
 
   const FullScreenImageViewer({super.key, required this.imageUrl});
+
+  @override
+  State<FullScreenImageViewer> createState() => _FullScreenImageViewerState();
+}
+
+class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
+  @override
+  void initState() {
+    super.initState();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: SystemUiOverlay.values,
+    );
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +39,7 @@ class FullScreenImageViewer extends StatelessWidget {
         child: Center(
           child: InteractiveViewer(
             child: Image.network(
-              imageUrl,
+              widget.imageUrl,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) => const Center(
                 child: Text(
