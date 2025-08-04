@@ -55,8 +55,9 @@ class _ChatScreenState extends State<ChatScreen> {
   static const List<String> _reactionOptions = ['❤️', '😂', '👍', '😮', '😢', '🙏'];
 
   // Media upload limitations
-  static const int _maxVideoFileSize = 15 * 1024 * 1024; // 15 MB
-  static const int _maxVideoDurationSeconds = 60; // 60 seconds max
+  // Increase limits so typical smartphone videos can be shared.
+  static const int _maxVideoFileSize = 100 * 1024 * 1024; // 100 MB
+  static const int _maxVideoDurationSeconds = 300; // 5 minutes max
 
   @override
   void initState() {
@@ -204,7 +205,7 @@ class _ChatScreenState extends State<ChatScreen> {
         final fileSize = File(pickedFile.path).lengthSync();
         if (fileSize > _maxVideoFileSize) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Video is too large. Please select a video under 15 MB.')),
+            const SnackBar(content: Text('Video is too large. Please select a video under 100 MB.')),
           );
           return;
         }
@@ -214,7 +215,7 @@ class _ChatScreenState extends State<ChatScreen> {
         if (duration.inSeconds > _maxVideoDurationSeconds) {
           await player.dispose();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Video is too long. Please select a video under 60 seconds.')),
+            const SnackBar(content: Text('Video is too long. Please select a video under 5 minutes.')),
           );
           return;
         }
