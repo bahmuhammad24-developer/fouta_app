@@ -27,6 +27,7 @@ import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/screens/profile_screen.dart';
 import 'package:fouta_app/widgets/post_card_widget.dart';
 import 'package:fouta_app/utils/firestore_paths.dart';
+import 'package:fouta_app/widgets/fouta_button.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -666,7 +667,29 @@ class _FeedTabState extends State<FeedTab> {
             child: (_posts.isEmpty && _isLoading)
                 ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.secondary))
                 : (filteredPosts.isEmpty)
-                    ? const Center(child: Text('No posts to display.', style: TextStyle(fontSize: 16, color: Colors.grey)))
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text('No posts to display.',
+                                style: TextStyle(fontSize: 16, color: Colors.grey)),
+                            const SizedBox(height: 16),
+                            FoutaButton(
+                              label: 'Create Post',
+                              onPressed: () async {
+                                widget.setNavBarVisibility(false);
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const CreatePostScreen(),
+                                  ),
+                                );
+                                widget.setNavBarVisibility(true);
+                              },
+                            ),
+                          ],
+                        ),
+                      )
                     : ListView.builder(
                         controller: _scrollController,
                         // FIX: Removed horizontal padding to make cards wider
@@ -771,7 +794,28 @@ class _ChatsTabState extends State<ChatsTab> {
                 return const Center(child: CircularProgressIndicator());
               }
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Center(child: Text('No active chats. Start a new one!'));
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('No active chats. Start a new one!'),
+                      const SizedBox(height: 16),
+                      FoutaButton(
+                        label: 'Start Chat',
+                        onPressed: () async {
+                          widget.setNavBarVisibility(false);
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const NewChatScreen(),
+                            ),
+                          );
+                          widget.setNavBarVisibility(true);
+                        },
+                      ),
+                    ],
+                  ),
+                );
               }
               return ListView.separated(
                 padding: const EdgeInsets.fromLTRB(0, 0, 0, 80),
