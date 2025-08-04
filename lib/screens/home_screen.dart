@@ -284,7 +284,7 @@ class _NotificationsButton extends StatelessWidget {
               unreadCount > 99 ? '99+' : '$unreadCount',
               style: const TextStyle(color: Colors.white, fontSize: 10),
             ),
-            position: badges.BadgePosition.topEnd(top: 0, end: 3),
+            position: badges.BadgePosition.topEnd(top: -4, end: -4),
             child: const Icon(Icons.notifications_outlined),
           ),
           tooltip: 'Notifications',
@@ -384,7 +384,7 @@ class _BottomNavBar extends StatelessWidget {
               unreadChatsCount > 99 ? '99+' : '$unreadChatsCount',
               style: const TextStyle(color: Colors.white, fontSize: 10),
             ),
-            position: badges.BadgePosition.topEnd(top: -10, end: -12),
+            position: badges.BadgePosition.topEnd(top: 6, end: -12),
             child: _BottomNavItem(
               icon: selectedIndex == 1 ? Icons.chat_bubble : Icons.chat_bubble_outline,
               isSelected: selectedIndex == 1,
