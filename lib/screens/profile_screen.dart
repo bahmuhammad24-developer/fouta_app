@@ -541,6 +541,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         delegate: _SliverTabBarDelegate(
                           TabBar(
                             controller: _tabController,
+                            labelColor:
+                                Theme.of(context).colorScheme.onSurface,
+                            unselectedLabelColor: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.6),
                             tabs: const [
                               Tab(icon: Icon(Icons.grid_on)),
                               Tab(icon: Icon(Icons.photo_library)),

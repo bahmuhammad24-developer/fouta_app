@@ -1,5 +1,6 @@
 // lib/screens/story_viewer_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -42,6 +43,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
   @override
   void initState() {
     super.initState();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     _currentStoryIndex = widget.initialStoryIndex;
     _pageController = PageController(initialPage: _currentStoryIndex);
     _animationController = AnimationController(vsync: this);
@@ -165,6 +167,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     _pageController.dispose();
     _animationController.dispose();
     _disposeVideo();
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: SystemUiOverlay.values,
+    );
     super.dispose();
   }
 
