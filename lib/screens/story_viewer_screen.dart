@@ -10,6 +10,7 @@ import 'package:fouta_app/models/story_model.dart';
 import 'package:fouta_app/services/video_cache_service.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:fouta_app/utils/video_controller_extensions.dart';
 
 class StoryViewerScreen extends StatefulWidget {
   final List<Story> stories;
@@ -394,8 +395,4 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
       // ignore errors
     }
   }
-}
-
-extension on VideoController? {
-  void dispose() {}
 }
