@@ -122,7 +122,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         return;
       }
       final player = Player();
-      await player.open(Media(pickedFile.path));
+      // Open the video without autoplay to avoid background audio during
+      // metadata extraction.  `play: false` prevents the player from
+      // immediately starting playback which previously caused the selected
+      // video's audio to play even though the user had not yet posted it.
+      await player.open(Media(pickedFile.path), play: false);
       final duration = player.state.duration;
       await player.stream.width.firstWhere((width) => width != null);
       final width = player.state.width;
