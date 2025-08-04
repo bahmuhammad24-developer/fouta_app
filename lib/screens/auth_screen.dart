@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fouta_app/main.dart'; // Import APP_ID
+import 'package:fouta_app/utils/firestore_paths.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -56,7 +56,10 @@ class _AuthScreenState extends State<AuthScreen> {
           password: _passwordController.text.trim(),
         );
         if (userCredential.user != null) {
-          await FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(userCredential.user!.uid).set({
+          await FirebaseFirestore.instance
+              .collection(FirestorePaths.users())
+              .doc(userCredential.user!.uid)
+              .set({
             'email': _emailController.text.trim(),
             'firstName': _firstNameController.text.trim(),
             'lastName': _lastNameController.text.trim(),
@@ -83,7 +86,9 @@ class _AuthScreenState extends State<AuthScreen> {
           password: _passwordController.text.trim(),
         );
         if (userCredential.user != null) {
-          final userDocRef = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(userCredential.user!.uid);
+          final userDocRef = FirebaseFirestore.instance
+              .collection(FirestorePaths.users())
+              .doc(userCredential.user!.uid);
           final userDoc = await userDocRef.get();
 
           Map<String, dynamic> updateData = {};
