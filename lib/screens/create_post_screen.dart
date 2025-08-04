@@ -52,8 +52,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   bool _isPreviewing = false;
 
   // Media upload limitations
-  static const int _maxVideoFileSize = 15 * 1024 * 1024; // 15 MB
-  static const int _maxVideoDurationSeconds = 60; // 60 seconds max
+  // Increased limits to allow larger video uploads.
+  // Most modern devices record videos well above 15 MB, which previously
+  // prevented uploads. Allow up to ~100 MB and five minutes duration.
+  static const int _maxVideoFileSize = 100 * 1024 * 1024; // 100 MB
+  static const int _maxVideoDurationSeconds = 300; // 5 minutes max
 
   @override
   void initState() {
@@ -118,7 +121,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     if (isVideo && !kIsWeb) {
       final fileSize = File(pickedFile.path).lengthSync();
       if (fileSize > _maxVideoFileSize) {
-        _showMessage('Video is too large. Please select a video under 15 MB.');
+        _showMessage('Video is too large. Please select a video under 100 MB.');
         return;
       }
       final player = Player();
@@ -136,7 +139,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       }
       if (duration.inSeconds > _maxVideoDurationSeconds) {
         await player.dispose();
-        _showMessage('Video is too long. Please select a video under 60 seconds.');
+        _showMessage('Video is too long. Please select a video under 5 minutes.');
         return;
       }
       await player.dispose();
