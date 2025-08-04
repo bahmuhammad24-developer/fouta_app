@@ -227,7 +227,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                     subtitle: const Text('Enable dark theme'),
                     value: themeProvider.isDarkMode,
                     onChanged: (value) {
-                      themeProvider.toggleDarkMode(value);
+                      themeProvider.setDarkMode(value);
                     },
                   );
                 },
