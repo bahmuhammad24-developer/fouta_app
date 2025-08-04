@@ -308,7 +308,7 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
               if (isGroupChat) {
                 _leaveGroup();
               } else {
-                _blockUser(otherUserId);
+                _blockUser(otherUserId!);
               }
             },
           ),
