@@ -242,7 +242,25 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if(isGroupChat) ...[
+          if (isGroupChat) ...[
+            if (amIAdmin) ...[
+              ListTile(
+                leading: const Icon(Icons.person_add),
+                title: const Text('Add Members'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AddMembersScreen(
+                        chatId: widget.chatId,
+                        currentMemberIds: List<String>.from(participants),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const Divider(),
+            ],
             Text('Members (${participants.length})', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             ListView.builder(

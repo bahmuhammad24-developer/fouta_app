@@ -77,14 +77,19 @@ class _AddMembersScreenState extends State<AddMembersScreen> {
       Navigator.pop(context);
       return;
     }
-    
+    // Prepare updates for participants and unread counts
+    final Map<String, dynamic> updates = {
+      'participants': FieldValue.arrayUnion(_selectedMemberIds),
+    };
+    for (final id in _selectedMemberIds) {
+      updates['unreadCounts.$id'] = 0;
+    }
+
     await FirebaseFirestore.instance
-      .collection('artifacts/$APP_ID/public/data/chats')
-      .doc(widget.chatId)
-      .update({
-        'participants': FieldValue.arrayUnion(_selectedMemberIds),
-      });
-      
+        .collection('artifacts/$APP_ID/public/data/chats')
+        .doc(widget.chatId)
+        .update(updates);
+
     Navigator.pop(context);
   }
 
