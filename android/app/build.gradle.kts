@@ -35,7 +35,6 @@ if (keystoreProperties.getProperty("storeFile").isNullOrEmpty()) {
 android {
     compileSdk = 36
     namespace = "com.example.fouta_app"
-    compileSdk = flutter.compileSdkVersion.toInt()
     ndkVersion = "27.0.12077973"
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
