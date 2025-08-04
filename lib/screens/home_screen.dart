@@ -1172,10 +1172,12 @@ class _PeopleTabState extends State<PeopleTab> {
     // Load minimal user lists instead of streaming the entire collection
     final usersCollection =
         FirebaseFirestore.instance.collection(FirestorePaths.users());
-    return FutureBuilder<DocumentSnapshot>(
-      future: usersCollection.doc(currentUser.uid).get(),
+    return StreamBuilder<DocumentSnapshot>(
+      stream: usersCollection.doc(currentUser.uid).snapshots(),
       builder: (context, currentUserSnap) {
-        if (!currentUserSnap.hasData) return const Center(child: CircularProgressIndicator());
+        if (!currentUserSnap.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
         final currentData = currentUserSnap.data!.data() as Map<String, dynamic>? ?? {};
         final List<String> myFollowing = List<String>.from(currentData['following'] ?? []);
         final List<String> myFollowers = List<String>.from(currentData['followers'] ?? []);

@@ -144,6 +144,7 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
       final storyDoc = storiesRef.doc(user.uid);
 
       await storyDoc.set({
+
         'authorName': displayName,
         'authorImageUrl': imageUrl,
         'lastUpdated': FieldValue.serverTimestamp(),
