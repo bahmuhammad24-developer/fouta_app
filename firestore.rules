@@ -1,10 +1,12 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
     match /stories/{userId}/slides/{slideId} {
       allow update: if request.auth != null &&
         request.resource.data.keys().hasOnly(['viewers']) &&
         request.resource.data.viewers == resource.data.viewers.union([request.auth.uid]);
+
     }
   }
 }

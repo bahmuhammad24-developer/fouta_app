@@ -6,11 +6,16 @@ import 'package:fouta_app/main.dart';
 import 'package:fouta_app/screens/post_detail_screen.dart';
 import 'package:fouta_app/screens/profile_screen.dart';
 import 'package:fouta_app/screens/create_post_screen.dart';
+import 'package:fouta_app/utils/date_utils.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
-import 'package:intl/intl.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
+
+  String _formatTimestamp(Timestamp? timestamp) {
+    if (timestamp == null) return 'Just now';
+    return DateUtilsHelper.formatRelative(timestamp.toDate());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +110,7 @@ class NotificationsScreen extends StatelessWidget {
                   ),
                 ),
                 subtitle: Text(
-                  timestamp != null ? DateFormat.yMd().add_jm().format(timestamp.toDate()) : 'Just now',
+                  _formatTimestamp(timestamp),
                 ),
                 onTap: () {
                   final String? postId = notification['postId'];
