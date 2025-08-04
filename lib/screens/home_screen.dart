@@ -496,7 +496,9 @@ class _FeedTabState extends State<FeedTab> {
 
   bool _isDataSaverOn = true;
   bool _isOnMobileData = false;
-  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
+
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+
 
 
   // Pagination State
@@ -516,15 +518,21 @@ class _FeedTabState extends State<FeedTab> {
     Connectivity().checkConnectivity().then((result) {
       if (mounted) {
         setState(() {
-          _isOnMobileData = result == ConnectivityResult.mobile;
+
+          _isOnMobileData = result is List<ConnectivityResult>
+              ? result.contains(ConnectivityResult.mobile)
+              : result == ConnectivityResult.mobile;
+
         });
       }
     });
     _connectivitySubscription =
-        Connectivity().onConnectivityChanged.listen((result) {
+
+        Connectivity().onConnectivityChanged.listen((results) {
       if (mounted) {
         setState(() {
-          _isOnMobileData = result == ConnectivityResult.mobile;
+          _isOnMobileData = results.contains(ConnectivityResult.mobile);
+
         });
       }
     });

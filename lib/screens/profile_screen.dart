@@ -8,6 +8,7 @@ import 'package:fouta_app/screens/post_detail_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -17,6 +18,8 @@ import 'package:fouta_app/widgets/full_screen_image_viewer.dart';
 import 'package:fouta_app/widgets/post_card_widget.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
 import 'package:fouta_app/screens/create_post_screen.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:fouta_app/utils/firestore_paths.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userId;
@@ -38,6 +41,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   bool _isUploading = false;
 
   final ImagePicker _picker = ImagePicker();
+
+  bool _isDataSaverOn = true;
+  bool _isOnMobileData = false;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   
   // TAB CONTROLLER SETUP
   late TabController _tabController;
@@ -47,12 +54,31 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     super.initState();
     _isEditing = widget.initialIsEditing;
     _tabController = TabController(length: 2, vsync: this);
+    _loadDataSaverPreference();
+    Connectivity().checkConnectivity().then((result) {
+      if (mounted) {
+        setState(() {
+          _isOnMobileData = result is List<ConnectivityResult>
+              ? result.contains(ConnectivityResult.mobile)
+              : result == ConnectivityResult.mobile;
+        });
+      }
+    });
+    _connectivitySubscription =
+        Connectivity().onConnectivityChanged.listen((results) {
+      if (mounted) {
+        setState(() {
+          _isOnMobileData = results.contains(ConnectivityResult.mobile);
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _bioController.dispose();
     _tabController.dispose();
+    _connectivitySubscription?.cancel();
     super.dispose();
   }
 
@@ -64,6 +90,21 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         backgroundColor: msg.contains('successful') ? Colors.green : Theme.of(context).colorScheme.error,
       ),
     );
+  }
+
+  Future<void> _loadDataSaverPreference() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      final doc = await FirebaseFirestore.instance
+          .collection(FirestorePaths.users())
+          .doc(currentUser.uid)
+          .get();
+      if (mounted) {
+        setState(() {
+          _isDataSaverOn = doc.data()?['dataSaver'] ?? true;
+        });
+      }
+    }
   }
 
   Future<void> _pickProfileImage() async {
@@ -482,6 +523,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               currentUser: currentUser,
               appId: APP_ID,
               onMessage: _showMessage,
+              isDataSaverOn: _isDataSaverOn,
+              isOnMobileData: _isOnMobileData,
             );
           },
         );
