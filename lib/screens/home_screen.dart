@@ -494,6 +494,11 @@ class _FeedTabState extends State<FeedTab> {
   int _lastPrecachedIndex = 0;
 
 
+  bool _isDataSaverOn = true;
+  bool _isOnMobileData = false;
+  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
+
+
   // Pagination State
   List<DocumentSnapshot> _posts = [];
   DocumentSnapshot? _lastDocument;
@@ -508,6 +513,21 @@ class _FeedTabState extends State<FeedTab> {
     _setupFollowingListener();
     _scrollController.addListener(_scrollListener);
     _fetchFirstPosts();
+    Connectivity().checkConnectivity().then((result) {
+      if (mounted) {
+        setState(() {
+          _isOnMobileData = result == ConnectivityResult.mobile;
+        });
+      }
+    });
+    _connectivitySubscription =
+        Connectivity().onConnectivityChanged.listen((result) {
+      if (mounted) {
+        setState(() {
+          _isOnMobileData = result == ConnectivityResult.mobile;
+        });
+      }
+    });
   }
 
   void _setupFollowingListener() {
@@ -521,6 +541,7 @@ class _FeedTabState extends State<FeedTab> {
         if (userDoc.exists && mounted) {
           setState(() {
             _currentUserFollowingIds = List<String>.from(userDoc.data()?['following'] ?? []);
+            _isDataSaverOn = userDoc.data()?['dataSaver'] ?? true;
           });
         }
       });
@@ -530,6 +551,7 @@ class _FeedTabState extends State<FeedTab> {
   @override
   void dispose() {
     _followingSubscription?.cancel();
+    _connectivitySubscription?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
@@ -751,6 +773,8 @@ class _FeedTabState extends State<FeedTab> {
                             currentUser: currentUser,
                             appId: APP_ID,
                             onMessage: _showMessage,
+                            isDataSaverOn: _isDataSaverOn,
+                            isOnMobileData: _isOnMobileData,
                           );
                         },
                       ),
