@@ -400,7 +400,12 @@ class _ChatScreenState extends State<ChatScreen> {
                 const SizedBox(width: 2),
                 Text(
                   users.length.toString(),
-                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white54
+                        : Colors.black54,
+                  ),
                 ),
               ],
             ),
@@ -420,7 +425,11 @@ class _ChatScreenState extends State<ChatScreen> {
         margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
         padding: const EdgeInsets.all(12.0),
         decoration: BoxDecoration(
-          color: isMe ? Theme.of(context).colorScheme.primary : Colors.grey[300],
+          color: isMe
+              ? Theme.of(context).colorScheme.primary
+              : (Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[700]
+                  : Colors.grey[300]),
           borderRadius: BorderRadius.circular(16.0),
         ),
         child: Column(
@@ -431,7 +440,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 padding: const EdgeInsets.only(bottom: 4.0),
                 child: Text(
                   message['senderName'] ?? 'User',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54, fontSize: 12),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white54
+                        : Colors.black54,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             // Placeholder for Reply UI
@@ -439,7 +454,9 @@ class _ChatScreenState extends State<ChatScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withOpacity(0.1)
+                      : Colors.black.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8)
                 ),
                 child: Column(
@@ -447,7 +464,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     Text(
                       message['replyToSenderName'] ?? '',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black54),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white54
+                            : Colors.black54,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     if ((message['replyToContent'] ?? '').toString().isNotEmpty)
@@ -455,7 +478,13 @@ class _ChatScreenState extends State<ChatScreen> {
                         message['replyToContent'],
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.black54),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white54
+                              : Colors.black54,
+                        ),
                       ),
                   ],
                 ),
@@ -467,7 +496,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 padding: const EdgeInsets.only(top: 4.0),
                 child: Text(
                   message['content'],
-                  style: TextStyle(color: isMe ? Colors.white : Colors.black),
+                  style: TextStyle(
+                    color: isMe
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black,
+                  ),
                 ),
               ),
             _buildReactions(message['reactions'] ?? {}),
@@ -573,14 +608,26 @@ class _ChatScreenState extends State<ChatScreen> {
                       children: [
                         Text(
                           (_replyingToMessage!.data()! as Map<String, dynamic>)['senderName'] ?? '',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white54
+                                : Colors.black54,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           (_replyingToMessage!.data()! as Map<String, dynamic>)['content'] ?? '',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.black54),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white54
+                                : Colors.black54,
+                          ),
                         ),
                       ],
                     ),

@@ -1,12 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-// Import the story creation screen from the project root instead of
-// the screens directory. The file lives at lib/story_creation_screen.dart.
-// Import the story creation screen from the screens directory. The file lives
-// at lib/screens/story_creation_screen.dart, so it can be imported via the
-// package namespace under screens.
+// Import the story creation screen widget used after capturing media.
 import 'package:fouta_app/screens/story_creation_screen.dart';
 
 /// A camera interface for creating a story. Users can tap the shutter button
@@ -166,6 +160,4 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
       ),
     );
   }
-  
-  StoryCreationScreen({required String initialMediaPath, required bool isVideo}) {}
 }

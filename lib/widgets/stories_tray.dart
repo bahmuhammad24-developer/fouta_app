@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fouta_app/main.dart';
 import 'package:fouta_app/models/story_model.dart';
-import 'package:fouta_app/screens/story_creation_screen.dart';
 import 'package:fouta_app/screens/story_camera_screen.dart';
 import 'package:fouta_app/screens/story_viewer_screen.dart';
 
@@ -161,6 +160,8 @@ class StoriesTray extends StatelessWidget {
     );
   }
 }
+
+
 
 class _StoryAvatar extends StatelessWidget {
   final String imageUrl;
