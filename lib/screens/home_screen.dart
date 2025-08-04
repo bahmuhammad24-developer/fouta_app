@@ -623,6 +623,7 @@ class _FeedTabState extends State<FeedTab> {
         children: [
           // Prevent users from vertically dragging to hide the stories tray
           GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onVerticalDragDown: (_) {},
             onVerticalDragStart: (_) {},
             onVerticalDragUpdate: (_) {},
