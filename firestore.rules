@@ -1,6 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
     match /stories/{userId} {
       allow update: if request.auth != null && (
         request.auth.uid == userId ||
@@ -9,6 +10,7 @@ service cloud.firestore {
           request.resource.data.viewedBy == resource.data.viewedBy.union([request.auth.uid])
         )
       );
+
     }
   }
 }
