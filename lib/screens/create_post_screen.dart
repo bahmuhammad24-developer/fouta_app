@@ -265,11 +265,19 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         final String storagePath = '${type}s/${user.uid}/${DateTime.now().millisecondsSinceEpoch}_${user.uid}_$i.$fileExtension';
         final storageRef = FirebaseStorage.instance.ref().child(storagePath);
 
+        // Ensure a correct content type so that Firebase Storage serves the
+        // file with the proper headers.  Without this, uploaded videos can be
+        // stored as `application/octet-stream`, preventing some clients from
+        // recognizing them as playable media.
+        final SettableMetadata metadata = SettableMetadata(
+          contentType: type == 'video' ? 'video/mp4' : 'image/jpeg',
+        );
+
         UploadTask uploadTask;
         if (bytesToUpload != null) {
-          uploadTask = storageRef.putData(bytesToUpload);
+          uploadTask = storageRef.putData(bytesToUpload, metadata);
         } else if (fileToUpload != null) {
-          uploadTask = storageRef.putFile(fileToUpload);
+          uploadTask = storageRef.putFile(fileToUpload, metadata);
         } else {
           _showMessage('Invalid media data for upload.');
           setState(() { _isUploading = false; });

@@ -21,6 +21,9 @@ import 'package:media_kit/media_kit.dart';
 import 'package:image/image.dart' as img;
 import 'package:provider/provider.dart';
 import 'package:fouta_app/services/connectivity_provider.dart';
+import 'package:fouta_app/widgets/chat_audio_player.dart';
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ChatScreen extends StatefulWidget {
   final String? chatId;
@@ -43,6 +46,9 @@ class _ChatScreenState extends State<ChatScreen> {
   String _mediaType = '';
   double _uploadProgress = 0.0;
   bool _isUploading = false;
+
+  final Record _audioRecorder = Record();
+  bool _isRecordingAudio = false;
 
   Timer? _typingTimer;
 
@@ -236,6 +242,30 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  Future<void> _startRecording() async {
+    if (await _audioRecorder.hasPermission()) {
+      final dir = await getTemporaryDirectory();
+      final path = '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.m4a';
+      await _audioRecorder.start(path: path);
+      if (mounted) {
+        setState(() => _isRecordingAudio = true);
+      }
+    }
+  }
+
+  Future<void> _stopRecording() async {
+    final path = await _audioRecorder.stop();
+    if (mounted) {
+      setState(() => _isRecordingAudio = false);
+    }
+    if (path != null) {
+      setState(() {
+        _selectedMediaFile = XFile(path);
+        _mediaType = 'audio';
+      });
+    }
+  }
+
   Future<void> _sendMessage() async {
     final messageText = _messageController.text.trim();
     if (messageText.isEmpty && _selectedMediaFile == null) return;
@@ -331,7 +361,11 @@ class _ChatScreenState extends State<ChatScreen> {
         });
 
     await _chatRef!.update({
-          'lastMessage': messageText.isNotEmpty ? messageText : 'Sent a $_mediaType',
+          'lastMessage': messageText.isNotEmpty
+              ? messageText
+              : _mediaType == 'audio'
+                  ? 'Sent a voice message'
+                  : 'Sent a $_mediaType',
           'lastMessageTimestamp': FieldValue.serverTimestamp(),
           'typingStatus.${currentUser.uid}': false,
         });
@@ -371,6 +405,8 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       case 'video':
         return SizedBox(width: 150, child: ChatVideoPlayer(videoUrl: mediaUrl));
+      case 'audio':
+        return SizedBox(width: 150, child: ChatAudioPlayer(source: mediaUrl));
       default:
         return const SizedBox.shrink();
     }
@@ -645,16 +681,38 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
           if (_isUploading) LinearProgressIndicator(value: _uploadProgress),
-          if (_selectedMediaFile != null) 
+          if (_selectedMediaFile != null && _mediaType == 'audio')
+            SizedBox(
+              height: 60,
+              child: Stack(
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: ChatAudioPlayer(source: _selectedMediaFile!.path, isLocal: true),
+                  ),
+                  Positioned(
+                    right: 0,
+                    child: IconButton(
+                      icon: const CircleAvatar(backgroundColor: Colors.black54, child: Icon(Icons.close, color: Colors.white)),
+                      onPressed: () => setState(() {
+                        _selectedMediaFile = null;
+                        _mediaType = '';
+                      }),
+                    ),
+                  )
+                ],
+              ),
+            )
+          else if (_selectedMediaFile != null)
             SizedBox(
               height: 100,
               child: Stack(
                 children: [
                   kIsWeb && _selectedMediaBytes != null
-                    ? Image.memory(_selectedMediaBytes!, height: 100, width: 100, fit: BoxFit.cover)
-                    : !kIsWeb 
-                      ? Image.file(File(_selectedMediaFile!.path), height: 100, width: 100, fit: BoxFit.cover)
-                      : Container(),
+                      ? Image.memory(_selectedMediaBytes!, height: 100, width: 100, fit: BoxFit.cover)
+                      : !kIsWeb
+                          ? Image.file(File(_selectedMediaFile!.path), height: 100, width: 100, fit: BoxFit.cover)
+                          : Container(),
                   Positioned(
                     right: 0,
                     child: IconButton(
@@ -670,6 +728,14 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           Row(
             children: [
+              GestureDetector(
+                onLongPressStart: (_) => _startRecording(),
+                onLongPressEnd: (_) => _stopRecording(),
+                child: Icon(
+                  Icons.mic,
+                  color: _isRecordingAudio ? Colors.red : null,
+                ),
+              ),
               IconButton(icon: const Icon(Icons.image), onPressed: () => _pickMediaForChat(ImageSource.gallery)),
               IconButton(icon: const Icon(Icons.videocam), onPressed: () => _pickMediaForChat(ImageSource.gallery, isVideo: true)),
               Expanded(

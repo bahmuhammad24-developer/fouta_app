@@ -29,6 +29,7 @@ import 'package:fouta_app/widgets/post_card_widget.dart';
 import 'package:fouta_app/utils/firestore_paths.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
 
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -36,9 +37,10 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
   bool _isNavBarVisible = true;
+  late final AnimationController _navBarController;
   StreamSubscription? _unreadChatsSubscription;
   Stream<int>? _unreadNotificationsStream;
   int _unreadChatsCount = 0;
@@ -55,6 +57,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _setupListeners();
+    _navBarController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+      value: 1.0,
+    );
   }
 
   void _setupListeners() {
@@ -83,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _unreadChatsSubscription?.cancel();
+    _navBarController.dispose();
     super.dispose();
   }
 
@@ -97,10 +105,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _setNavBarVisibility(bool isVisible) {
-    if (_isNavBarVisible != isVisible) {
-      setState(() {
-        _isNavBarVisible = isVisible;
-      });
+    if (_isNavBarVisible == isVisible) return;
+    _isNavBarVisible = isVisible;
+    if (isVisible) {
+      _navBarController.forward();
+    } else {
+      _navBarController.reverse();
     }
   }
 
@@ -154,24 +164,34 @@ class _HomeScreenState extends State<HomeScreen> {
           navigator.pop();
         }
       },
-      child: Scaffold(
-        endDrawer: _AppDrawer(showMessage: _showMessage),
-        // Show the New Chat FAB only when on the chat tab root (the chat list) and not inside a nested chat screen.
-        floatingActionButton: (_selectedIndex == 1 && !(_navigatorKeys[_selectedIndex].currentState?.canPop() ?? false))
-            ? _buildNewChatFab(context)
-            : null,
-        bottomNavigationBar: _isNavBarVisible
-            ? _BottomNavBar(
-                selectedIndex: _selectedIndex,
-                unreadChatsCount: _unreadChatsCount,
-                onItemTapped: _onItemTapped,
-              )
-            : null,
-        body: Consumer<ConnectivityProvider>(
-          builder: (context, connectivity, _) {
-            return Column(
-              children: [
-                if (!connectivity.isOnline)
+        child: Scaffold(
+          endDrawer: _AppDrawer(showMessage: _showMessage),
+          // Show the New Chat FAB only when on the chat tab root (the chat list) and not inside a nested chat screen.
+          floatingActionButton: (_selectedIndex == 1 && !(_navigatorKeys[_selectedIndex].currentState?.canPop() ?? false))
+              ? _buildNewChatFab(context)
+              : null,
+          bottomNavigationBar: AnimatedBuilder(
+            animation: _navBarController,
+            builder: (context, child) {
+              return SizedBox(
+                height: kBottomNavigationBarHeight * _navBarController.value,
+                child: Transform.translate(
+                  offset: Offset(0, kBottomNavigationBarHeight * (1 - _navBarController.value)),
+                  child: child,
+                ),
+              );
+            },
+            child: _BottomNavBar(
+              selectedIndex: _selectedIndex,
+              unreadChatsCount: _unreadChatsCount,
+              onItemTapped: _onItemTapped,
+            ),
+          ),
+          body: Consumer<ConnectivityProvider>(
+            builder: (context, connectivity, _) {
+              return Column(
+                children: [
+                  if (!connectivity.isOnline)
                   MaterialBanner(
                     backgroundColor:
                         Theme.of(context).colorScheme.errorContainer,
@@ -196,27 +216,39 @@ class _HomeScreenState extends State<HomeScreen> {
                             IconButton(
                               icon: const Icon(Icons.add_circle_outline),
                               tooltip: 'Create Post',
-                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatePostScreen())),
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const CreatePostScreen(),
+                                ),
+                              ),
                             ),
-                            _NotificationsButton(unreadStream: _unreadNotificationsStream),
+                            _NotificationsButton(
+                                unreadStream: _unreadNotificationsStream),
                             Builder(
                               builder: (context) => IconButton(
                                 icon: const Icon(Icons.menu),
-                                onPressed: () => Scaffold.of(context).openEndDrawer(),
+                                onPressed: () =>
+                                    Scaffold.of(context).openEndDrawer(),
                               ),
                             ),
                           ],
                         ),
                       ];
                     },
-            body: IndexedStack(
+                    body: IndexedStack(
                       index: _selectedIndex,
                       children: <Widget>[
-                        _buildOffstageNavigator(0, FeedTab(setNavBarVisibility: _setNavBarVisibility)),
-                        _buildOffstageNavigator(1, ChatsTab(setNavBarVisibility: _setNavBarVisibility)),
-                        _buildOffstageNavigator(2, const EventsListScreen()),
+                        _buildOffstageNavigator(
+                            0, FeedTab(setNavBarVisibility: _setNavBarVisibility)),
+                        _buildOffstageNavigator(
+                            1, ChatsTab(setNavBarVisibility: _setNavBarVisibility)),
+                        _buildOffstageNavigator(
+                            2, const EventsListScreen()),
                         _buildOffstageNavigator(3, const PeopleTab()),
-                        _buildOffstageNavigator(4, ProfileScreen(userId: currentUser?.uid ?? '')),
+                        _buildOffstageNavigator(
+                            4, ProfileScreen(userId: currentUser?.uid ?? '')),
                       ],
                     ),
                   ),
@@ -285,7 +317,7 @@ class _NotificationsButton extends StatelessWidget {
               unreadCount > 99 ? '99+' : '$unreadCount',
               style: const TextStyle(color: Colors.white, fontSize: 10),
             ),
-            position: badges.BadgePosition.topEnd(top: 0, end: 3),
+            position: badges.BadgePosition.topEnd(top: -4, end: -4),
             child: const Icon(Icons.notifications_outlined),
           ),
           tooltip: 'Notifications',
@@ -385,7 +417,7 @@ class _BottomNavBar extends StatelessWidget {
               unreadChatsCount > 99 ? '99+' : '$unreadChatsCount',
               style: const TextStyle(color: Colors.white, fontSize: 10),
             ),
-            position: badges.BadgePosition.topEnd(top: -10, end: -12),
+            position: badges.BadgePosition.topEnd(top: 6, end: -12),
             child: _BottomNavItem(
               icon: selectedIndex == 1 ? Icons.chat_bubble : Icons.chat_bubble_outline,
               isSelected: selectedIndex == 1,
@@ -629,38 +661,36 @@ class _FeedTabState extends State<FeedTab> {
             onVerticalDragStart: (_) {},
             onVerticalDragUpdate: (_) {},
             onVerticalDragEnd: (_) {},
-            child: const StoriesTray(),
+            child: FoutaCard(
+              padding: EdgeInsets.zero,
+              child: const StoriesTray(),
+            ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-
-            child: Material(
-              type: MaterialType.transparency,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ChoiceChip(
-                    label: const Text('Explore'),
-                    selected: !_showFollowingFeed,
-                    onSelected: (selected) {
-                      setState(() {
-                        _showFollowingFeed = false;
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  ChoiceChip(
-                    label: const Text('Following'),
-                    selected: _showFollowingFeed,
-                    onSelected: (selected) {
-                      setState(() {
-                        _showFollowingFeed = true;
-                      });
-                    },
-                  ),
-                ],
-              ),
-
+          FoutaCard(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ChoiceChip(
+                  label: const Text('Explore'),
+                  selected: !_showFollowingFeed,
+                  onSelected: (selected) {
+                    setState(() {
+                      _showFollowingFeed = false;
+                    });
+                  },
+                ),
+                const SizedBox(width: 8),
+                ChoiceChip(
+                  label: const Text('Following'),
+                  selected: _showFollowingFeed,
+                  onSelected: (selected) {
+                    setState(() {
+                      _showFollowingFeed = true;
+                    });
+                  },
+                ),
+              ],
             ),
           ),
           Expanded(
