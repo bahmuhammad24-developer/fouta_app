@@ -185,10 +185,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       return <Widget>[
                         SliverAppBar(
                           title: Text(_getAppBarTitle()),
-                          // Hide the app bar when scrolling down; show it when scrolling up
-                          pinned: false,
-                          floating: true,
-                          snap: true,
+                          // Keep the app bar visible while scrolling
+                          pinned: true,
                           actions: [
                             IconButton(
                               icon: const Icon(Icons.add_circle_outline),
