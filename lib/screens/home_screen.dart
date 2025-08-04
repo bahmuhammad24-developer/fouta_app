@@ -36,9 +36,10 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
   bool _isNavBarVisible = true;
+  late final AnimationController _navBarController;
   StreamSubscription? _unreadChatsSubscription;
   Stream<int>? _unreadNotificationsStream;
   int _unreadChatsCount = 0;
@@ -55,6 +56,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _setupListeners();
+    _navBarController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+      value: 1.0,
+    );
   }
 
   void _setupListeners() {
@@ -83,6 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _unreadChatsSubscription?.cancel();
+    _navBarController.dispose();
     super.dispose();
   }
 
@@ -97,10 +104,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _setNavBarVisibility(bool isVisible) {
-    if (_isNavBarVisible != isVisible) {
-      setState(() {
-        _isNavBarVisible = isVisible;
-      });
+    if (_isNavBarVisible == isVisible) return;
+    _isNavBarVisible = isVisible;
+    if (isVisible) {
+      _navBarController.forward();
+    } else {
+      _navBarController.reverse();
     }
   }
 
@@ -154,24 +163,34 @@ class _HomeScreenState extends State<HomeScreen> {
           navigator.pop();
         }
       },
-      child: Scaffold(
-        endDrawer: _AppDrawer(showMessage: _showMessage),
-        // Show the New Chat FAB only when on the chat tab root (the chat list) and not inside a nested chat screen.
-        floatingActionButton: (_selectedIndex == 1 && !(_navigatorKeys[_selectedIndex].currentState?.canPop() ?? false))
-            ? _buildNewChatFab(context)
-            : null,
-        bottomNavigationBar: _isNavBarVisible
-            ? _BottomNavBar(
-                selectedIndex: _selectedIndex,
-                unreadChatsCount: _unreadChatsCount,
-                onItemTapped: _onItemTapped,
-              )
-            : null,
-        body: Consumer<ConnectivityProvider>(
-          builder: (context, connectivity, _) {
-            return Column(
-              children: [
-                if (!connectivity.isOnline)
+        child: Scaffold(
+          endDrawer: _AppDrawer(showMessage: _showMessage),
+          // Show the New Chat FAB only when on the chat tab root (the chat list) and not inside a nested chat screen.
+          floatingActionButton: (_selectedIndex == 1 && !(_navigatorKeys[_selectedIndex].currentState?.canPop() ?? false))
+              ? _buildNewChatFab(context)
+              : null,
+          bottomNavigationBar: AnimatedBuilder(
+            animation: _navBarController,
+            builder: (context, child) {
+              return SizedBox(
+                height: kBottomNavigationBarHeight * _navBarController.value,
+                child: Transform.translate(
+                  offset: Offset(0, kBottomNavigationBarHeight * (1 - _navBarController.value)),
+                  child: child,
+                ),
+              );
+            },
+            child: _BottomNavBar(
+              selectedIndex: _selectedIndex,
+              unreadChatsCount: _unreadChatsCount,
+              onItemTapped: _onItemTapped,
+            ),
+          ),
+          body: Consumer<ConnectivityProvider>(
+            builder: (context, connectivity, _) {
+              return Column(
+                children: [
+                  if (!connectivity.isOnline)
                   MaterialBanner(
                     backgroundColor:
                         Theme.of(context).colorScheme.errorContainer,
