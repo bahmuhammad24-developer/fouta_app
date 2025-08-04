@@ -47,8 +47,10 @@ dependency_overrides:
   # Ensure the latest Linux implementation of the record plugin is used so it
   # matches the platform interface and exposes `startStream`.
   record_linux: ^0.11.3
+
   # Keep the platform interface in sync with the Linux implementation
   record_platform_interface: ^1.3.0
+
 
 flutter:
   uses-material-design: true
