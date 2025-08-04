@@ -53,7 +53,6 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
 
   @override
   void dispose() {
-    _controller?.dispose();
     _player?.dispose();
     super.dispose();
   }
