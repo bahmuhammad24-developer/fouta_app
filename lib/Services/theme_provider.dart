@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
 /// A ChangeNotifier that holds the current theme mode (light or dark)
-/// and allows toggling between modes. Consumers can watch [isDarkMode]
-/// and rebuild accordingly.
+/// and allows setting it based on a provided boolean. Consumers can watch
+/// [isDarkMode] and rebuild accordingly.
 class ThemeProvider extends ChangeNotifier {
   bool _isDarkMode = false;
   bool get isDarkMode => _isDarkMode;
 
-  void toggleDarkMode(bool value) {
+  /// Sets the theme based on the provided [value].
+  void setDarkMode(bool value) {
     _isDarkMode = value;
     notifyListeners();
   }
