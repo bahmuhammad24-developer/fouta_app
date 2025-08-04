@@ -35,7 +35,10 @@ dependencies:
   image_picker: ^1.1.2
   camera: ^0.10.5+2
   visibility_detector: ^0.4.0+2
-  record: ^5.0.5
+  # Update to the latest record plugin so its platform implementations,
+  # including Linux, align with the current platform interface and expose
+  # `startStream`.
+  record: ^5.1.1
 
 dev_dependencies:
   flutter_test:
