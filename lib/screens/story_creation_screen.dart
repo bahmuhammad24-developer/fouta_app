@@ -1,18 +1,18 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 
 /// Screen used to create and post a story.
 ///
 /// Displays a preview of the media captured from the camera or gallery and
-/// allows the user to submit it. Video preview is not implemented yet but the
-/// screen still accepts video files so the flow can be wired up end‑to‑end.
-class StoryCreationScreen extends StatelessWidget {
+/// allows the user to submit it.
+class StoryCreationScreen extends StatefulWidget {
   /// Path to the media chosen or captured by the user.
   final String initialMediaPath;
 
-  /// Whether the media is a video. If `true`, a simple placeholder is shown
-  /// instead of an image preview.
+  /// Whether the media is a video.
   final bool isVideo;
 
   const StoryCreationScreen({
@@ -22,21 +22,55 @@ class StoryCreationScreen extends StatelessWidget {
   });
 
   @override
+  State<StoryCreationScreen> createState() => _StoryCreationScreenState();
+}
+
+class _StoryCreationScreenState extends State<StoryCreationScreen> {
+  Player? _player;
+  VideoController? _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isVideo) {
+      _initializeVideo();
+    }
+  }
+
+  Future<void> _initializeVideo() async {
+    _player = Player();
+    try {
+      await _player!.open(Media(widget.initialMediaPath));
+      await _player!.play();
+      if (!mounted) return;
+      setState(() {
+        _controller = VideoController(_player!);
+      });
+    } catch (e) {
+      debugPrint('Error initializing video: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    _player?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     Widget preview;
-    if (isVideo) {
-      preview = Container(
-        color: Colors.black,
-        alignment: Alignment.center,
-        child: const Text(
-          'Video preview not implemented',
-          style: TextStyle(color: Colors.white),
-          textAlign: TextAlign.center,
-        ),
-      );
+    if (widget.isVideo) {
+      preview = (_controller != null)
+          ? Video(
+              controller: _controller!,
+              fit: BoxFit.contain,
+            )
+          : const CircularProgressIndicator(color: Colors.white);
     } else {
       preview = Image.file(
-        File(initialMediaPath),
+        File(widget.initialMediaPath),
         fit: BoxFit.contain,
       );
     }
