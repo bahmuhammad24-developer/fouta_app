@@ -621,7 +621,14 @@ class _FeedTabState extends State<FeedTab> {
       color: Theme.of(context).colorScheme.primary,
       child: Column(
         children: [
-          const StoriesTray(),
+          // Prevent users from vertically dragging to hide the stories tray
+          GestureDetector(
+            onVerticalDragDown: (_) {},
+            onVerticalDragStart: (_) {},
+            onVerticalDragUpdate: (_) {},
+            onVerticalDragEnd: (_) {},
+            child: const StoriesTray(),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           // Reverted segmented control back to ChoiceChips for feed toggle
