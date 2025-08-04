@@ -27,6 +27,7 @@ import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/screens/profile_screen.dart';
 import 'package:fouta_app/widgets/post_card_widget.dart';
 import 'package:fouta_app/utils/firestore_paths.dart';
+import 'package:fouta_app/widgets/fouta_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -195,27 +196,39 @@ class _HomeScreenState extends State<HomeScreen> {
                             IconButton(
                               icon: const Icon(Icons.add_circle_outline),
                               tooltip: 'Create Post',
-                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatePostScreen())),
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const CreatePostScreen(),
+                                ),
+                              ),
                             ),
-                            _NotificationsButton(unreadStream: _unreadNotificationsStream),
+                            _NotificationsButton(
+                                unreadStream: _unreadNotificationsStream),
                             Builder(
                               builder: (context) => IconButton(
                                 icon: const Icon(Icons.menu),
-                                onPressed: () => Scaffold.of(context).openEndDrawer(),
+                                onPressed: () =>
+                                    Scaffold.of(context).openEndDrawer(),
                               ),
                             ),
                           ],
                         ),
                       ];
                     },
-            body: IndexedStack(
+                    body: IndexedStack(
                       index: _selectedIndex,
                       children: <Widget>[
-                        _buildOffstageNavigator(0, FeedTab(setNavBarVisibility: _setNavBarVisibility)),
-                        _buildOffstageNavigator(1, ChatsTab(setNavBarVisibility: _setNavBarVisibility)),
-                        _buildOffstageNavigator(2, const EventsListScreen()),
+                        _buildOffstageNavigator(
+                            0, FeedTab(setNavBarVisibility: _setNavBarVisibility)),
+                        _buildOffstageNavigator(
+                            1, ChatsTab(setNavBarVisibility: _setNavBarVisibility)),
+                        _buildOffstageNavigator(
+                            2, const EventsListScreen()),
                         _buildOffstageNavigator(3, const PeopleTab()),
-                        _buildOffstageNavigator(4, ProfileScreen(userId: currentUser?.uid ?? '')),
+                        _buildOffstageNavigator(
+                            4, ProfileScreen(userId: currentUser?.uid ?? '')),
                       ],
                     ),
                   ),
@@ -628,38 +641,36 @@ class _FeedTabState extends State<FeedTab> {
             onVerticalDragStart: (_) {},
             onVerticalDragUpdate: (_) {},
             onVerticalDragEnd: (_) {},
-            child: const StoriesTray(),
+            child: FoutaCard(
+              padding: EdgeInsets.zero,
+              child: const StoriesTray(),
+            ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-
-            child: Material(
-              type: MaterialType.transparency,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ChoiceChip(
-                    label: const Text('Explore'),
-                    selected: !_showFollowingFeed,
-                    onSelected: (selected) {
-                      setState(() {
-                        _showFollowingFeed = false;
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  ChoiceChip(
-                    label: const Text('Following'),
-                    selected: _showFollowingFeed,
-                    onSelected: (selected) {
-                      setState(() {
-                        _showFollowingFeed = true;
-                      });
-                    },
-                  ),
-                ],
-              ),
-
+          FoutaCard(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ChoiceChip(
+                  label: const Text('Explore'),
+                  selected: !_showFollowingFeed,
+                  onSelected: (selected) {
+                    setState(() {
+                      _showFollowingFeed = false;
+                    });
+                  },
+                ),
+                const SizedBox(width: 8),
+                ChoiceChip(
+                  label: const Text('Following'),
+                  selected: _showFollowingFeed,
+                  onSelected: (selected) {
+                    setState(() {
+                      _showFollowingFeed = true;
+                    });
+                  },
+                ),
+              ],
             ),
           ),
           Expanded(
