@@ -16,7 +16,7 @@ class VideoPlayerWidget extends StatefulWidget {
   final bool areControlsVisible;
   final bool shouldInitialize; // New property to trigger loading
 
-  const VideoPlayerWidget({
+  VideoPlayerWidget({
     Key? key,
     required this.videoUrl,
     required this.videoId,

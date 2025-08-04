@@ -117,7 +117,7 @@ class _MediaFilePage extends StatefulWidget {
   final String type;
   final double? aspectRatio;
 
-  const _MediaFilePage({
+  _MediaFilePage({
     Key? key,
     required this.url,
     required this.type,
