@@ -27,6 +27,7 @@ class _ChatVideoPlayerState extends State<ChatVideoPlayer> {
 
   @override
   void dispose() {
+    _controller?.dispose();
     _player.dispose();
     super.dispose();
   }
