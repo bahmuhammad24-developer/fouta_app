@@ -47,6 +47,25 @@ class ConnectivityProvider extends ChangeNotifier {
     });
   }
 
+  /// Manually re-check the current connectivity status. Useful for retry
+  /// actions from the UI when the user wants to verify if connection has
+  /// been restored.
+  Future<void> refresh() async {
+    final dynamic result = await Connectivity().checkConnectivity();
+    bool online;
+    if (result is List<ConnectivityResult>) {
+      online = result.isNotEmpty && !result.contains(ConnectivityResult.none);
+    } else if (result is ConnectivityResult) {
+      online = result != ConnectivityResult.none;
+    } else {
+      online = true;
+    }
+    if (online != _isOnline) {
+      _isOnline = online;
+      notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
     _subscription?.cancel();

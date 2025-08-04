@@ -26,6 +26,7 @@ import 'package:provider/provider.dart';
 import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/screens/profile_screen.dart';
 import 'package:fouta_app/widgets/post_card_widget.dart';
+import 'package:fouta_app/utils/firestore_paths.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -58,7 +59,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void _setupListeners() {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null && !currentUser.isAnonymous) {
-      final userRef = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(currentUser.uid);
+      final userRef = FirebaseFirestore.instance
+          .collection(FirestorePaths.users())
+          .doc(currentUser.uid);
 
       _unreadNotificationsStream = userRef
           .collection('notifications')
@@ -168,16 +171,17 @@ class _HomeScreenState extends State<HomeScreen> {
             return Column(
               children: [
                 if (!connectivity.isOnline)
-                  Container(
-                    width: double.infinity,
-                    color: Colors.red,
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: const Center(
-                      child: Text(
-                        'You are offline',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
+                  MaterialBanner(
+                    backgroundColor:
+                        Theme.of(context).colorScheme.errorContainer,
+                    leading: const Icon(Icons.wifi_off),
+                    content: const Text('You are offline'),
+                    actions: [
+                      TextButton(
+                        onPressed: connectivity.refresh,
+                        child: const Text('Retry'),
                       ),
-                    ),
+                    ],
                   ),
                 Expanded(
                   child: NestedScrollView(
@@ -253,7 +257,10 @@ class _NotificationsButton extends StatelessWidget {
   Future<void> _markNotificationsAsRead(BuildContext context) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
-    final notificationsRef = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(currentUser.uid).collection('notifications');
+    final notificationsRef = FirebaseFirestore.instance
+        .collection(FirestorePaths.users())
+        .doc(currentUser.uid)
+        .collection('notifications');
     final unreadSnapshot = await notificationsRef.where('isRead', isEqualTo: false).get();
     if (unreadSnapshot.docs.isEmpty) return;
     final batch = FirebaseFirestore.instance.batch();
@@ -475,7 +482,7 @@ class _FeedTabState extends State<FeedTab> {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null && !currentUser.isAnonymous) {
       _followingSubscription = FirebaseFirestore.instance
-          .collection('artifacts/$APP_ID/public/data/users')
+          .collection(FirestorePaths.users())
           .doc(currentUser.uid)
           .snapshots()
           .listen((userDoc) {
@@ -510,7 +517,7 @@ class _FeedTabState extends State<FeedTab> {
     setState(() => _isLoading = true);
 
     Query query = FirebaseFirestore.instance
-        .collection('artifacts/$APP_ID/public/data/posts')
+        .collection(FirestorePaths.posts())
         .orderBy('timestamp', descending: true)
         .limit(_postsLimit);
 
@@ -534,7 +541,7 @@ class _FeedTabState extends State<FeedTab> {
     setState(() => _isLoading = true);
 
     Query query = FirebaseFirestore.instance
-        .collection('artifacts/$APP_ID/public/data/posts')
+        .collection(FirestorePaths.posts())
         .orderBy('timestamp', descending: true)
         .startAfterDocument(_lastDocument!)
         .limit(_postsLimit);
@@ -745,7 +752,7 @@ class _ChatsTabState extends State<ChatsTab> {
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
-                .collection('artifacts/$APP_ID/public/data/chats')
+                .collection(FirestorePaths.chats())
                 .where('participants', arrayContains: currentUser.uid)
                 .orderBy('lastMessageTimestamp', descending: true)
                 .snapshots(),
@@ -871,7 +878,10 @@ class _ChatListItem extends StatelessWidget {
       final otherUserId = (List<String>.from(chat['participants'])).firstWhere((uid) => uid != currentUserId, orElse: () => '');
       if (otherUserId.isEmpty) return const SizedBox.shrink();
       return FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(otherUserId).get(),
+        future: FirebaseFirestore.instance
+            .collection(FirestorePaths.users())
+            .doc(otherUserId)
+            .get(),
         builder: (context, userSnapshot) {
           if (!userSnapshot.hasData) return const SizedBox.shrink();
           final userData = userSnapshot.data!.data() as Map<String, dynamic>;
@@ -1007,8 +1017,12 @@ class _PeopleTabState extends State<PeopleTab> {
   }
   
   void _toggleFollow(String currentUserId, String targetUserId, bool isFollowing) async {
-    final currentUserRef = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(currentUserId);
-    final targetUserRef = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(targetUserId);
+    final currentUserRef = FirebaseFirestore.instance
+        .collection(FirestorePaths.users())
+        .doc(currentUserId);
+    final targetUserRef = FirebaseFirestore.instance
+        .collection(FirestorePaths.users())
+        .doc(targetUserId);
 
     if (isFollowing) {
       await currentUserRef.update({'following': FieldValue.arrayRemove([targetUserId])});
@@ -1061,7 +1075,8 @@ class _PeopleTabState extends State<PeopleTab> {
 
   Widget _buildUserList(BuildContext context, String type, User currentUser, String searchQuery) {
     // Load minimal user lists instead of streaming the entire collection
-    final usersCollection = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users');
+    final usersCollection =
+        FirebaseFirestore.instance.collection(FirestorePaths.users());
     return FutureBuilder<DocumentSnapshot>(
       future: usersCollection.doc(currentUser.uid).get(),
       builder: (context, currentUserSnap) {
