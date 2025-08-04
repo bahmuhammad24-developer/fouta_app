@@ -631,31 +631,33 @@ class _FeedTabState extends State<FeedTab> {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          // Reverted segmented control back to ChoiceChips for feed toggle
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ChoiceChip(
-                label: const Text('Explore'),
-                selected: !_showFollowingFeed,
-                onSelected: (selected) {
-                  setState(() {
-                    _showFollowingFeed = false;
-                  });
-                },
+            child: Container(
+              color: Colors.transparent,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ChoiceChip(
+                    label: const Text('Explore'),
+                    selected: !_showFollowingFeed,
+                    onSelected: (selected) {
+                      setState(() {
+                        _showFollowingFeed = false;
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  ChoiceChip(
+                    label: const Text('Following'),
+                    selected: _showFollowingFeed,
+                    onSelected: (selected) {
+                      setState(() {
+                        _showFollowingFeed = true;
+                      });
+                    },
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text('Following'),
-                selected: _showFollowingFeed,
-                onSelected: (selected) {
-                  setState(() {
-                    _showFollowingFeed = true;
-                  });
-                },
-              ),
-            ],
-          ),
+            ),
           ),
           Expanded(
             child: (_posts.isEmpty && _isLoading)
