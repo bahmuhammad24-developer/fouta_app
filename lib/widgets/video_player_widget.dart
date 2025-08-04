@@ -6,6 +6,7 @@ import 'package:fouta_app/widgets/full_screen_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:fouta_app/utils/video_controller_extensions.dart';
 import 'package:provider/provider.dart';
 
 class VideoPlayerWidget extends StatefulWidget {
@@ -97,6 +98,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   
   void _releasePlayer() {
     if (_player != null) {
+      _controller?.dispose();
       _playerManager.releasePlayer(widget.videoId);
       if (mounted) {
         setState(() {

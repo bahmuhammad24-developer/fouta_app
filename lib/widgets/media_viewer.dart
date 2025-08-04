@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:fouta_app/services/video_cache_service.dart';
+import 'package:fouta_app/utils/video_controller_extensions.dart';
 
 /// A unified full‑screen media viewer that can display a list of images and
 /// videos.  Users can swipe between items, pinch to zoom on photos, and
@@ -164,6 +165,7 @@ class _MediaFilePageState extends State<_MediaFilePage> {
 
   @override
   void dispose() {
+    _controller?.dispose();
     _player?.dispose();
     super.dispose();
   }

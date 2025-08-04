@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:fouta_app/utils/video_controller_extensions.dart';
 
 /// Screen used to create and post a story.
 ///
@@ -53,6 +54,7 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
 
   @override
   void dispose() {
+    _controller?.dispose();
     _player?.dispose();
     super.dispose();
   }

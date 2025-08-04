@@ -4,6 +4,7 @@ import 'package:fouta_app/widgets/full_screen_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:fouta_app/utils/video_controller_extensions.dart';
 
 class ChatVideoPlayer extends StatefulWidget {
   final String videoUrl;
@@ -27,6 +28,7 @@ class _ChatVideoPlayerState extends State<ChatVideoPlayer> {
 
   @override
   void dispose() {
+    _controller?.dispose();
     _player.dispose();
     super.dispose();
   }
