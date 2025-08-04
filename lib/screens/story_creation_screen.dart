@@ -20,7 +20,7 @@ class StoryCreationScreen extends StatefulWidget {
   /// Whether the media is a video.
   final bool isVideo;
 
-  const StoryCreationScreen({
+  StoryCreationScreen({
     Key? key,
     required this.initialMediaPath,
     required this.isVideo,

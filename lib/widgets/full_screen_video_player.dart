@@ -10,7 +10,7 @@ class FullScreenVideoPlayer extends StatefulWidget {
   final String videoUrl;
   final Duration initialPosition;
 
-  const FullScreenVideoPlayer({
+  FullScreenVideoPlayer({
     Key? key,
     required this.videoUrl,
     required this.initialPosition,

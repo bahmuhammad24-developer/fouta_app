@@ -16,7 +16,7 @@ class StoryViewerScreen extends StatefulWidget {
   final List<Story> stories;
   final int initialStoryIndex;
 
-  const StoryViewerScreen({
+  StoryViewerScreen({
     Key? key,
     required this.stories,
     required this.initialStoryIndex,
