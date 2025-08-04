@@ -47,8 +47,10 @@ dev_dependencies:
   flutter_lints: ^3.0.0
 
 dependency_overrides:
+
   # Ensure the Linux implementation matches the latest record API.
   record_linux: ^1.0.0
+
 
 flutter:
   uses-material-design: true
