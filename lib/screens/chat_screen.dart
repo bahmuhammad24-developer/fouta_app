@@ -221,7 +221,8 @@ class _ChatScreenState extends State<ChatScreen> {
           return;
         }
         final player = Player();
-        await player.open(Media(pickedFile.path));
+        // Open without autoplay so the selected video's audio doesn't play in the background.
+        await player.open(Media(pickedFile.path), play: false);
         final duration = player.state.duration;
         if (duration.inSeconds > _maxVideoDurationSeconds) {
           await player.dispose();
@@ -236,12 +237,15 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() {
         _selectedMediaFile = pickedFile;
         _mediaType = isVideo ? 'video' : 'image';
-        if (kIsWeb) {
+        if (kIsWeb && !isVideo) {
+          // Only read bytes for image previews on web. Video previews show a placeholder.
           pickedFile!.readAsBytes().then((bytes) {
             setState(() {
               _selectedMediaBytes = bytes;
             });
           });
+        } else {
+          _selectedMediaBytes = null;
         }
       });
     }
@@ -292,8 +296,9 @@ class _ChatScreenState extends State<ChatScreen> {
         return;
       }
       setState(() => _isUploading = true);
-      final ref = FirebaseStorage.instance.ref()
-          .child('chat_media/$_currentChatId/${DateTime.now().millisecondsSinceEpoch}');
+      final ext = _selectedMediaFile!.name.split('.').last;
+      final ref = FirebaseStorage.instance.ref().child(
+          'chat_media/$_currentChatId/${DateTime.now().millisecondsSinceEpoch}.$ext');
 
       Uint8List? bytesToUpload;
       File? fileToUpload;
@@ -314,11 +319,19 @@ class _ChatScreenState extends State<ChatScreen> {
         }
       }
 
+      final metadata = SettableMetadata(
+        contentType: _mediaType == 'video'
+            ? 'video/mp4'
+            : _mediaType == 'audio'
+                ? 'audio/mpeg'
+                : 'image/jpeg',
+      );
+
       UploadTask uploadTask;
       if (bytesToUpload != null) {
-        uploadTask = ref.putData(bytesToUpload);
+        uploadTask = ref.putData(bytesToUpload, metadata);
       } else if (fileToUpload != null) {
-        uploadTask = ref.putFile(fileToUpload);
+        uploadTask = ref.putFile(fileToUpload, metadata);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Invalid media data for upload.')),
@@ -716,11 +729,21 @@ class _ChatScreenState extends State<ChatScreen> {
               height: 100,
               child: Stack(
                 children: [
-                  kIsWeb && _selectedMediaBytes != null
-                      ? Image.memory(_selectedMediaBytes!, height: 100, width: 100, fit: BoxFit.cover)
-                      : !kIsWeb
-                          ? Image.file(File(_selectedMediaFile!.path), height: 100, width: 100, fit: BoxFit.cover)
-                          : Container(),
+                  if (_mediaType == 'video')
+                    Container(
+                      width: 100,
+                      height: 100,
+                      color: Colors.black,
+                      child: const Center(
+                        child: Icon(Icons.play_circle_fill, color: Colors.white, size: 40),
+                      ),
+                    )
+                  else
+                    (kIsWeb && _selectedMediaBytes != null
+                        ? Image.memory(_selectedMediaBytes!, height: 100, width: 100, fit: BoxFit.cover)
+                        : !kIsWeb
+                            ? Image.file(File(_selectedMediaFile!.path), height: 100, width: 100, fit: BoxFit.cover)
+                            : Container()),
                   Positioned(
                     right: 0,
                     child: IconButton(
@@ -728,6 +751,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       onPressed: () => setState(() {
                         _selectedMediaFile = null;
                         _selectedMediaBytes = null;
+                        _mediaType = '';
                       }),
                     ),
                   )
