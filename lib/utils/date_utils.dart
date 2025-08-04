@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 /// relative manner. These helpers convert a [DateTime] into strings like
 /// "Just now", "5 mins ago", "Yesterday", or a formatted date. The
 /// thresholds are based on common UX guidelines that recommend relative
-/// timestamps until about seven days after the event【335098120425566†L238-L260】.
+/// timestamps until about seven days after the event.
 class DateUtilsHelper {
   /// Returns a human‑friendly relative string for the given [date].
   ///
