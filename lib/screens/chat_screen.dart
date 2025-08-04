@@ -47,7 +47,12 @@ class _ChatScreenState extends State<ChatScreen> {
   double _uploadProgress = 0.0;
   bool _isUploading = false;
 
-  final Record _audioRecorder = Record();
+  // The `record` package updated its API, replacing the concrete `Record`
+  // class with the new `AudioRecorder` implementation. The previous `Record`
+  // class is now abstract, so instantiating it directly caused compilation
+  // errors. `AudioRecorder` provides the same recording features with an
+  // updated `start` signature that accepts a [RecordConfig].
+  final AudioRecorder _audioRecorder = AudioRecorder();
   bool _isRecordingAudio = false;
 
   Timer? _typingTimer;
@@ -242,29 +247,32 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Future<void> _startRecording() async {
-    if (await _audioRecorder.hasPermission()) {
-      final dir = await getTemporaryDirectory();
-      final path = '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.m4a';
-      await _audioRecorder.start(path: path);
-      if (mounted) {
-        setState(() => _isRecordingAudio = true);
+    Future<void> _startRecording() async {
+      if (await _audioRecorder.hasPermission()) {
+        final dir = await getTemporaryDirectory();
+        final path = '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.m4a';
+        await _audioRecorder.start(
+          const RecordConfig(),
+          path: path,
+        );
+        if (mounted) {
+          setState(() => _isRecordingAudio = true);
+        }
       }
     }
-  }
 
-  Future<void> _stopRecording() async {
-    final path = await _audioRecorder.stop();
-    if (mounted) {
-      setState(() => _isRecordingAudio = false);
+    Future<void> _stopRecording() async {
+      final path = await _audioRecorder.stop();
+      if (mounted) {
+        setState(() => _isRecordingAudio = false);
+      }
+      if (path != null) {
+        setState(() {
+          _selectedMediaFile = XFile(path);
+          _mediaType = 'audio';
+        });
+      }
     }
-    if (path != null) {
-      setState(() {
-        _selectedMediaFile = XFile(path);
-        _mediaType = 'audio';
-      });
-    }
-  }
 
   Future<void> _sendMessage() async {
     final messageText = _messageController.text.trim();
