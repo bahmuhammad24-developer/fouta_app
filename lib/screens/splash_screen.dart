@@ -2,6 +2,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:fouta_app/main.dart';
+import 'package:fouta_app/screens/notification_permission_screen.dart';
+import 'package:fouta_app/services/push_notification_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -27,11 +29,15 @@ class _SplashScreenState extends State<SplashScreen> {
       }
     });
 
-    // Navigate to the main app after the animation
-    Timer(const Duration(seconds: 2), () {
+    // Navigate to the appropriate screen after the animation
+    Timer(const Duration(seconds: 2), () async {
+      if (!mounted) return;
+      final granted = await PushNotificationService.isPermissionGranted();
+      final Widget nextScreen =
+          granted ? const AuthWrapper() : const NotificationPermissionScreen();
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const AuthWrapper()),
+          MaterialPageRoute(builder: (context) => nextScreen),
         );
       }
     });

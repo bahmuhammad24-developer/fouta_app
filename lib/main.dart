@@ -4,6 +4,7 @@ import 'package:fouta_app/services/video_player_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fouta_app/services/push_notification_service.dart';
 import 'package:fouta_app/screens/auth_screen.dart';
 import 'package:fouta_app/screens/home_screen.dart';
 import 'package:media_kit/media_kit.dart';
@@ -23,6 +24,7 @@ void main() async {
   // Required for media_kit to work
   MediaKit.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await PushNotificationService.initialize();
 
   // Enable Firestore offline persistence
   FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: true);
