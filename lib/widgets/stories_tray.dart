@@ -52,18 +52,28 @@ class StoriesTray extends StatelessWidget {
                 return const Center(child: SizedBox.shrink());
               }
               // Filter out any expired stories and those from users not followed.
+              // A story is considered expired if it has an `expiresAt` timestamp in
+              // the past. If `expiresAt` is missing, we fall back to the
+              // `lastUpdated` field and consider the story expired 24 hours after
+              // that timestamp. This ensures stories older than a day disappear
+              // from the tray without deleting any backend data.
               final originalDocs = snapshot.data!.docs;
               final List<QueryDocumentSnapshot> filteredDocs = originalDocs.where((doc) {
                 final data = doc.data() as Map<String, dynamic>;
-                final expiresAt = data['expiresAt'];
                 if (!allowedIds.contains(doc.id)) return false;
-                if (expiresAt == null) return true;
-                try {
-                  final ts = expiresAt as Timestamp;
-                  return ts.toDate().isAfter(DateTime.now());
-                } catch (_) {
-                  return true;
+
+                DateTime? expiration;
+                final expiresAt = data['expiresAt'];
+                final lastUpdated = data['lastUpdated'];
+
+                if (expiresAt is Timestamp) {
+                  expiration = expiresAt.toDate();
+                } else if (lastUpdated is Timestamp) {
+                  expiration = lastUpdated.toDate().add(const Duration(hours: 24));
                 }
+
+                if (expiration == null) return true;
+                return expiration.isAfter(DateTime.now());
               }).toList();
               // Separate docs into unseen and seen based on whether the current user UID
               // appears in the 'viewedBy' array. Unseen stories should be shown first.

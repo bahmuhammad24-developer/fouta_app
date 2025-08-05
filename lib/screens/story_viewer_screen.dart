@@ -11,6 +11,7 @@ import 'package:fouta_app/services/video_cache_service.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:fouta_app/utils/video_controller_extensions.dart';
+import 'package:intl/intl.dart';
 
 class StoryViewerScreen extends StatefulWidget {
   final List<Story> stories;
@@ -249,7 +250,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                         errorWidget: (context, url, error) => const Center(child: Icon(Icons.error, color: Colors.white)),
                       ),
                     ),
-                  _buildOverlay(context, currentStory),
+                  _buildOverlay(context, currentStory, currentSlide),
                 ],
               ),
             );
@@ -259,7 +260,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     );
   }
 
-  Widget _buildOverlay(BuildContext context, Story story) {
+  Widget _buildOverlay(BuildContext context, Story story, StorySlide slide) {
     return Positioned(
       top: 40.0,
       left: 10.0,
@@ -301,7 +302,23 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                 child: story.userImageUrl.isEmpty ? const Icon(Icons.person) : null,
               ),
               const SizedBox(width: 8.0),
-              Text(story.userName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, shadows: [Shadow(blurRadius: 2)])),
+              Text(
+                story.userName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  shadows: [Shadow(blurRadius: 2)],
+                ),
+              ),
+              const SizedBox(width: 8.0),
+              Text(
+                DateFormat('MMM d, h:mm a').format(slide.timestamp.toDate()),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  shadows: [Shadow(blurRadius: 2)],
+                ),
+              ),
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.close, color: Colors.white),
