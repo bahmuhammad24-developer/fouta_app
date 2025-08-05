@@ -868,11 +868,13 @@ class _ChatsTabState extends State<ChatsTab> {
             stream: FirebaseFirestore.instance
                 .collection(FirestorePaths.chats())
                 .where('participants', arrayContains: currentUser.uid)
-                .orderBy('lastMessageTimestamp', descending: true)
                 .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return const Center(child: Text('Failed to load chats'));
               }
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                 return Center(
@@ -898,12 +900,23 @@ class _ChatsTabState extends State<ChatsTab> {
                   ),
                 );
               }
+              final docs = snapshot.data!.docs.toList();
+              docs.sort((a, b) {
+                final aData = a.data() as Map<String, dynamic>;
+                final bData = b.data() as Map<String, dynamic>;
+                final aTs = aData['lastMessageTimestamp'] as Timestamp?;
+                final bTs = bData['lastMessageTimestamp'] as Timestamp?;
+                if (aTs == null && bTs == null) return 0;
+                if (aTs == null) return 1;
+                if (bTs == null) return -1;
+                return bTs.compareTo(aTs);
+              });
               return ListView.separated(
                 padding: const EdgeInsets.fromLTRB(0, 0, 0, 80),
-                itemCount: snapshot.data!.docs.length,
+                itemCount: docs.length,
                 separatorBuilder: (context, index) => const Divider(height: 1, indent: 80),
                 itemBuilder: (context, index) {
-                  final chatDoc = snapshot.data!.docs[index];
+                  final chatDoc = docs[index];
                   final chat = chatDoc.data() as Map<String, dynamic>;
                   return _ChatListItem(
                     chat: chat,
