@@ -6,6 +6,7 @@ import 'package:fouta_app/main.dart';
 import 'package:fouta_app/models/story_model.dart';
 import 'package:fouta_app/screens/story_camera_screen.dart';
 import 'package:fouta_app/screens/story_viewer_screen.dart';
+import 'package:fouta_app/utils/firestore_paths.dart';
 
 class StoriesTray extends StatelessWidget {
   const StoriesTray({super.key});
@@ -14,100 +15,121 @@ class StoriesTray extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
 
-    return Container(
-      height: 100.0,
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('artifacts/$APP_ID/public/data/stories')
-            // Order by lastUpdated so the newest stories appear first. We'll filter
-            // out expired stories on the client because some documents may not
-            // have an `expiresAt` field (e.g. older data). Filtering client‑side
-            // prevents unintentionally excluding those records.
-            .orderBy('lastUpdated', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: SizedBox.shrink());
-          }
-          // Filter out any expired stories. Stories missing `expiresAt` are included.
-          final originalDocs = snapshot.data!.docs;
-          final List<QueryDocumentSnapshot> filteredDocs = originalDocs.where((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            final expiresAt = data['expiresAt'];
-            if (expiresAt == null) return true;
-            try {
-              final ts = expiresAt as Timestamp;
-              return ts.toDate().isAfter(DateTime.now());
-            } catch (_) {
-              return true;
-            }
-          }).toList();
-          // Separate docs into unseen and seen based on whether the current user UID
-          // appears in the 'viewedBy' array. Unseen stories should be shown first.
-          final List<QueryDocumentSnapshot> unseenDocs = [];
-          final List<QueryDocumentSnapshot> seenDocs = [];
-          for (final doc in filteredDocs) {
-            final data = doc.data() as Map<String, dynamic>;
-            final List<dynamic> viewedBy = data['viewedBy'] ?? [];
-            final bool hasUnseen = currentUser != null
-                ? !viewedBy.contains(currentUser!.uid)
-                : true;
-            if (hasUnseen) {
-              unseenDocs.add(doc);
-            } else {
-              seenDocs.add(doc);
-            }
-          }
-          final List<QueryDocumentSnapshot> sortedDocs = [...unseenDocs, ...seenDocs];
+    if (currentUser == null) {
+      return const SizedBox.shrink();
+    }
 
-          return ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            itemCount: sortedDocs.length + 1, // +1 for the "Your Story" button
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return _buildYourStoryAvatar(context, currentUser);
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection(FirestorePaths.users())
+          .doc(currentUser.uid)
+          .snapshots(),
+      builder: (context, userSnapshot) {
+        if (!userSnapshot.hasData) {
+          return const Center(child: SizedBox.shrink());
+        }
+        final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
+        final List<dynamic> followingDynamic = userData?['following'] ?? [];
+        final Set<String> allowedIds = {
+          ...followingDynamic.cast<String>(),
+          currentUser.uid,
+        };
+
+        return Container(
+          height: 100.0,
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('artifacts/$APP_ID/public/data/stories')
+                // Order by lastUpdated so the newest stories appear first. We'll filter
+                // out expired stories on the client because some documents may not
+                // have an `expiresAt` field (e.g. older data). Filtering client‑side
+                // prevents unintentionally excluding those records.
+                .orderBy('lastUpdated', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: SizedBox.shrink());
               }
-              final storyDoc = sortedDocs[index - 1];
-              final storyData = storyDoc.data() as Map<String, dynamic>;
+              // Filter out any expired stories and those from users not followed.
+              final originalDocs = snapshot.data!.docs;
+              final List<QueryDocumentSnapshot> filteredDocs = originalDocs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final expiresAt = data['expiresAt'];
+                if (!allowedIds.contains(doc.id)) return false;
+                if (expiresAt == null) return true;
+                try {
+                  final ts = expiresAt as Timestamp;
+                  return ts.toDate().isAfter(DateTime.now());
+                } catch (_) {
+                  return true;
+                }
+              }).toList();
+              // Separate docs into unseen and seen based on whether the current user UID
+              // appears in the 'viewedBy' array. Unseen stories should be shown first.
+              final List<QueryDocumentSnapshot> unseenDocs = [];
+              final List<QueryDocumentSnapshot> seenDocs = [];
+              for (final doc in filteredDocs) {
+                final data = doc.data() as Map<String, dynamic>;
+                final List<dynamic> viewedBy = data['viewedBy'] ?? [];
+                final bool hasUnseen =
+                    !viewedBy.contains(currentUser.uid);
+                if (hasUnseen) {
+                  unseenDocs.add(doc);
+                } else {
+                  seenDocs.add(doc);
+                }
+              }
+              final List<QueryDocumentSnapshot> sortedDocs = [...unseenDocs, ...seenDocs];
 
-              // Determine if the current user has unseen stories by checking the 'viewedBy' array on the story document
-              final List<dynamic> viewedBy = storyData['viewedBy'] ?? [];
-              final bool hasUnseen = currentUser != null
-                  ? !(viewedBy.contains(currentUser.uid))
-                  : true;
+              return ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                itemCount: sortedDocs.length + 1, // +1 for the "Your Story" button
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return _buildYourStoryAvatar(context, currentUser);
+                  }
+                  final storyDoc = sortedDocs[index - 1];
+                  final storyData = storyDoc.data() as Map<String, dynamic>;
 
-              return _StoryAvatar(
-                imageUrl: storyData['authorImageUrl'],
-                userName: storyData['authorName'],
-                hasUnseen: hasUnseen,
-                onTap: () {
-                  // Build the list of Story models preserving the same order as sortedDocs.
-                  final stories = sortedDocs.map((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    return Story(
-                      userId: doc.id,
-                      userName: data['authorName'] ?? 'User',
-                      userImageUrl: data['authorImageUrl'] ?? '',
-                      slides: [],
-                    );
-                  }).toList();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => StoryViewerScreen(
-                        stories: stories,
-                        initialStoryIndex: index - 1,
-                      ),
-                    ),
+                  // Determine if the current user has unseen stories by checking the 'viewedBy' array on the story document
+                  final List<dynamic> viewedBy = storyData['viewedBy'] ?? [];
+                  final bool hasUnseen =
+                      !(viewedBy.contains(currentUser.uid));
+
+                  return _StoryAvatar(
+                    imageUrl: storyData['authorImageUrl'],
+                    userName: storyData['authorName'],
+                    hasUnseen: hasUnseen,
+                    onTap: () {
+                      // Build the list of Story models preserving the same order as sortedDocs.
+                      final stories = sortedDocs.map((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        return Story(
+                          userId: doc.id,
+                          userName: data['authorName'] ?? 'User',
+                          userImageUrl: data['authorImageUrl'] ?? '',
+                          slides: [],
+                        );
+                      }).toList();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => StoryViewerScreen(
+                            stories: stories,
+                            initialStoryIndex: index - 1,
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               );
             },
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
