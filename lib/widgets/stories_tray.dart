@@ -98,7 +98,7 @@ class StoriesTray extends StatelessWidget {
                 itemCount: sortedDocs.length + 1, // +1 for the "Your Story" button
                 itemBuilder: (context, index) {
                   if (index == 0) {
-                    return _buildYourStoryAvatar(context, currentUser);
+                    return _buildYourStoryAvatar(context, currentUser, sortedDocs);
                   }
                   final storyDoc = sortedDocs[index - 1];
                   final storyData = storyDoc.data() as Map<String, dynamic>;
@@ -143,13 +143,38 @@ class StoriesTray extends StatelessWidget {
     );
   }
 
-  Widget _buildYourStoryAvatar(BuildContext context, User? currentUser) {
+  Widget _buildYourStoryAvatar(
+      BuildContext context, User? currentUser, List<QueryDocumentSnapshot> sortedDocs) {
+    final yourIndex = sortedDocs.indexWhere((doc) => doc.id == currentUser?.uid);
+    final bool hasStory = yourIndex != -1;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
       child: GestureDetector(
         onTap: () {
-          // Navigate to the camera interface for capturing a new story.
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const StoryCameraScreen()));
+          if (hasStory) {
+            final stories = sortedDocs.map((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              return Story(
+                userId: doc.id,
+                userName: data['authorName'] ?? 'User',
+                userImageUrl: data['authorImageUrl'] ?? '',
+                slides: [],
+              );
+            }).toList();
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StoryViewerScreen(
+                  stories: stories,
+                  initialStoryIndex: yourIndex,
+                ),
+              ),
+            );
+          } else {
+            // Navigate to the camera interface for capturing a new story.
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const StoryCameraScreen()));
+          }
         },
         child: Column(
           children: [
@@ -161,17 +186,18 @@ class StoriesTray extends StatelessWidget {
                   backgroundColor: Colors.grey,
                   child: Icon(Icons.person, color: Colors.white, size: 32),
                 ),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    shape: BoxShape.circle,
+                if (!hasStory)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.add_circle,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 22.0,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.add_circle,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 22.0,
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 2.0),
@@ -179,7 +205,7 @@ class StoriesTray extends StatelessWidget {
             SizedBox(
               height: 14,
               child: Text(
-                'Your Story', 
+                'Your Story',
                 style: const TextStyle(fontSize: 11),
                 maxLines: 1,
                 textAlign: TextAlign.center,

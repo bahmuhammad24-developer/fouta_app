@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fouta_app/main.dart';
 import 'package:fouta_app/models/story_model.dart';
 import 'package:fouta_app/services/video_cache_service.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:fouta_app/utils/video_controller_extensions.dart';
@@ -298,8 +299,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
             children: [
               CircleAvatar(
                 radius: 16,
-                backgroundImage: story.userImageUrl.isNotEmpty ? NetworkImage(story.userImageUrl) : null,
-                child: story.userImageUrl.isEmpty ? const Icon(Icons.person) : null,
+                backgroundImage: story.userImageUrl.isNotEmpty
+                    ? NetworkImage(story.userImageUrl)
+                    : null,
+                child: story.userImageUrl.isEmpty
+                    ? const Icon(Icons.person)
+                    : null,
               ),
               const SizedBox(width: 8.0),
               Text(
@@ -320,6 +325,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                 ),
               ),
               const Spacer(),
+              if (FirebaseAuth.instance.currentUser?.uid == story.userId)
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.white),
+                  onPressed: () => _deleteStory(story.userId),
+                ),
               IconButton(
                 icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () => Navigator.of(context).pop(),
@@ -374,6 +384,53 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     _videoController = null;
     _videoPlayer?.dispose();
     _videoPlayer = null;
+  }
+
+  /// Delete the current user's story from Firestore and storage.
+  Future<void> _deleteStory(String userId) async {
+    final shouldDelete = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Delete Story'),
+            content: const Text('Are you sure you want to delete your story?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!shouldDelete) return;
+
+    try {
+      final storyRef = FirebaseFirestore.instance
+          .collection('artifacts/$APP_ID/public/data/stories')
+          .doc(userId);
+      final slidesSnapshot = await storyRef.collection('slides').get();
+      for (final doc in slidesSnapshot.docs) {
+        final data = doc.data();
+        final mediaUrl = data['mediaUrl'];
+        if (mediaUrl is String && mediaUrl.isNotEmpty) {
+          try {
+            await FirebaseStorage.instance.refFromURL(mediaUrl).delete();
+          } catch (_) {}
+        }
+        await doc.reference.delete();
+      }
+      await storyRef.delete();
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to delete story')));
+      }
+    }
   }
 
   /// Update the story document to record that the current user has viewed it.
