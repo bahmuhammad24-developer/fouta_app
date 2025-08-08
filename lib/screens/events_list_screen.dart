@@ -6,6 +6,7 @@ import 'package:fouta_app/main.dart';
 import 'package:fouta_app/screens/create_event_screen.dart';
 import 'package:fouta_app/screens/event_details_screen.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
+import 'package:fouta_app/widgets/fouta_card.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -262,23 +263,26 @@ class _EventCard extends StatelessWidget {
 
     return Opacity(
       opacity: isPast ? 0.6 : 1.0,
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-        child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => EventDetailsScreen(eventId: eventId),
-              ),
-            );
-          },
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (headerImageUrl.isNotEmpty)
-                CachedNetworkImage(
+      child: FoutaCard(
+        padding: EdgeInsets.zero,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => EventDetailsScreen(eventId: eventId),
+            ),
+          );
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (headerImageUrl.isNotEmpty)
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+                child: CachedNetworkImage(
                   imageUrl: headerImageUrl,
                   height: 140,
                   width: double.infinity,
@@ -289,59 +293,67 @@ class _EventCard extends StatelessWidget {
                     child: const Center(child: CircularProgressIndicator()),
                   ),
                   errorWidget: (context, url, error) => _buildDefaultHeader(context),
-                )
-              else
-                _buildDefaultHeader(context),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      DateFormat('EEE, MMM d, yyyy • hh:mm a').format(eventDate),
-                      style: TextStyle(
-                        color: Theme.of(context).primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      eventData['title'] ?? 'Untitled Event',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            eventData['location'] ?? 'No location provided',
-                            style: TextStyle(color: Colors.grey[600]),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Icon(Icons.people_outline, size: 16, color: Colors.grey[600]),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${attendees.length} going',
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                      ],
-                    ),
-                  ],
                 ),
               )
-            ],
-          ),
+            else
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+                child: _buildDefaultHeader(context),
+              ),
+            Container(
+              width: double.infinity,
+              color: Theme.of(context).cardColor,
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    DateFormat('EEE, MMM d, yyyy • hh:mm a').format(eventDate),
+                    style: TextStyle(
+                      color: Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    eventData['title'] ?? 'Untitled Event',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          eventData['location'] ?? 'No location provided',
+                          style: TextStyle(color: Colors.grey[600]),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Icon(Icons.people_outline, size: 16, color: Colors.grey[600]),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${attendees.length} going',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
