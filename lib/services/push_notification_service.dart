@@ -6,6 +6,11 @@ import 'package:flutter/foundation.dart';
 import '../firebase_options.dart';
 import '../utils/firestore_paths.dart';
 
+// Mark the handler as an entry point to ensure it's not tree-shaken in release
+// builds, which prevents background notifications from being processed when the
+// app is terminated. This is critical for receiving push notifications on iOS
+// when the application is not running.
+@pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
@@ -15,6 +20,9 @@ class PushNotificationService {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('Received a foreground message: ${message.messageId}');
+    });
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint('Notification caused app to open: ${message.messageId}');
     });
 
     await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
