@@ -29,26 +29,28 @@ class FoutaThemeDiaspora {
   /// Returns the light [ThemeData] for the Diaspora palette.
   static ThemeData get lightTheme {
     return ThemeData(
-      useMaterial3: false,
+      useMaterial3: true,
       primaryColor: lightPrimary,
       scaffoldBackgroundColor: lightBackground,
       fontFamily: 'Inter',
-      colorScheme: const ColorScheme.light(
-        primary: lightPrimary,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: lightPrimary,
+        brightness: Brightness.light,
+      ).copyWith(
         secondary: lightSecondary,
+        onSecondary: Colors.black,
         surface: lightSurface,
         background: lightBackground,
         error: lightError,
+        onSurface: const Color(0xFF333333),
+        onBackground: const Color(0xFF333333),
         onPrimary: Colors.white,
-        onSecondary: Colors.black,
-        onSurface: Color(0xFF333333),
-        onBackground: Color(0xFF333333),
-        onError: Colors.white,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: lightSurface,
-        foregroundColor: lightPrimary,
-        elevation: 1,
+        foregroundColor: Color(0xFF333333),
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: lightSecondary,
@@ -92,27 +94,29 @@ class FoutaThemeDiaspora {
   /// Returns the dark [ThemeData] for the Diaspora palette.
   static ThemeData get darkTheme {
     return ThemeData(
-      useMaterial3: false,
+      useMaterial3: true,
       brightness: Brightness.dark,
       primaryColor: darkPrimary,
       scaffoldBackgroundColor: darkBackground,
       fontFamily: 'Inter',
-      colorScheme: const ColorScheme.dark(
-        primary: darkPrimary,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: darkPrimary,
+        brightness: Brightness.dark,
+      ).copyWith(
         secondary: darkSecondary,
+        onSecondary: Colors.black,
         background: darkBackground,
         surface: darkSurface,
         error: darkError,
-        onPrimary: Colors.white,
-        onSecondary: Colors.black,
         onSurface: darkText,
         onBackground: darkText,
-        onError: Colors.white,
+        onPrimary: Colors.white,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: darkSurface,
-        foregroundColor: darkSecondary,
-        elevation: 1,
+        foregroundColor: darkText,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: darkSecondary,
