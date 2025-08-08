@@ -35,7 +35,7 @@ exports.incrementUnreadMessageCount = onDocumentCreated(
         const recipientRef = db.collection("artifacts/fouta-app/public/data/users").doc(recipientId);
         
         const batch = db.batch();
-        
+
         batch.update(recipientRef, {
             unreadMessageCount: admin.firestore.FieldValue.increment(1),
         });
@@ -44,7 +44,30 @@ exports.incrementUnreadMessageCount = onDocumentCreated(
             [`unreadCounts.${recipientId}`]: admin.firestore.FieldValue.increment(1),
         });
 
-        return batch.commit();
+        await batch.commit();
+
+        const recipientDoc = await recipientRef.get();
+        const tokens = recipientDoc.data().fcmTokens || [];
+        if (tokens.length > 0) {
+            const payload = {
+                tokens: tokens,
+                notification: {
+                    title: `${messageData.senderName || 'New message'}`,
+                    body: messageData.content || 'You have a new message.',
+                },
+                data: {
+                    chatId: chatId,
+                    senderId: senderId,
+                },
+            };
+            try {
+                await admin.messaging().sendEachForMulticast(payload);
+            } catch (error) {
+                console.error('Error sending FCM message', error);
+            }
+        }
+
+        return null;
     });
 
 // **FIXED FUNCTION:** This now correctly listens for updates on the CHAT document.
