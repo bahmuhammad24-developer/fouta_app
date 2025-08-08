@@ -162,6 +162,7 @@ samples, guidance on mobile development, and a full API reference.
 - Handle camera and microphone permissions in the story camera screen to prevent a crash when creating stories.
 - Updated platform configuration and dependencies to support these permissions.
 - Configured iOS permission macros to enable camera and microphone access and avoid crashes when creating stories on iOS.
+- Ensured background push notifications work by marking the Firebase Messaging background handler as an entry point and logging when notifications open the app.
 
 For help getting started with Flutter development, view the [online documentation](https://docs.flutter.dev/), which offers tutorials, samples, guidance on mobile development, and a full API reference.
 
@@ -221,7 +222,8 @@ flutter test
 ```
 
 ## Change Log
- - 2025-08-08 03:09 UTC – Increased video upload limit to 500 MB for posts and chats and expanded video cache capacity.
+- 2025-08-08 06:18 UTC – Marked Firebase Messaging background handler as an entry point and logged notification open events to enable push notifications when the app is closed.
+- 2025-08-08 03:09 UTC – Increased video upload limit to 500 MB for posts and chats and expanded video cache capacity.
 - 2025-08-08 02:36 UTC – Registered device tokens and added Cloud Function to send push notifications for new chat messages.
 - 2025-08-08 02:21 UTC – Added AI collaboration guidelines requiring agents to document their work.
 - 2025-08-08 02:15 UTC – Expanded README with a hierarchical app structure including all icons and color choices.
