@@ -12,7 +12,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:fouta_app/utils/video_controller_extensions.dart';
-import 'package:intl/intl.dart';
+import 'package:fouta_app/utils/date_utils.dart';
 
 class StoryViewerScreen extends StatefulWidget {
   final List<Story> stories;
@@ -317,7 +317,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
               ),
               const SizedBox(width: 8.0),
               Text(
-                DateFormat('MMM d, h:mm a').format(slide.timestamp.toDate()),
+                DateUtilsHelper.formatRelative(slide.timestamp.toDate()),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,
