@@ -28,9 +28,11 @@
         <string>Camera access is required to create stories.</string>
         <key>NSMicrophoneUsageDescription</key>
         <string>Microphone access is required to record story videos.</string>
+        <key>NSPhotoLibraryUsageDescription</key>
+        <string>Photo library access is required to choose existing media.</string>
         <key>LSRequiresIPhoneOS</key>
         <true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
+        <key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>

@@ -124,8 +124,17 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
       await uploadTask;
       final mediaUrl = await ref.getDownloadURL();
 
-      // Fetch author details for display in story tray
-      String displayName = user.email?.split('@')[0] ?? 'User';
+      // Fetch author details for display in story tray.
+      // Some authentication methods (e.g., phone sign-in) don't provide an
+      // email address.  The previous implementation attempted to split the
+      // email to derive a username which resulted in a crash when `email` was
+      // null.  Derive the display name defensively instead.
+      String displayName;
+      if (user.email != null) {
+        displayName = user.email!.split('@').first;
+      } else {
+        displayName = user.displayName ?? user.phoneNumber ?? 'User';
+      }
       String imageUrl = '';
       try {
         final userDoc = await FirebaseFirestore.instance
@@ -144,7 +153,7 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
       final storyDoc = storiesRef.doc(user.uid);
 
       await storyDoc.set({
-
+        'authorId': user.uid,
         'authorName': displayName,
         'authorImageUrl': imageUrl,
         'lastUpdated': FieldValue.serverTimestamp(),
@@ -154,6 +163,7 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
       }, SetOptions(merge: true));
 
       await storyDoc.collection('slides').add({
+        'authorId': user.uid,
         'mediaUrl': mediaUrl,
         'mediaType': widget.isVideo ? 'video' : 'image',
         'createdAt': FieldValue.serverTimestamp(),

@@ -118,6 +118,22 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
   }
 
   Future<void> _pickFromGallery() async {
+    final statuses = await [Permission.photos, Permission.storage].request();
+    final photosGranted =
+        statuses[Permission.photos] == PermissionStatus.granted;
+    final storageGranted =
+        statuses[Permission.storage] == PermissionStatus.granted;
+    if (!photosGranted && !storageGranted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Photo library permission is required.'),
+          ),
+        );
+      }
+      return;
+    }
+
     final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
     if (file != null && mounted) {
       Navigator.push(
