@@ -9,9 +9,14 @@ import 'package:fouta_app/screens/create_post_screen.dart';
 import 'package:fouta_app/utils/date_utils.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
 
-class NotificationsScreen extends StatelessWidget {
+class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
+  @override
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends State<NotificationsScreen> {
   String _formatTimestamp(Timestamp? timestamp) {
     if (timestamp == null) return 'Just now';
     return DateUtilsHelper.formatRelative(timestamp.toDate());
@@ -27,17 +32,18 @@ class NotificationsScreen extends StatelessWidget {
       );
     }
 
+    final notificationsQuery = FirebaseFirestore.instance
+        .collection('artifacts/$APP_ID/public/data/users')
+        .doc(currentUser.uid)
+        .collection('notifications')
+        .orderBy('timestamp', descending: true);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notifications'),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('artifacts/$APP_ID/public/data/users')
-            .doc(currentUser.uid)
-            .collection('notifications')
-            .orderBy('timestamp', descending: true)
-            .snapshots(),
+        stream: notificationsQuery.snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -67,63 +73,69 @@ class NotificationsScreen extends StatelessWidget {
 
           final notifications = snapshot.data!.docs;
 
-          return ListView.builder(
-            itemCount: notifications.length,
-            itemBuilder: (context, index) {
-              final notification = notifications[index].data() as Map<String, dynamic>;
-              final String type = notification['type'] ?? '';
-              final String fromUserName = notification['fromUserName'] ?? 'Someone';
-              final String content = notification['content'] ?? '';
-              final Timestamp? timestamp = notification['timestamp'];
-
-              IconData iconData;
-              Color iconColor;
-              switch (type) {
-                case 'like':
-                  iconData = Icons.favorite;
-                  iconColor = Colors.red;
-                  break;
-                case 'comment':
-                  iconData = Icons.comment;
-                  iconColor = Colors.blue;
-                  break;
-                case 'follow':
-                  iconData = Icons.person_add;
-                  iconColor = Colors.green;
-                  break;
-                default:
-                  iconData = Icons.notifications;
-                  iconColor = Colors.grey;
-              }
-
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: iconColor,
-                  child: Icon(iconData, color: Colors.white),
-                ),
-                title: Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(text: fromUserName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      TextSpan(text: ' $content'),
-                    ],
-                  ),
-                ),
-                subtitle: Text(
-                  _formatTimestamp(timestamp),
-                ),
-                onTap: () {
-                  final String? postId = notification['postId'];
-                  final String? fromUserId = notification['fromUserId'];
-                  // FIX: Added parentheses to correct the logical condition
-                  if ((type == 'like' || type == 'comment') && postId != null) {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => PostDetailScreen(postId: postId)));
-                  } else if (type == 'follow' && fromUserId != null) {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreen(userId: fromUserId)));
-                  }
-                },
-              );
+          return RefreshIndicator(
+            onRefresh: () async {
+              await notificationsQuery.get();
+              setState(() {});
             },
+            child: ListView.builder(
+              itemCount: notifications.length,
+              itemBuilder: (context, index) {
+                final notification = notifications[index].data() as Map<String, dynamic>;
+                final String type = notification['type'] ?? '';
+                final String fromUserName = notification['fromUserName'] ?? 'Someone';
+                final String content = notification['content'] ?? '';
+                final Timestamp? timestamp = notification['timestamp'];
+
+                IconData iconData;
+                Color iconColor;
+                switch (type) {
+                  case 'like':
+                    iconData = Icons.favorite;
+                    iconColor = Colors.red;
+                    break;
+                  case 'comment':
+                    iconData = Icons.comment;
+                    iconColor = Colors.blue;
+                    break;
+                  case 'follow':
+                    iconData = Icons.person_add;
+                    iconColor = Colors.green;
+                    break;
+                  default:
+                    iconData = Icons.notifications;
+                    iconColor = Colors.grey;
+                }
+
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: iconColor,
+                    child: Icon(iconData, color: Colors.white),
+                  ),
+                  title: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(text: fromUserName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        TextSpan(text: ' $content'),
+                      ],
+                    ),
+                  ),
+                  subtitle: Text(
+                    _formatTimestamp(timestamp),
+                  ),
+                  onTap: () {
+                    final String? postId = notification['postId'];
+                    final String? fromUserId = notification['fromUserId'];
+                    // FIX: Added parentheses to correct the logical condition
+                    if ((type == 'like' || type == 'comment') && postId != null) {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => PostDetailScreen(postId: postId)));
+                    } else if (type == 'follow' && fromUserId != null) {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreen(userId: fromUserId)));
+                    }
+                  },
+                );
+              },
+            ),
           );
         },
       ),

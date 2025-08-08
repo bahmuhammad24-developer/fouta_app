@@ -222,16 +222,21 @@ class _EventsListScreenState extends State<EventsListScreen> {
           );
         }
         final events = snapshot.data!.docs;
-        return ListView.builder(
-          padding: const EdgeInsets.all(8.0),
-          itemCount: events.length,
-          itemBuilder: (context, index) {
-            final eventData = events[index].data() as Map<String, dynamic>;
-            return _EventCard(
-              eventId: events[index].id,
-              eventData: eventData,
-            );
+        return RefreshIndicator(
+          onRefresh: () async {
+            await query.get();
           },
+          child: ListView.builder(
+            padding: const EdgeInsets.all(8.0),
+            itemCount: events.length,
+            itemBuilder: (context, index) {
+              final eventData = events[index].data() as Map<String, dynamic>;
+              return _EventCard(
+                eventId: events[index].id,
+                eventData: eventData,
+              );
+            },
+          ),
         );
       },
     );

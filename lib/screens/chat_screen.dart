@@ -67,7 +67,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // Media upload limitations
   // Increase limits so typical smartphone videos can be shared.
-  static const int _maxVideoFileSize = 100 * 1024 * 1024; // 100 MB
+  static const int _maxVideoFileSize = 500 * 1024 * 1024; // 500 MB
   static const int _maxVideoDurationSeconds = 300; // 5 minutes max
 
   @override
@@ -216,7 +216,7 @@ class _ChatScreenState extends State<ChatScreen> {
         final fileSize = File(pickedFile.path).lengthSync();
         if (fileSize > _maxVideoFileSize) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Video is too large. Please select a video under 100 MB.')),
+            const SnackBar(content: Text('Video is too large. Please select a video under 500 MB.')),
           );
           return;
         }
@@ -758,27 +758,29 @@ class _ChatScreenState extends State<ChatScreen> {
                 ],
               ),
             ),
-          Row(
-            children: [
-              GestureDetector(
-                onLongPressStart: (_) => _startRecording(),
-                onLongPressEnd: (_) => _stopRecording(),
-                child: Icon(
-                  Icons.mic,
-                  color: _isRecordingAudio ? Colors.red : null,
+          SafeArea(
+            child: Row(
+              children: [
+                GestureDetector(
+                  onLongPressStart: (_) => _startRecording(),
+                  onLongPressEnd: (_) => _stopRecording(),
+                  child: Icon(
+                    Icons.mic,
+                    color: _isRecordingAudio ? Colors.red : null,
+                  ),
                 ),
-              ),
-              IconButton(icon: const Icon(Icons.image), onPressed: () => _pickMediaForChat(ImageSource.gallery)),
-              IconButton(icon: const Icon(Icons.videocam), onPressed: () => _pickMediaForChat(ImageSource.gallery, isVideo: true)),
-              Expanded(
-                child: TextField(
-                  controller: _messageController,
-                  decoration: const InputDecoration(hintText: 'Type a message...'),
-                  textCapitalization: TextCapitalization.sentences,
+                IconButton(icon: const Icon(Icons.image), onPressed: () => _pickMediaForChat(ImageSource.gallery)),
+                IconButton(icon: const Icon(Icons.videocam), onPressed: () => _pickMediaForChat(ImageSource.gallery, isVideo: true)),
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    decoration: const InputDecoration(hintText: 'Type a message...'),
+                    textCapitalization: TextCapitalization.sentences,
+                  ),
                 ),
-              ),
-              IconButton(icon: const Icon(Icons.send), onPressed: _sendMessage),
-            ],
+                IconButton(icon: const Icon(Icons.send), onPressed: _sendMessage),
+              ],
+            ),
           ),
         ],
       ),

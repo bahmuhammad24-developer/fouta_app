@@ -685,6 +685,10 @@ class _MediaGridTile extends StatelessWidget {
             CachedNetworkImage(
               imageUrl: mediaUrl,
               fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                color: Colors.grey[300],
+                child: const Center(child: CircularProgressIndicator()),
+              ),
               errorWidget: (context, url, error) => const Icon(Icons.error),
             ),
             if(mediaType == 'video')

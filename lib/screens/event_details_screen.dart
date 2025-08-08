@@ -118,6 +118,19 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       ? CachedNetworkImage(
                           imageUrl: headerImageUrl,
                           fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                                color: Colors.grey[200],
+                                child: const Center(
+                                    child: CircularProgressIndicator()),
+                              ),
+                          errorWidget: (context, url, error) => Container(
+                                color: Theme.of(context).primaryColor,
+                                child: Icon(
+                                  Icons.event,
+                                  size: 80,
+                                  color: Colors.white.withOpacity(0.5),
+                                ),
+                              ),
                         )
                       : Container(
                           color: Theme.of(context).primaryColor,
@@ -410,13 +423,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           },
         ),
         const SizedBox(height: 8),
-        TextField(
-          controller: _commentController,
-          decoration: InputDecoration(
-            hintText: 'Add a comment...',
-            suffixIcon: IconButton(
-              icon: Icon(Icons.send, color: Theme.of(context).primaryColor),
-              onPressed: _addComment,
+        SafeArea(
+          bottom: true,
+          child: TextField(
+            controller: _commentController,
+            decoration: InputDecoration(
+              hintText: 'Add a comment...',
+              suffixIcon: IconButton(
+                icon: Icon(Icons.send, color: Theme.of(context).primaryColor),
+                onPressed: _addComment,
+              ),
             ),
           ),
         ),
