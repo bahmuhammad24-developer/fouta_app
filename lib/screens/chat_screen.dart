@@ -189,6 +189,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null && _chatRef != null) {
+      _chatRef!.update({'typingStatus.${currentUser.uid}': false});
+    }
     _messageController.removeListener(_handleTyping);
     _messageController.dispose();
     _typingTimer?.cancel();
