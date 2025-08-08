@@ -15,6 +15,12 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
+
+## Recent Changes
+
+- Handle camera and microphone permissions in the story camera screen to prevent a crash when creating stories.
+- Updated platform configuration and dependencies to support these permissions.
+
 ## iOS Build Setup & Firebase Integration
 
 - **Regenerating the iOS project:** The previous `ios/` directory was removed and `flutter create .` was run to regenerate a clean iOS project, eliminating stale Swift Package references that caused duplicate module errors.
@@ -57,4 +63,5 @@ samples, guidance on mobile development, and a full API reference.
 - **gRPC header search paths:** The Podfile adds `$(PODS_ROOT)/gRPC-C++/include` and `$(PODS_ROOT)/gRPC-Core/include` to the header search paths to fix missing gRPC headers.
 - **Bundle ID and Firebase plist:** The project uses bundle ID `com.example.foutaApp`. If you register a new Firebase app, replace `ios/Runner/GoogleService-Info.plist` with the file downloaded from Firebase.
 - **Record plugin:** The `record` plugin was upgraded to 6.x to resolve Swift compilation errors. Future plugin upgrades should follow the clean sequence above.
+
 
