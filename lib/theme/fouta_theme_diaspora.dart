@@ -50,6 +50,7 @@ class FoutaThemeDiaspora {
         backgroundColor: lightSurface,
         foregroundColor: Color(0xFF333333),
         titleTextStyle: const TextStyle(
+          fontSize: 20,
           fontWeight: FontWeight.bold,
           color: Color(0xFF333333),
         ),
@@ -120,6 +121,7 @@ class FoutaThemeDiaspora {
         backgroundColor: darkSurface,
         foregroundColor: darkText,
         titleTextStyle: const TextStyle(
+          fontSize: 20,
           fontWeight: FontWeight.bold,
           color: darkText,
         ),
