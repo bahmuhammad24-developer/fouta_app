@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fouta_app/utils/firestore_paths.dart';
+import 'package:fouta_app/services/push_notification_service.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -77,7 +78,9 @@ class _AuthScreenState extends State<AuthScreen> {
             'unreadMessageCount': 0,
             'dataSaver': true,
             'showOnlineStatus': true,
+            'fcmTokens': [],
           });
+          await PushNotificationService.updateDeviceToken();
         }
         _showMessage('Registration successful!');
       } else {
@@ -129,6 +132,7 @@ class _AuthScreenState extends State<AuthScreen> {
               await userDocRef.update(updateData);
             }
           }
+          await PushNotificationService.updateDeviceToken();
         }
         _showMessage('Login successful!');
       }

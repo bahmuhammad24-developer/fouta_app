@@ -210,6 +210,7 @@ flutter test
 ```
 
 ## Change Log
+- 2025-08-08 02:36 UTC – Registered device tokens and added Cloud Function to send push notifications for new chat messages.
 - 2025-08-08 02:21 UTC – Added AI collaboration guidelines requiring agents to document their work.
 - 2025-08-08 02:15 UTC – Expanded README with a hierarchical app structure including all icons and color choices.
 - 2025-08-08 02:05 UTC – Added documentation and logging guidelines to the README.
