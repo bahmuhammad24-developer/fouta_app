@@ -1333,8 +1333,8 @@ class _PeopleTabState extends State<PeopleTab> {
         final userDoc = users[index];
         final userData = userDoc.data() as Map<String, dynamic>;
         final bool isFollowing = myFollowing.contains(userDoc.id);
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+        return FoutaCard(
+          padding: EdgeInsets.zero,
           child: ListTile(
             leading: GestureDetector(
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen(userId: userDoc.id))),
@@ -1342,7 +1342,9 @@ class _PeopleTabState extends State<PeopleTab> {
                 backgroundImage: (userData['profileImageUrl'] != null && userData['profileImageUrl']!.toString().isNotEmpty)
                     ? CachedNetworkImageProvider(userData['profileImageUrl'])
                     : null,
-                child: (userData['profileImageUrl'] == null || userData['profileImageUrl']!.toString().isEmpty) ? const Icon(Icons.person) : null,
+                child: (userData['profileImageUrl'] == null || userData['profileImageUrl']!.toString().isEmpty)
+                    ? const Icon(Icons.person)
+                    : null,
               ),
             ),
             title: Text(userData['displayName'] ?? 'Unknown'),
@@ -1355,7 +1357,8 @@ class _PeopleTabState extends State<PeopleTab> {
               ),
               child: Text(isFollowing ? 'Unfollow' : 'Follow'),
             ),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen(userId: userDoc.id))),
+            onTap: () => Navigator.push(
+                context, MaterialPageRoute(builder: (context) => ProfileScreen(userId: userDoc.id))),
           ),
         );
       },
