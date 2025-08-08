@@ -1,4 +1,6 @@
 // lib/main.dart
+import 'dart:async';
+
 import 'package:fouta_app/screens/splash_screen.dart';
 import 'package:fouta_app/services/video_player_manager.dart';
 import 'package:flutter/material.dart';
@@ -24,11 +26,10 @@ void main() async {
   // Required for media_kit to work
   MediaKit.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await PushNotificationService.initialize();
 
   // Enable Firestore offline persistence
   FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: true);
-  
+
   runApp(
     MultiProvider(
       providers: [
@@ -39,6 +40,10 @@ void main() async {
       child: const MyApp(),
     ),
   );
+
+  // Initialize push notifications without blocking startup to avoid a white
+  // screen on iOS if the call hangs.
+  unawaited(PushNotificationService.initialize());
 }
 
 class MyApp extends StatelessWidget {
