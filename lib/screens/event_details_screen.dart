@@ -410,13 +410,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           },
         ),
         const SizedBox(height: 8),
-        TextField(
-          controller: _commentController,
-          decoration: InputDecoration(
-            hintText: 'Add a comment...',
-            suffixIcon: IconButton(
-              icon: Icon(Icons.send, color: Theme.of(context).primaryColor),
-              onPressed: _addComment,
+        SafeArea(
+          bottom: true,
+          child: TextField(
+            controller: _commentController,
+            decoration: InputDecoration(
+              hintText: 'Add a comment...',
+              suffixIcon: IconButton(
+                icon: Icon(Icons.send, color: Theme.of(context).primaryColor),
+                onPressed: _addComment,
+              ),
             ),
           ),
         ),

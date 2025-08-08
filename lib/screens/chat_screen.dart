@@ -758,27 +758,29 @@ class _ChatScreenState extends State<ChatScreen> {
                 ],
               ),
             ),
-          Row(
-            children: [
-              GestureDetector(
-                onLongPressStart: (_) => _startRecording(),
-                onLongPressEnd: (_) => _stopRecording(),
-                child: Icon(
-                  Icons.mic,
-                  color: _isRecordingAudio ? Colors.red : null,
+          SafeArea(
+            child: Row(
+              children: [
+                GestureDetector(
+                  onLongPressStart: (_) => _startRecording(),
+                  onLongPressEnd: (_) => _stopRecording(),
+                  child: Icon(
+                    Icons.mic,
+                    color: _isRecordingAudio ? Colors.red : null,
+                  ),
                 ),
-              ),
-              IconButton(icon: const Icon(Icons.image), onPressed: () => _pickMediaForChat(ImageSource.gallery)),
-              IconButton(icon: const Icon(Icons.videocam), onPressed: () => _pickMediaForChat(ImageSource.gallery, isVideo: true)),
-              Expanded(
-                child: TextField(
-                  controller: _messageController,
-                  decoration: const InputDecoration(hintText: 'Type a message...'),
-                  textCapitalization: TextCapitalization.sentences,
+                IconButton(icon: const Icon(Icons.image), onPressed: () => _pickMediaForChat(ImageSource.gallery)),
+                IconButton(icon: const Icon(Icons.videocam), onPressed: () => _pickMediaForChat(ImageSource.gallery, isVideo: true)),
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    decoration: const InputDecoration(hintText: 'Type a message...'),
+                    textCapitalization: TextCapitalization.sentences,
+                  ),
                 ),
-              ),
-              IconButton(icon: const Icon(Icons.send), onPressed: _sendMessage),
-            ],
+                IconButton(icon: const Icon(Icons.send), onPressed: _sendMessage),
+              ],
+            ),
           ),
         ],
       ),
