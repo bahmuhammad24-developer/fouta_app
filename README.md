@@ -210,6 +210,7 @@ flutter test
 ```
 
 ## Change Log
+ - 2025-08-08 03:09 UTC – Increased video upload limit to 500 MB for posts and chats and expanded video cache capacity.
 - 2025-08-08 02:36 UTC – Registered device tokens and added Cloud Function to send push notifications for new chat messages.
 - 2025-08-08 02:21 UTC – Added AI collaboration guidelines requiring agents to document their work.
 - 2025-08-08 02:15 UTC – Expanded README with a hierarchical app structure including all icons and color choices.
