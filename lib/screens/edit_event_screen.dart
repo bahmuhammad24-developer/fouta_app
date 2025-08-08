@@ -209,7 +209,18 @@ class _EditEventScreenState extends State<EditEventScreen> {
     if (_currentHeaderImageUrl != null && _currentHeaderImageUrl!.isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: CachedNetworkImage(imageUrl: _currentHeaderImageUrl!, fit: BoxFit.cover),
+        child: CachedNetworkImage(
+          imageUrl: _currentHeaderImageUrl!,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Container(
+            color: Colors.grey[200],
+            child: const Center(child: CircularProgressIndicator()),
+          ),
+          errorWidget: (context, url, error) => Container(
+            color: Colors.grey[300],
+            child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
+          ),
+        ),
       );
     }
     return const Center(child: Column(
