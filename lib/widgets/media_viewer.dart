@@ -149,6 +149,7 @@ class _MediaFilePageState extends State<_MediaFilePage> {
     final player = Player();
     try {
       final file = await _cacheService.getFile(widget.url);
+      // Using `file://` prevents media_kit from treating the path as remote.
       final uri = Uri.file(file.path).toString();
       await player.open(Media(uri), play: true);
       if (!mounted) return;

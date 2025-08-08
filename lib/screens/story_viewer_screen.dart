@@ -348,6 +348,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     _videoPlayer = Player();
     try {
       final file = await _cacheService.getFile(slide.url);
+      // `media_kit` needs a `file://` scheme to treat cached files as local.
       final uri = Uri.file(file.path).toString();
       await _videoPlayer!.open(Media(uri));
       final duration = _videoPlayer!.state.duration;

@@ -46,7 +46,8 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
   Future<void> _initializeVideo() async {
     _player = Player();
     try {
-      // Use a file URI so the player treats the path as a local file.
+      // `media_kit` interprets bare paths as remote URLs, yielding a black
+      // preview. Prefix with `file://` so it knows the source is local.
       final uri = Uri.file(widget.initialMediaPath).toString();
       await _player!.open(Media(uri));
       await _player!.play();
