@@ -222,6 +222,7 @@ flutter test
 ```
 
 ## Change Log
+- 2025-08-08 11:50 UTC – Adjusted bottom navigation bar height to account for device padding and prevent overflow errors.
 - 2025-08-08 06:18 UTC – Marked Firebase Messaging background handler as an entry point and logged notification open events to enable push notifications when the app is closed.
 - 2025-08-08 03:09 UTC – Increased video upload limit to 500 MB for posts and chats and expanded video cache capacity.
 - 2025-08-08 02:36 UTC – Registered device tokens and added Cloud Function to send push notifications for new chat messages.

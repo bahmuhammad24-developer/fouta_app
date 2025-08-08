@@ -184,10 +184,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           bottomNavigationBar: AnimatedBuilder(
             animation: _navBarController,
             builder: (context, child) {
+              final bottomPadding = MediaQuery.of(context).padding.bottom;
+              final totalHeight = kBottomNavigationBarHeight + bottomPadding;
               return SizedBox(
-                height: kBottomNavigationBarHeight * _navBarController.value,
+                height: totalHeight * _navBarController.value,
                 child: Transform.translate(
-                  offset: Offset(0, kBottomNavigationBarHeight * (1 - _navBarController.value)),
+                  offset: Offset(0, totalHeight * (1 - _navBarController.value)),
                   child: child,
                 ),
               );
