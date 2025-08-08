@@ -118,6 +118,19 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       ? CachedNetworkImage(
                           imageUrl: headerImageUrl,
                           fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                                color: Colors.grey[200],
+                                child: const Center(
+                                    child: CircularProgressIndicator()),
+                              ),
+                          errorWidget: (context, url, error) => Container(
+                                color: Theme.of(context).primaryColor,
+                                child: Icon(
+                                  Icons.event,
+                                  size: 80,
+                                  color: Colors.white.withOpacity(0.5),
+                                ),
+                              ),
                         )
                       : Container(
                           color: Theme.of(context).primaryColor,
