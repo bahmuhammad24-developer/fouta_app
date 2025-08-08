@@ -22,10 +22,14 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
-	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
+        <key>CFBundleVersion</key>
+        <string>$(FLUTTER_BUILD_NUMBER)</string>
+        <key>NSCameraUsageDescription</key>
+        <string>Camera access is required to create stories.</string>
+        <key>NSMicrophoneUsageDescription</key>
+        <string>Microphone access is required to record story videos.</string>
+        <key>LSRequiresIPhoneOS</key>
+        <true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

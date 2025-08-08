@@ -3,6 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 // Import the story creation screen widget used after capturing media.
 import 'package:fouta_app/screens/story_creation_screen.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 /// A camera interface for creating a story. Users can tap the shutter button
 /// to take a photo or press and hold to record a video. They can also
@@ -29,6 +30,24 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
   }
 
   Future<void> _initCamera() async {
+    final statuses = await [Permission.camera, Permission.microphone].request();
+    final cameraGranted =
+        statuses[Permission.camera] == PermissionStatus.granted;
+    final micGranted =
+        statuses[Permission.microphone] == PermissionStatus.granted;
+    if (!cameraGranted || !micGranted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('Camera and microphone permissions are required.'),
+          ),
+        );
+        Navigator.pop(context);
+      }
+      return;
+    }
+
     try {
       _cameras = await availableCameras();
       if (_cameras.isEmpty) return;
