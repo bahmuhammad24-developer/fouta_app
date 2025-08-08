@@ -192,10 +192,71 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
               );
             },
-            child: _BottomNavBar(
-              selectedIndex: _selectedIndex,
-              unreadChatsCount: _unreadChatsCount,
-              onItemTapped: _onItemTapped,
+            child: BottomNavigationBar(
+              currentIndex: _selectedIndex,
+              onTap: _onItemTapped,
+              type: BottomNavigationBarType.fixed,
+              selectedItemColor: Theme.of(context).colorScheme.primary,
+              unselectedItemColor: Colors.grey[600],
+              items: [
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.home_outlined),
+                  activeIcon: Icon(Icons.home),
+                  label: 'Feed',
+                ),
+                BottomNavigationBarItem(
+                  icon: badges.Badge(
+                    showBadge: _unreadChatsCount > 0,
+                    badgeStyle: badges.BadgeStyle(
+                      badgeColor: Theme.of(context).colorScheme.error,
+                    ),
+                    badgeContent: Text(
+                      _unreadChatsCount > 99
+                          ? '99+'
+                          : '$_unreadChatsCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                      ),
+                    ),
+                    position: badges.BadgePosition.topEnd(top: 6, end: -12),
+                    child: const Icon(Icons.chat_bubble_outline),
+                  ),
+                  activeIcon: badges.Badge(
+                    showBadge: _unreadChatsCount > 0,
+                    badgeStyle: badges.BadgeStyle(
+                      badgeColor: Theme.of(context).colorScheme.error,
+                    ),
+                    badgeContent: Text(
+                      _unreadChatsCount > 99
+                          ? '99+'
+                          : '$_unreadChatsCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                      ),
+                    ),
+                    position: badges.BadgePosition.topEnd(top: 6, end: -12),
+                    child: const Icon(Icons.chat_bubble),
+                  ),
+                  label: 'Chats',
+                ),
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.event_outlined),
+                  activeIcon: Icon(Icons.event),
+                  label: 'Events',
+                ),
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.people_outline),
+                  activeIcon: Icon(Icons.people),
+                  label: 'People',
+                ),
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.person_outline),
+                  activeIcon: Icon(Icons.person),
+                  label: 'Profile',
+                ),
+              ],
             ),
           ),
           body: Consumer<ConnectivityProvider>(
@@ -394,92 +455,6 @@ class _AppDrawer extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _BottomNavBar extends StatelessWidget {
-  final int selectedIndex;
-  final int unreadChatsCount;
-  final void Function(int) onItemTapped;
-
-  const _BottomNavBar({
-    required this.selectedIndex,
-    required this.unreadChatsCount,
-    required this.onItemTapped,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return BottomAppBar(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: <Widget>[
-          _BottomNavItem(
-            icon: selectedIndex == 0 ? Icons.home : Icons.home_outlined,
-            isSelected: selectedIndex == 0,
-            onTap: () => onItemTapped(0),
-            tooltip: 'Feed',
-          ),
-          badges.Badge(
-            showBadge: unreadChatsCount > 0,
-            badgeStyle: badges.BadgeStyle(badgeColor: Theme.of(context).colorScheme.error),
-            badgeContent: Text(
-              unreadChatsCount > 99 ? '99+' : '$unreadChatsCount',
-              style: const TextStyle(color: Colors.white, fontSize: 10),
-            ),
-            position: badges.BadgePosition.topEnd(top: 6, end: -12),
-            child: _BottomNavItem(
-              icon: selectedIndex == 1 ? Icons.chat_bubble : Icons.chat_bubble_outline,
-              isSelected: selectedIndex == 1,
-              onTap: () => onItemTapped(1),
-              tooltip: 'Chats',
-            ),
-          ),
-          _BottomNavItem(
-            icon: selectedIndex == 2 ? Icons.event : Icons.event_outlined,
-            isSelected: selectedIndex == 2,
-            onTap: () => onItemTapped(2),
-            tooltip: 'Events',
-          ),
-          _BottomNavItem(
-            icon: selectedIndex == 3 ? Icons.people : Icons.people_outlined,
-            isSelected: selectedIndex == 3,
-            onTap: () => onItemTapped(3),
-            tooltip: 'People',
-          ),
-          _BottomNavItem(
-            icon: selectedIndex == 4 ? Icons.person : Icons.person_outlined,
-            isSelected: selectedIndex == 4,
-            onTap: () => onItemTapped(4),
-            tooltip: 'Profile',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BottomNavItem extends StatelessWidget {
-  final IconData icon;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final String tooltip;
-
-  const _BottomNavItem({
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-    required this.tooltip,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(icon),
-      color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey[600],
-      onPressed: onTap,
-      tooltip: tooltip,
     );
   }
 }
