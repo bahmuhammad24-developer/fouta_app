@@ -67,7 +67,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // Media upload limitations
   // Increase limits so typical smartphone videos can be shared.
-  static const int _maxVideoFileSize = 100 * 1024 * 1024; // 100 MB
+  static const int _maxVideoFileSize = 500 * 1024 * 1024; // 500 MB
   static const int _maxVideoDurationSeconds = 300; // 5 minutes max
 
   @override
@@ -216,7 +216,7 @@ class _ChatScreenState extends State<ChatScreen> {
         final fileSize = File(pickedFile.path).lengthSync();
         if (fileSize > _maxVideoFileSize) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Video is too large. Please select a video under 100 MB.')),
+            const SnackBar(content: Text('Video is too large. Please select a video under 500 MB.')),
           );
           return;
         }

@@ -12,8 +12,8 @@ class VideoCacheService {
   }
   VideoCacheService._internal();
 
-  // Maximum cache size in bytes (e.g. 100 MB)
-  static const int _maxCacheSizeBytes = 100 * 1024 * 1024;
+  // Maximum cache size in bytes (e.g. 500 MB)
+  static const int _maxCacheSizeBytes = 500 * 1024 * 1024;
 
   final Set<String> _precacheJobs = {};
 
