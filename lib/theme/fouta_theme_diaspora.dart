@@ -49,6 +49,10 @@ class FoutaThemeDiaspora {
       appBarTheme: const AppBarTheme(
         backgroundColor: lightSurface,
         foregroundColor: Color(0xFF333333),
+        titleTextStyle: const TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF333333),
+        ),
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
@@ -115,6 +119,10 @@ class FoutaThemeDiaspora {
       appBarTheme: const AppBarTheme(
         backgroundColor: darkSurface,
         foregroundColor: darkText,
+        titleTextStyle: const TextStyle(
+          fontWeight: FontWeight.bold,
+          color: darkText,
+        ),
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
