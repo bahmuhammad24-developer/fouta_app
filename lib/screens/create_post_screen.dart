@@ -129,7 +129,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       // metadata extraction.  `play: false` prevents the player from
       // immediately starting playback which previously caused the selected
       // video's audio to play even though the user had not yet posted it.
-      await player.open(Media(pickedFile.path), play: false);
+      final uri = Uri.file(pickedFile.path).toString();
+      await player.open(Media(uri), play: false);
       final duration = player.state.duration;
       await player.stream.width.firstWhere((width) => width != null);
       final width = player.state.width;

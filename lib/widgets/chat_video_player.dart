@@ -39,7 +39,8 @@ class _ChatVideoPlayerState extends State<ChatVideoPlayer> {
   Future<void> _initialize() async {
     try {
       final file = await _cacheService.getFile(widget.videoUrl);
-      await _player.open(Media(file.path));
+      final uri = Uri.file(file.path).toString();
+      await _player.open(Media(uri));
       if (!mounted) return;
       setState(() {
         _controller = VideoController(_player);

@@ -149,7 +149,8 @@ class _MediaFilePageState extends State<_MediaFilePage> {
     final player = Player();
     try {
       final file = await _cacheService.getFile(widget.url);
-      await player.open(Media(file.path), play: true);
+      final uri = Uri.file(file.path).toString();
+      await player.open(Media(uri), play: true);
       if (!mounted) return;
       setState(() {
         _player = player;

@@ -46,7 +46,9 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
   Future<void> _initializeVideo() async {
     _player = Player();
     try {
-      await _player!.open(Media(widget.initialMediaPath));
+      // Use a file URI so the player treats the path as a local file.
+      final uri = Uri.file(widget.initialMediaPath).toString();
+      await _player!.open(Media(uri));
       await _player!.play();
       if (!mounted) return;
       setState(() {

@@ -37,7 +37,8 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
   Future<void> _initializePlayer() async {
     try {
       final file = await _cacheService.getFile(widget.videoUrl);
-      await _player.open(Media(file.path), play: true);
+      final uri = Uri.file(file.path).toString();
+      await _player.open(Media(uri), play: true);
       await _player.seek(widget.initialPosition);
 
       if (mounted) {

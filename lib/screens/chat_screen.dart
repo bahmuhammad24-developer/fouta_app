@@ -222,7 +222,8 @@ class _ChatScreenState extends State<ChatScreen> {
         }
         final player = Player();
         // Open without autoplay so the selected video's audio doesn't play in the background.
-        await player.open(Media(pickedFile.path), play: false);
+        final uri = Uri.file(pickedFile.path).toString();
+        await player.open(Media(uri), play: false);
         final duration = player.state.duration;
         if (duration.inSeconds > _maxVideoDurationSeconds) {
           await player.dispose();
