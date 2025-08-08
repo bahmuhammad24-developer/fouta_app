@@ -80,7 +80,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     try {
       final file = await _cacheService.getFile(widget.videoUrl);
-      await _player!.open(Media(file.path));
+      // `media_kit` requires a `file://` prefix for local cache files.
+      final uri = Uri.file(file.path).toString();
+      await _player!.open(Media(uri));
       if (!mounted) return;
 
       setState(() {
