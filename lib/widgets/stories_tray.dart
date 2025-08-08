@@ -150,32 +150,35 @@ class StoriesTray extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
       child: GestureDetector(
+        // Always allow the user to create or append a story when tapping the
+        // avatar.  Long‑pressing the avatar opens the viewer for any existing
+        // story.
         onTap: () {
-          if (hasStory) {
-            final stories = sortedDocs.map((doc) {
-              final data = doc.data() as Map<String, dynamic>;
-              return Story(
-                userId: doc.id,
-                userName: data['authorName'] ?? 'User',
-                userImageUrl: data['authorImageUrl'] ?? '',
-                slides: [],
-              );
-            }).toList();
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => StoryViewerScreen(
-                  stories: stories,
-                  initialStoryIndex: yourIndex,
-                ),
-              ),
-            );
-          } else {
-            // Navigate to the camera interface for capturing a new story.
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const StoryCameraScreen()));
-          }
+          Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const StoryCameraScreen()));
         },
+        onLongPress: hasStory
+            ? () {
+                final stories = sortedDocs.map((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  return Story(
+                    userId: doc.id,
+                    userName: data['authorName'] ?? 'User',
+                    userImageUrl: data['authorImageUrl'] ?? '',
+                    slides: [],
+                  );
+                }).toList();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => StoryViewerScreen(
+                      stories: stories,
+                      initialStoryIndex: yourIndex,
+                    ),
+                  ),
+                );
+              }
+            : null,
         child: Column(
           children: [
             Stack(
