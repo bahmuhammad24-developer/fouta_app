@@ -13,6 +13,7 @@ class AccountSettingsScreen extends StatefulWidget {
 }
 
 class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _phoneNumberController = TextEditingController();
@@ -79,6 +80,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   }
 
   Future<void> _saveAccountData() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
     setState(() {
       _message = null;
     });
@@ -132,9 +137,11 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             if (_message != null)
               Container(
                 padding: const EdgeInsets.all(8.0),
@@ -148,7 +155,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                   ),
                 ),
               ),
-            Card(
+              Card(
               margin: const EdgeInsets.symmetric(vertical: 8.0),
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
@@ -162,7 +169,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
-                    TextField(
+                    TextFormField(
                       controller: _firstNameController,
                       decoration: const InputDecoration(
                         labelText: 'First Name',
@@ -170,9 +177,15 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                         helperText: 'This will be part of your display name.',
                       ),
                       textCapitalization: TextCapitalization.words,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'First name is required';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
-                    TextField(
+                    TextFormField(
                       controller: _lastNameController,
                       decoration: const InputDecoration(
                         labelText: 'Last Name',
@@ -180,9 +193,15 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                         helperText: 'This will be part of your display name.',
                       ),
                       textCapitalization: TextCapitalization.words,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Last name is required';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
-                    TextField(
+                    TextFormField(
                       controller: _phoneNumberController,
                       decoration: const InputDecoration(
                         labelText: 'Phone Number',
@@ -190,9 +209,16 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                         helperText: 'Only visible to you unless shared.',
                       ),
                       keyboardType: TextInputType.phone,
+                      validator: (value) {
+                        final phone = value?.trim() ?? '';
+                        if (phone.isNotEmpty && !RegExp(r'^[0-9]{7,15}$').hasMatch(phone)) {
+                          return 'Enter a valid phone number';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
-                    TextField(
+                    TextFormField(
                       controller: _cityController,
                       decoration: const InputDecoration(
                         labelText: 'City',
