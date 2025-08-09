@@ -11,6 +11,7 @@
 - [Documentation & Logging Guidelines](#documentation--logging-guidelines)
   - [AI Collaboration](#ai-collaboration)
 - [Development Notes](#development-notes)
+- [Media Pipeline](#media-pipeline)
 - [Testing](#testing)
 - [Change Log](#change-log)
 - [Contributing](#contributing)
@@ -215,6 +216,17 @@ For help getting started with Flutter development, view the [online documentatio
 - **Bundle ID and Firebase plist:** The project uses bundle ID `com.example.foutaApp`. If you register a new Firebase app, replace `ios/Runner/GoogleService-Info.plist` with the file downloaded from Firebase.
 - **Record plugin:** The `record` plugin was upgraded to 6.x to resolve Swift compilation errors. Future plugin upgrades should follow the clean sequence above.
 
+## Media Pipeline
+Uploads are processed server-side to improve delivery speed and quality. A Cloud Function listens for new files in Firebase Storage and:
+
+- Resizes images to thumb (128w), preview (480w), and full (~1080w) using **sharp**.
+- Captures a poster frame for videos and generates the same sizes.
+- Computes a BlurHash for each media item.
+- Writes the resulting URLs, dimensions, and blurhash to `artifacts/fouta-app/public/data/media/{docId}` in Firestore.
+
+When creating a post, the app waits for this metadata and then stores the progressive URLs. Feeds display the blurhash first, then the preview image, and finally the full version.
+
+To attach captions to a video, upload a WebVTT file to Storage and set its download URL in the media document's `captionUrl` field. The app will include this subtitle track when available.
 ## Testing
 Run the test suite with:
 ```bash
@@ -222,6 +234,7 @@ flutter test
 ```
 
 ## Change Log
+- 2025-08-09 01:30 UTC – Implemented server-side media pipeline generating progressive images, video posters, and blurhash placeholders.
 - 2025-08-08 23:10 UTC – Aligned story timestamps with the app-wide relative format for consistency.
 - 2025-08-08 11:50 UTC – Adjusted bottom navigation bar height to account for device padding and prevent overflow errors.
 - 2025-08-08 06:18 UTC – Marked Firebase Messaging background handler as an entry point and logged notification open events to enable push notifications when the app is closed.
