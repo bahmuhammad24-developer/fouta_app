@@ -201,41 +201,46 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
                     IconButton(
                       iconSize: 32,
                       icon: const Icon(Icons.photo_library, color: Colors.white),
+                      tooltip: 'Pick from gallery',
                       onPressed: _pickFromGallery,
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                GestureDetector(
-                  onTap: _takePhoto,
-                  onLongPressStart: (_) {
-                    setState(() => _isRecording = true);
-                    _startVideoRecording();
-                  },
-                  onLongPressEnd: (_) async {
-                    if (_isRecording) {
-                      setState(() => _isRecording = false);
-                      await _stopVideoRecording();
-                    }
-                  },
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.2),
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 4,
+                Semantics(
+                  label: 'Capture story',
+                  button: true,
+                  child: GestureDetector(
+                    onTap: _takePhoto,
+                    onLongPressStart: (_) {
+                      setState(() => _isRecording = true);
+                      _startVideoRecording();
+                    },
+                    onLongPressEnd: (_) async {
+                      if (_isRecording) {
+                        setState(() => _isRecording = false);
+                        await _stopVideoRecording();
+                      }
+                    },
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.2),
+                        border: Border.all(
+                          color: Colors.white,
+                          width: 4,
+                        ),
                       ),
-                    ),
-                    child: Center(
-                      child: Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _isRecording ? Colors.red : Colors.white,
+                      child: Center(
+                        child: Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _isRecording ? Colors.red : Colors.white,
+                          ),
                         ),
                       ),
                     ),

@@ -191,6 +191,19 @@ class _MediaFilePageState extends State<_MediaFilePage> {
   Widget build(BuildContext context) {
     if (widget.type == 'image') {
       return Center(
+
+        child: Semantics(
+          label: 'Image preview',
+          child: InteractiveViewer(
+            child: CachedNetworkImage(
+              imageUrl: widget.url,
+              fit: BoxFit.contain,
+              placeholder: (context, url) =>
+                  const Center(child: CircularProgressIndicator(color: Colors.white)),
+              errorWidget: (context, url, error) =>
+                  const Center(child: Icon(Icons.broken_image, color: Colors.white)),
+            ),
+
         child: InteractiveViewer(
           child: CachedNetworkImage(
             imageUrl: widget.url,
@@ -205,6 +218,7 @@ class _MediaFilePageState extends State<_MediaFilePage> {
               errorWidget: (c, u, e) => Container(color: Colors.black),
             ),
             errorWidget: (context, url, error) => const Center(child: Icon(Icons.broken_image, color: Colors.white)),
+
           ),
         ),
       );
@@ -223,10 +237,13 @@ class _MediaFilePageState extends State<_MediaFilePage> {
         children: [
           AspectRatio(
             aspectRatio: widget.aspectRatio ?? 16 / 9,
-            child: Video(
-              key: ValueKey(widget.url),
-              controller: _controller!,
-              controls: AdaptiveVideoControls,
+            child: Semantics(
+              label: 'Video preview',
+              child: Video(
+                key: ValueKey(widget.url),
+                controller: _controller!,
+                controls: AdaptiveVideoControls,
+              ),
             ),
           ),
           if (_showControls)
