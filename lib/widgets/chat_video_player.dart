@@ -61,15 +61,16 @@ class _ChatVideoPlayerState extends State<ChatVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     if (_hasError) {
       return Container(
         width: 150,
         height: 150,
-        color: Colors.black,
+        color: scheme.surface,
         alignment: Alignment.center,
-        child: const Text(
+        child: Text(
           'Video unavailable',
-          style: TextStyle(color: Colors.white70, fontSize: 12),
+          style: TextStyle(color: scheme.onSurface.withOpacity(0.7), fontSize: 12),
           textAlign: TextAlign.center,
         ),
       );
@@ -78,8 +79,8 @@ class _ChatVideoPlayerState extends State<ChatVideoPlayer> {
       return Container(
         width: 150,
         height: 150,
-        color: Colors.black,
-        child: const Center(child: CircularProgressIndicator(color: Colors.white)),
+        color: scheme.surface,
+        child: Center(child: CircularProgressIndicator(color: scheme.onSurface)),
       );
     }
     return GestureDetector(
