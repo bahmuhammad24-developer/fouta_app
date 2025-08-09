@@ -43,6 +43,10 @@ dependencies:
   # including Linux, align with the current platform interface and expose
   # `startStream`.
   record: ^5.1.1
+  photo_view: ^0.14.0
+  flutter_blurhash: ^0.7.0
+  video_player: ^2.8.2
+  subtitle_wrapper_package: ^2.0.0
 
 dev_dependencies:
   flutter_test:

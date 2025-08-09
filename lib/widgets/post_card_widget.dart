@@ -13,7 +13,8 @@ import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/create_post_screen.dart';
 import 'package:fouta_app/screens/profile_screen.dart';
 // Use the unified MediaViewer instead of separate full screen image/video widgets
-import 'package:fouta_app/widgets/media_viewer.dart';
+import '../models/media_item.dart';
+import 'media/post_media.dart';
 import 'package:fouta_app/widgets/share_post_dialog.dart';
 import 'package:fouta_app/widgets/fouta_card.dart';
 
@@ -559,6 +560,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
   /// opens a full‑screen [MediaViewer] with all attachments for this post.
   Widget _buildAttachmentThumbnail(List<dynamic> attachments) {
     if (attachments.isEmpty) return const SizedBox.shrink();
+
     final Map<String, dynamic> first = attachments.first as Map<String, dynamic>;
     final String type = first['type'] ?? 'image';
     final String url = first['url'] ?? '';
@@ -670,6 +672,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
         ],
       ),
     );
+
   }
 
   void _showLikesDialog(BuildContext context, List<dynamic> likerIds) {
