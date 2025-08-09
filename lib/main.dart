@@ -55,10 +55,12 @@ class MyApp extends StatelessWidget {
       builder: (context, themeProvider, _) {
         return MaterialApp(
           title: 'Fouta',
+
           // Use the Material 3 themed definitions for light and dark modes
           theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),
           themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+
           home: const SplashScreen(),
         );
       },

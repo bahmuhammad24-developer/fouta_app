@@ -149,45 +149,59 @@ class StoriesTray extends StatelessWidget {
     final bool hasStory = yourIndex != -1;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: GestureDetector(
-        // Always allow the user to create or append a story when tapping the
-        // avatar.  Long‑pressing the avatar opens the viewer for any existing
-        // story.
-        onTap: () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const StoryCameraScreen()));
-        },
-        onLongPress: hasStory
-            ? () {
-                final stories = sortedDocs.map((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  return Story(
-                    userId: doc.id,
-                    userName: data['authorName'] ?? 'User',
-                    userImageUrl: data['authorImageUrl'] ?? '',
-                    slides: [],
-                  );
-                }).toList();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => StoryViewerScreen(
-                      stories: stories,
-                      initialStoryIndex: yourIndex,
+      child: Semantics(
+        label: hasStory ? 'Your story' : 'Create a story',
+        button: true,
+        child: GestureDetector(
+          // Always allow the user to create or append a story when tapping the
+          // avatar.  Long‑pressing the avatar opens the viewer for any existing
+          // story.
+          onTap: () {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const StoryCameraScreen()));
+          },
+          onLongPress: hasStory
+              ? () {
+                  final stories = sortedDocs.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    return Story(
+                      userId: doc.id,
+                      userName: data['authorName'] ?? 'User',
+                      userImageUrl: data['authorImageUrl'] ?? '',
+                      slides: [],
+                    );
+                  }).toList();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => StoryViewerScreen(
+                        stories: stories,
+                        initialStoryIndex: yourIndex,
+                      ),
                     ),
+
                   ),
                 );
               }
             : null,
-        child: Column(
-          children: [
+        child: Semantics(
+          label: 'Your story',
+
+                  );
+                }
+              : null,
+
+          child: Column(
+            children: [
             Stack(
               alignment: Alignment.bottomRight,
               children: [
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 32.0,
+
                   backgroundColor: Theme.of(context).colorScheme.outline,
                   child: Icon(Icons.person, color: Theme.of(context).colorScheme.onPrimary, size: 32),
+
                 ),
                 if (!hasStory)
                   Container(
@@ -215,7 +229,8 @@ class StoriesTray extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -241,23 +256,39 @@ class _StoryAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
+
       child: InkWell(
         onTap: onTap,
-        child: Column(
+        child: Semantics(
+          label: 'Story from $userName',
+          child: Column(
           children: [
+
+      child: Semantics(
+        label: "$userName's story",
+        button: true,
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            children: [
+
             Container(
               padding: const EdgeInsets.all(2.0),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
+
                   color: hasUnseen ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.outline,
+
                   width: 2.0,
                 ),
               ),
               child: CircleAvatar(
                 radius: 30.0,
                 backgroundImage: imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
-                child: imageUrl.isEmpty ? const Icon(Icons.person) : null,
+                child: imageUrl.isEmpty
+                    ? Icon(Icons.person, color: Theme.of(context).colorScheme.onSurface)
+                    : null,
               ),
             ),
             const SizedBox(height: 2.0),
@@ -274,6 +305,7 @@ class _StoryAvatar extends StatelessWidget {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

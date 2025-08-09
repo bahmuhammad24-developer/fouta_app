@@ -7,6 +7,7 @@ import 'package:fouta_app/screens/create_event_screen.dart';
 import 'package:fouta_app/screens/event_details_screen.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
 import 'package:fouta_app/widgets/fouta_card.dart';
+import 'package:fouta_app/widgets/skeletons/events_skeleton.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -17,7 +18,8 @@ class EventsListScreen extends StatefulWidget {
   State<EventsListScreen> createState() => _EventsListScreenState();
 }
 
-class _EventsListScreenState extends State<EventsListScreen> {
+class _EventsListScreenState extends State<EventsListScreen>
+    with AutomaticKeepAliveClientMixin {
   final User? currentUser = FirebaseAuth.instance.currentUser;
 
   // Filtering and sorting state. By default, show all upcoming events and sort by date ascending.
@@ -25,7 +27,11 @@ class _EventsListScreenState extends State<EventsListScreen> {
   String _sortOption = 'date'; // options: date, popularity
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     return DefaultTabController(
       length: 3,
       child: Scaffold(
@@ -198,7 +204,7 @@ class _EventsListScreenState extends State<EventsListScreen> {
       stream: query.snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const EventsSkeleton();
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return Center(
@@ -223,6 +229,13 @@ class _EventsListScreenState extends State<EventsListScreen> {
           );
         }
         final events = snapshot.data!.docs;
+        for (final doc in events) {
+          final data = doc.data() as Map<String, dynamic>;
+          final url = data['headerImageUrl'] as String? ?? '';
+          if (url.isNotEmpty) {
+            precacheImage(CachedNetworkImageProvider(url), context);
+          }
+        }
         return RefreshIndicator(
           onRefresh: () async {
             await query.get();

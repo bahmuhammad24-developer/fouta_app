@@ -24,6 +24,7 @@ import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/widgets/chat_audio_player.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:fouta_app/utils/snackbar.dart';
 
 class ChatScreen extends StatefulWidget {
   final String? chatId;
@@ -84,6 +85,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _findOrCreateChat() async {
     final currentUser = FirebaseAuth.instance.currentUser;
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     if (currentUser == null || widget.otherUserId == null) return;
     
     final participants = [currentUser.uid, widget.otherUserId!]..sort();
@@ -201,7 +203,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _pickMediaForChat(ImageSource source, {bool isVideo = false}) async {
     if (_isUploading) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Upload in progress...')));
+      AppSnackBar.show(context, 'Upload in progress...', isError: true);
       return;
     }
 
@@ -211,7 +213,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ? await _picker.pickVideo(source: source)
         : await _picker.pickImage(source: source);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error picking media: $e')));
+      AppSnackBar.show(context, 'Error picking media: $e', isError: true);
     }
 
     if (pickedFile != null) {
@@ -219,8 +221,10 @@ class _ChatScreenState extends State<ChatScreen> {
       if (isVideo && !kIsWeb) {
         final fileSize = File(pickedFile.path).lengthSync();
         if (fileSize > _maxVideoFileSize) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Video is too large. Please select a video under 500 MB.')),
+          AppSnackBar.show(
+            context,
+            'Video is too large. Please select a video under 500 MB.',
+            isError: true,
           );
           return;
         }
@@ -233,8 +237,10 @@ class _ChatScreenState extends State<ChatScreen> {
         final duration = player.state.duration;
         if (duration.inSeconds > _maxVideoDurationSeconds) {
           await player.dispose();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Video is too long. Please select a video under 5 minutes.')),
+          AppSnackBar.show(
+            context,
+            'Video is too long. Please select a video under 5 minutes.',
+            isError: true,
           );
           return;
         }
@@ -297,8 +303,10 @@ class _ChatScreenState extends State<ChatScreen> {
       // Prevent media uploads while offline. Text messages will still be queued via Firestore offline persistence.
       final connectivity = context.read<ConnectivityProvider>();
       if (!connectivity.isOnline) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('You are offline. Cannot send media in chat.')),
+        AppSnackBar.show(
+          context,
+          'You are offline. Cannot send media in chat.',
+          isError: true,
         );
         return;
       }
@@ -340,9 +348,7 @@ class _ChatScreenState extends State<ChatScreen> {
       } else if (fileToUpload != null) {
         uploadTask = ref.putFile(fileToUpload, metadata);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid media data for upload.')),
-        );
+        AppSnackBar.show(context, 'Invalid media data for upload.', isError: true);
         setState(() => _isUploading = false);
         return;
       }
@@ -416,6 +422,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildChatMediaDisplay(String mediaType, String mediaUrl) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     switch (mediaType) {
       case 'image':
         return GestureDetector(
@@ -423,11 +430,13 @@ class _ChatScreenState extends State<ChatScreen> {
           child: CachedNetworkImage(
             imageUrl: mediaUrl,
             placeholder: (context, url) => Container(
+
               width: 150, height: 150,
               color: Theme.of(context).colorScheme.surfaceVariant,
+
               child: const Center(child: CircularProgressIndicator()),
             ),
-            errorWidget: (context, url, error) => const Icon(Icons.error),
+            errorWidget: (context, url, error) => Icon(Icons.error, color: scheme.error),
             width: 150, height: 150, fit: BoxFit.cover,
           ),
         );
@@ -443,6 +452,7 @@ class _ChatScreenState extends State<ChatScreen> {
   // NOTE: This is a placeholder for a more complex reaction UI
   Widget _buildReactions(Map<String, dynamic> reactions) {
     if (reactions.isEmpty) return const SizedBox.shrink();
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     final List<Widget> reactionWidgets = [];
     reactions.forEach((emoji, users) {
       if (users is List && users.isNotEmpty) {
@@ -452,7 +462,9 @@ class _ChatScreenState extends State<ChatScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
             margin: const EdgeInsets.only(right: 4, top: 4),
             decoration: BoxDecoration(
+
               color: reactedByMe ? Theme.of(context).colorScheme.secondary[50] : Theme.of(context).colorScheme.surfaceVariant,
+
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -467,9 +479,11 @@ class _ChatScreenState extends State<ChatScreen> {
                   users.length.toString(),
                   style: TextStyle(
                     fontSize: 12,
+
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.54)
                         : Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
+
                   ),
                 ),
               ],
@@ -491,10 +505,12 @@ class _ChatScreenState extends State<ChatScreen> {
         padding: const EdgeInsets.all(12.0),
         decoration: BoxDecoration(
           color: isMe
+
               ? Theme.of(context).colorScheme.primary
               : (Theme.of(context).brightness == Brightness.dark
                   ? Theme.of(context).colorScheme.outline[700]
                   : Theme.of(context).colorScheme.surfaceVariant),
+
           borderRadius: BorderRadius.circular(16.0),
         ),
         child: Column(
@@ -507,9 +523,11 @@ class _ChatScreenState extends State<ChatScreen> {
                   message['senderName'] ?? 'User',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
+
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.54)
                         : Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
+
                     fontSize: 12,
                   ),
                 ),
@@ -519,9 +537,11 @@ class _ChatScreenState extends State<ChatScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
+
                   color: Theme.of(context).brightness == Brightness.dark
                       ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)
                       : Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+
                   borderRadius: BorderRadius.circular(8)
                 ),
                 child: Column(
@@ -532,9 +552,11 @@ class _ChatScreenState extends State<ChatScreen> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
+
                         color: Theme.of(context).brightness == Brightness.dark
                             ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.54)
                             : Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
+
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -546,9 +568,11 @@ class _ChatScreenState extends State<ChatScreen> {
                         style: TextStyle(
                           fontSize: 12,
                           fontStyle: FontStyle.italic,
+
                           color: Theme.of(context).brightness == Brightness.dark
                               ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.54)
                               : Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
+
                         ),
                       ),
                   ],
@@ -563,10 +587,12 @@ class _ChatScreenState extends State<ChatScreen> {
                   message['content'],
                   style: TextStyle(
                     color: isMe
+
                         ? Theme.of(context).colorScheme.onPrimary
                         : Theme.of(context).brightness == Brightness.dark
                             ? Theme.of(context).colorScheme.onPrimary
                             : Theme.of(context).colorScheme.onSurface,
+
                   ),
                 ),
               ),
@@ -676,9 +702,11 @@ class _ChatScreenState extends State<ChatScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
+
                             color: Theme.of(context).brightness == Brightness.dark
                                 ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.54)
                                 : Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
+
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -689,9 +717,11 @@ class _ChatScreenState extends State<ChatScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontStyle: FontStyle.italic,
+
                             color: Theme.of(context).brightness == Brightness.dark
                                 ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.54)
                                 : Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
+
                           ),
                         ),
                       ],
@@ -721,7 +751,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   Positioned(
                     right: 0,
                     child: IconButton(
+
                       icon: CircleAvatar(backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.54), child: Icon(Icons.close, color: Theme.of(context).colorScheme.onPrimary)),
+
                       onPressed: () => setState(() {
                         _selectedMediaFile = null;
                         _mediaType = '';
@@ -740,9 +772,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     Container(
                       width: 100,
                       height: 100,
+
                       color: Theme.of(context).colorScheme.onSurface,
                       child: const Center(
                         child: Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary, size: 40),
+
                       ),
                     )
                   else
@@ -754,7 +788,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   Positioned(
                     right: 0,
                     child: IconButton(
+
                       icon: CircleAvatar(backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.54), child: Icon(Icons.close, color: Theme.of(context).colorScheme.onPrimary)),
+
                       onPressed: () => setState(() {
                         _selectedMediaFile = null;
                         _selectedMediaBytes = null;

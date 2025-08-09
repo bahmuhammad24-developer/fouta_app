@@ -43,13 +43,16 @@ class _ChatAudioPlayerState extends State<ChatAudioPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     return Container(
       width: 150,
       height: 50,
       decoration: BoxDecoration(
+
         color: Theme.of(context).brightness == Brightness.dark
             ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.10)
             : Theme.of(context).colorScheme.onSurface.withOpacity(0.12),
+
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
