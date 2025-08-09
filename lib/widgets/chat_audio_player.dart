@@ -48,8 +48,8 @@ class _ChatAudioPlayerState extends State<ChatAudioPlayer> {
       height: 50,
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark
-            ? Colors.white10
-            : Colors.black12,
+            ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.10)
+            : Theme.of(context).colorScheme.onSurface.withOpacity(0.12),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(

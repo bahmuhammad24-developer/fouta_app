@@ -65,11 +65,11 @@ class _ChatVideoPlayerState extends State<ChatVideoPlayer> {
       return Container(
         width: 150,
         height: 150,
-        color: Colors.black,
+        color: Theme.of(context).colorScheme.onSurface,
         alignment: Alignment.center,
         child: const Text(
           'Video unavailable',
-          style: TextStyle(color: Colors.white70, fontSize: 12),
+          style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.70), fontSize: 12),
           textAlign: TextAlign.center,
         ),
       );
@@ -78,8 +78,8 @@ class _ChatVideoPlayerState extends State<ChatVideoPlayer> {
       return Container(
         width: 150,
         height: 150,
-        color: Colors.black,
-        child: const Center(child: CircularProgressIndicator(color: Colors.white)),
+        color: Theme.of(context).colorScheme.onSurface,
+        child: Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.onPrimary)),
       );
     }
     return GestureDetector(

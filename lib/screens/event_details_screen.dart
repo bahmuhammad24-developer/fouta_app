@@ -119,7 +119,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           imageUrl: headerImageUrl,
                           fit: BoxFit.cover,
                           placeholder: (context, url) => Container(
-                                color: Colors.grey[200],
+                                color: Theme.of(context).colorScheme.surfaceVariant,
                                 child: const Center(
                                     child: CircularProgressIndicator()),
                               ),
@@ -128,7 +128,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                 child: Icon(
                                   Icons.event,
                                   size: 80,
-                                  color: Colors.white.withOpacity(0.5),
+                                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
                                 ),
                               ),
                         )
@@ -137,7 +137,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           child: Icon(
                             Icons.event,
                             size: 80,
-                            color: Colors.white.withOpacity(0.5),
+                            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
                           ),
                         ),
                 ),
@@ -187,7 +187,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                             icon: Icon(isRsvpd ? Icons.cancel : Icons.check_circle_outline),
                             label: Text(isRsvpd ? 'Cancel RSVP' : 'RSVP'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: isRsvpd ? Colors.grey : Theme.of(context).colorScheme.secondary,
+                              backgroundColor: isRsvpd ? Theme.of(context).colorScheme.outline : Theme.of(context).colorScheme.secondary,
                               minimumSize: const Size.fromHeight(50),
                             ),
                           ),

@@ -424,7 +424,7 @@ class _ChatScreenState extends State<ChatScreen> {
             imageUrl: mediaUrl,
             placeholder: (context, url) => Container(
               width: 150, height: 150,
-              color: Colors.grey[300],
+              color: Theme.of(context).colorScheme.surfaceVariant,
               child: const Center(child: CircularProgressIndicator()),
             ),
             errorWidget: (context, url, error) => const Icon(Icons.error),
@@ -452,7 +452,7 @@ class _ChatScreenState extends State<ChatScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
             margin: const EdgeInsets.only(right: 4, top: 4),
             decoration: BoxDecoration(
-              color: reactedByMe ? Colors.blueGrey[50] : Colors.grey[200],
+              color: reactedByMe ? Theme.of(context).colorScheme.secondary[50] : Theme.of(context).colorScheme.surfaceVariant,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -468,8 +468,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   style: TextStyle(
                     fontSize: 12,
                     color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white54
-                        : Colors.black54,
+                        ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.54)
+                        : Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
                   ),
                 ),
               ],
@@ -493,8 +493,8 @@ class _ChatScreenState extends State<ChatScreen> {
           color: isMe
               ? Theme.of(context).colorScheme.primary
               : (Theme.of(context).brightness == Brightness.dark
-                  ? Colors.grey[700]
-                  : Colors.grey[300]),
+                  ? Theme.of(context).colorScheme.outline[700]
+                  : Theme.of(context).colorScheme.surfaceVariant),
           borderRadius: BorderRadius.circular(16.0),
         ),
         child: Column(
@@ -508,8 +508,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white54
-                        : Colors.black54,
+                        ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.54)
+                        : Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
                     fontSize: 12,
                   ),
                 ),
@@ -520,8 +520,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white.withOpacity(0.1)
-                      : Colors.black.withOpacity(0.1),
+                      ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)
+                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8)
                 ),
                 child: Column(
@@ -533,8 +533,8 @@ class _ChatScreenState extends State<ChatScreen> {
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white54
-                            : Colors.black54,
+                            ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.54)
+                            : Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -547,8 +547,8 @@ class _ChatScreenState extends State<ChatScreen> {
                           fontSize: 12,
                           fontStyle: FontStyle.italic,
                           color: Theme.of(context).brightness == Brightness.dark
-                              ? Colors.white54
-                              : Colors.black54,
+                              ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.54)
+                              : Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
                         ),
                       ),
                   ],
@@ -565,8 +565,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     color: isMe
                         ? Theme.of(context).colorScheme.onPrimary
                         : Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : Colors.black,
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -662,7 +662,7 @@ class _ChatScreenState extends State<ChatScreen> {
               margin: const EdgeInsets.only(bottom: 4),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.grey[200],
+                color: Theme.of(context).colorScheme.surfaceVariant,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -677,8 +677,8 @@ class _ChatScreenState extends State<ChatScreen> {
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).brightness == Brightness.dark
-                                ? Colors.white54
-                                : Colors.black54,
+                                ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.54)
+                                : Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -690,8 +690,8 @@ class _ChatScreenState extends State<ChatScreen> {
                             fontSize: 12,
                             fontStyle: FontStyle.italic,
                             color: Theme.of(context).brightness == Brightness.dark
-                                ? Colors.white54
-                                : Colors.black54,
+                                ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.54)
+                                : Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
                           ),
                         ),
                       ],
@@ -721,7 +721,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   Positioned(
                     right: 0,
                     child: IconButton(
-                      icon: const CircleAvatar(backgroundColor: Colors.black54, child: Icon(Icons.close, color: Colors.white)),
+                      icon: CircleAvatar(backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.54), child: Icon(Icons.close, color: Theme.of(context).colorScheme.onPrimary)),
                       onPressed: () => setState(() {
                         _selectedMediaFile = null;
                         _mediaType = '';
@@ -740,9 +740,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     Container(
                       width: 100,
                       height: 100,
-                      color: Colors.black,
+                      color: Theme.of(context).colorScheme.onSurface,
                       child: const Center(
-                        child: Icon(Icons.play_circle_fill, color: Colors.white, size: 40),
+                        child: Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary, size: 40),
                       ),
                     )
                   else
@@ -754,7 +754,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   Positioned(
                     right: 0,
                     child: IconButton(
-                      icon: const CircleAvatar(backgroundColor: Colors.black54, child: Icon(Icons.close, color: Colors.white)),
+                      icon: CircleAvatar(backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.54), child: Icon(Icons.close, color: Theme.of(context).colorScheme.onPrimary)),
                       onPressed: () => setState(() {
                         _selectedMediaFile = null;
                         _selectedMediaBytes = null;
@@ -773,7 +773,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   onLongPressEnd: (_) => _stopRecording(),
                   child: Icon(
                     Icons.mic,
-                    color: _isRecordingAudio ? Colors.red : null,
+                    color: _isRecordingAudio ? Theme.of(context).colorScheme.error : null,
                   ),
                 ),
                 IconButton(icon: const Icon(Icons.image), onPressed: () => _pickMediaForChat(ImageSource.gallery)),

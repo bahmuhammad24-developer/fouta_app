@@ -160,13 +160,13 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).colorScheme.onSurface,
       body: Stack(
         children: [
           Positioned.fill(
             child: (_controller != null && _controller!.value.isInitialized)
                 ? CameraPreview(_controller!)
-                : Container(color: Colors.black),
+                : Container(color: Theme.of(context).colorScheme.onSurface),
           ),
           // Top controls: flash, switch camera (placeholders)
           Positioned(
@@ -177,11 +177,11 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.flash_off, color: Colors.white),
+                  icon: Icon(Icons.flash_off, color: Theme.of(context).colorScheme.onPrimary),
                   onPressed: () {},
                 ),
                 IconButton(
-                  icon: const Icon(Icons.cameraswitch, color: Colors.white),
+                  icon: Icon(Icons.cameraswitch, color: Theme.of(context).colorScheme.onPrimary),
                   onPressed: _switchCamera,
                 ),
               ],
@@ -200,7 +200,7 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
                   children: [
                     IconButton(
                       iconSize: 32,
-                      icon: const Icon(Icons.photo_library, color: Colors.white),
+                      icon: Icon(Icons.photo_library, color: Theme.of(context).colorScheme.onPrimary),
                       onPressed: _pickFromGallery,
                     ),
                   ],
@@ -223,9 +223,9 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
                     height: 80,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.2),
+                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
                       border: Border.all(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                         width: 4,
                       ),
                     ),
@@ -235,7 +235,7 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
                         height: 60,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: _isRecording ? Colors.red : Colors.white,
+                          color: _isRecording ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onPrimary,
                         ),
                       ),
                     ),
