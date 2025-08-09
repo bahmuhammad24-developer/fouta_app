@@ -197,28 +197,52 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
   }
 
   @override
+  double _verticalDrag = 0;
+
+  void _handleVerticalDragUpdate(DragUpdateDetails details) {
+    setState(() {
+      _verticalDrag += details.delta.dy;
+      if (_verticalDrag < 0) _verticalDrag = 0;
+    });
+  }
+
+  void _handleVerticalDragEnd(DragEndDetails details) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    if (_verticalDrag > 150) {
+      setState(() => _verticalDrag = screenHeight);
+      Future.delayed(const Duration(milliseconds: 200), () {
+        Navigator.of(context).pop();
+      });
+    } else {
+      setState(() => _verticalDrag = 0);
+    }
+  }
+
   Widget build(BuildContext context) {
-    // FIX: Wrapped the body in a Dismissible for swipe-down-to-close functionality
-    return Dismissible(
-      key: const Key('story_viewer'),
-      direction: DismissDirection.down,
-      onDismissed: (_) => Navigator.of(context).pop(),
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: PageView.builder(
-          controller: _pageController,
-          onPageChanged: (index) {
-            _animationController.stop();
-            _animationController.reset();
-            _loadSlidesForStory(index);
-          },
-          itemCount: widget.stories.length,
-          itemBuilder: (context, index) {
-            if (index != _currentStoryIndex || _slides.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final Story currentStory = widget.stories[_currentStoryIndex];
-            final StorySlide currentSlide = _slides[_currentSlideIndex];
+    return GestureDetector(
+      onVerticalDragUpdate: _handleVerticalDragUpdate,
+      onVerticalDragEnd: _handleVerticalDragEnd,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        transform: Matrix4.translationValues(0, _verticalDrag, 0),
+        child: Opacity(
+          opacity: (1 - (_verticalDrag / 300)).clamp(0.0, 1.0),
+          child: Scaffold(
+            backgroundColor: Colors.black,
+            body: PageView.builder(
+              controller: _pageController,
+              onPageChanged: (index) {
+                _animationController.stop();
+                _animationController.reset();
+                _loadSlidesForStory(index);
+              },
+              itemCount: widget.stories.length,
+              itemBuilder: (context, index) {
+                if (index != _currentStoryIndex || _slides.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final Story currentStory = widget.stories[_currentStoryIndex];
+                final StorySlide currentSlide = _slides[_currentSlideIndex];
 
             return GestureDetector(
               onTapUp: _onTapUp,
@@ -256,6 +280,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
               ),
             );
           },
+            ),
+          ),
         ),
       ),
     );
