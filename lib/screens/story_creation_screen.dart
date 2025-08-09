@@ -8,6 +8,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:fouta_app/utils/firestore_paths.dart';
 import 'package:fouta_app/utils/video_controller_extensions.dart';
+import 'package:fouta_app/utils/snackbar.dart';
 
 /// Screen used to create and post a story.
 ///
@@ -106,9 +107,8 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please log in to post stories')),
-        );
+        AppSnackBar.show(context, 'Please log in to post stories',
+            isError: true);
       }
       return;
     }
@@ -177,9 +177,7 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
     } catch (e) {
       debugPrint('Error uploading story: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to upload story')),
-        );
+        AppSnackBar.show(context, 'Failed to upload story', isError: true);
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);

@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fouta_app/utils/firestore_paths.dart';
 import 'package:fouta_app/services/push_notification_service.dart';
+import 'package:fouta_app/utils/snackbar.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -53,12 +54,9 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() {
       _message = msg;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: msg.contains('successful') ? Colors.green : Theme.of(context).colorScheme.error,
-      ),
-    );
+    final lower = msg.toLowerCase();
+    final isError = lower.contains('fail') || lower.contains('error');
+    AppSnackBar.show(context, msg, isError: isError);
   }
 
   Future<void> _authenticate() async {

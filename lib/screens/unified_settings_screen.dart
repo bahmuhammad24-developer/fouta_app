@@ -9,6 +9,7 @@ import 'package:fouta_app/screens/data_saver_screen.dart';
 import 'package:fouta_app/screens/privacy_settings_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:fouta_app/services/theme_provider.dart';
+import 'package:fouta_app/utils/snackbar.dart';
 
 class UnifiedSettingsScreen extends StatefulWidget {
   const UnifiedSettingsScreen({super.key});
@@ -28,12 +29,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
 
   void _showMessage(String msg, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: isError ? Colors.red : Colors.green,
-      ),
-    );
+    AppSnackBar.show(context, msg, isError: isError);
   }
 
   Future<void> _changePassword() async {

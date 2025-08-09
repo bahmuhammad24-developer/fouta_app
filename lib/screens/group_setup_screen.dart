@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fouta_app/main.dart';
 import 'package:fouta_app/screens/chat_screen.dart';
+import 'package:fouta_app/utils/snackbar.dart';
 
 class GroupSetupScreen extends StatefulWidget {
   final List<String> memberIds;
@@ -26,9 +27,7 @@ class _GroupSetupScreenState extends State<GroupSetupScreen> {
   Future<void> _createGroup() async {
     final groupName = _groupNameController.text.trim();
     if (groupName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Group name cannot be empty.')),
-      );
+      AppSnackBar.show(context, 'Group name cannot be empty.', isError: true);
       return;
     }
 
@@ -66,9 +65,8 @@ class _GroupSetupScreenState extends State<GroupSetupScreen> {
       }
 
     } on FirebaseException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to create group: ${e.message}')),
-      );
+      AppSnackBar.show(context, 'Failed to create group: ${e.message}',
+          isError: true);
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

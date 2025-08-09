@@ -20,6 +20,9 @@ import 'package:fouta_app/widgets/fouta_button.dart';
 import 'package:fouta_app/screens/create_post_screen.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fouta_app/utils/firestore_paths.dart';
+import 'package:fouta_app/widgets/skeletons/profile_skeleton.dart';
+import 'package:fouta_app/utils/snackbar.dart';
+import 'package:fouta_app/widgets/skeletons/feed_skeleton.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userId;
@@ -31,7 +34,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 // Add SingleTickerProviderStateMixin for the TabController
-class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
+class _ProfileScreenState extends State<ProfileScreen>
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   final _bioController = TextEditingController();
   late bool _isEditing;
   String _currentProfileImageUrl = '';
@@ -75,6 +79,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void dispose() {
     _bioController.dispose();
     _tabController.dispose();
@@ -84,12 +91,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   void _showMessage(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: msg.contains('successful') ? Colors.green : Theme.of(context).colorScheme.error,
-      ),
-    );
+    final lower = msg.toLowerCase();
+    final isError = lower.contains('fail') || lower.contains('error');
+    AppSnackBar.show(context, msg, isError: isError);
   }
 
   Future<void> _loadDataSaverPreference() async {
@@ -482,7 +486,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           .orderBy('timestamp', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData) return const FeedSkeleton();
         if (snapshot.data!.docs.isEmpty) {
           return Center(
             child: Padding(
@@ -543,7 +547,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const FeedSkeleton();
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           final bool isMyProfile = currentUser != null && currentUser.uid == widget.userId;
@@ -595,6 +599,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final currentUser = FirebaseAuth.instance.currentUser;
     final bool isMyProfile = currentUser?.uid == widget.userId;
 
@@ -605,7 +610,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               stream: FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(widget.userId).snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const ProfileSkeleton();
                 }
                 if (!snapshot.hasData || !snapshot.data!.exists) {
                   return const Center(child: Text('User not found.'));
