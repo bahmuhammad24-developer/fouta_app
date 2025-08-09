@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:fouta_app/services/video_cache_service.dart';
@@ -71,12 +72,16 @@ class _MediaViewerState extends State<MediaViewer> {
                 final media = widget.mediaList[index];
                 final String type = media['type'] ?? 'image';
                 final String url = media['url'] ?? '';
+                final String previewUrl = media['previewUrl'] ?? url;
+                final String blurhash = media['blurhash'] ?? '';
                 final double? aspectRatio = media['aspectRatio'] as double?;
                 return _MediaFilePage(
                   key: ValueKey(url),
                   url: url,
                   type: type,
                   aspectRatio: aspectRatio,
+                  previewUrl: previewUrl,
+                  blurhash: blurhash,
                 );
               },
             ),
@@ -114,6 +119,8 @@ class _MediaViewerState extends State<MediaViewer> {
 /// video.  Videos are automatically cached and played with simple controls.
 class _MediaFilePage extends StatefulWidget {
   final String url;
+  final String previewUrl;
+  final String blurhash;
   final String type;
   final double? aspectRatio;
 
@@ -122,6 +129,8 @@ class _MediaFilePage extends StatefulWidget {
     required this.url,
     required this.type,
     this.aspectRatio,
+    required this.previewUrl,
+    required this.blurhash,
   }) : super(key: key ?? ValueKey(url));
 
   @override
@@ -186,7 +195,15 @@ class _MediaFilePageState extends State<_MediaFilePage> {
           child: CachedNetworkImage(
             imageUrl: widget.url,
             fit: BoxFit.contain,
-            placeholder: (context, url) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+            placeholder: (context, url) => CachedNetworkImage(
+              imageUrl: widget.previewUrl,
+              fit: BoxFit.contain,
+              placeholder: (context, url) => BlurHash(
+                hash: widget.blurhash,
+                imageFit: BoxFit.contain,
+              ),
+              errorWidget: (c, u, e) => Container(color: Colors.black),
+            ),
             errorWidget: (context, url, error) => const Center(child: Icon(Icons.broken_image, color: Colors.white)),
           ),
         ),

@@ -7,6 +7,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:fouta_app/widgets/video_player_widget.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:fouta_app/utils/date_utils.dart';
+import 'package:flutter_blurhash/flutter_blurhash.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/create_post_screen.dart';
@@ -559,11 +560,119 @@ class _PostCardWidgetState extends State<PostCardWidget> {
   /// opens a full‑screen [MediaViewer] with all attachments for this post.
   Widget _buildAttachmentThumbnail(List<dynamic> attachments) {
     if (attachments.isEmpty) return const SizedBox.shrink();
-    final items = attachments
-        .whereType<Map<String, dynamic>>()
-        .map(MediaItem.fromMap)
-        .toList();
-    return PostMedia(media: items);
+
+    final Map<String, dynamic> first = attachments.first as Map<String, dynamic>;
+    final String type = first['type'] ?? 'image';
+    final String url = first['url'] ?? '';
+    final String previewUrl = first['previewUrl'] ?? url;
+    final String blurhash = first['blurhash'] ?? '';
+    final double? aspectRatio = first['aspectRatio'] as double?;
+    final bool allowAutoplay = !widget.isDataSaverOn || !widget.isOnMobileData;
+    Widget thumb;
+    switch (type) {
+      case 'image':
+        thumb = ClipRRect(
+          borderRadius: BorderRadius.circular(8.0),
+          child: CachedNetworkImage(
+            imageUrl: url,
+            placeholder: (context, url) => CachedNetworkImage(
+              imageUrl: previewUrl,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => BlurHash(
+                hash: blurhash,
+                imageFit: BoxFit.cover,
+              ),
+              errorWidget: (c, u, e) => Container(color: Colors.grey[300]),
+            ),
+            errorWidget: (context, url, error) => Container(
+              height: 200,
+              color: Colors.grey[300],
+              child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 50)),
+            ),
+            width: double.infinity,
+            fit: BoxFit.cover,
+          ),
+        );
+        break;
+      case 'video':
+        if (allowAutoplay) {
+          thumb = ClipRRect(
+            borderRadius: BorderRadius.circular(8.0),
+            child: VideoPlayerWidget(
+              videoUrl: url,
+              videoId: widget.postId,
+              aspectRatio: aspectRatio,
+              areControlsVisible: false,
+              shouldInitialize: _isPostVisible,
+            ),
+          );
+        } else {
+          thumb = ClipRRect(
+            borderRadius: BorderRadius.circular(8.0),
+            child: AspectRatio(
+              aspectRatio: aspectRatio ?? 16 / 9,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (previewUrl.isNotEmpty)
+                    CachedNetworkImage(
+                      imageUrl: previewUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => BlurHash(
+                        hash: blurhash,
+                        imageFit: BoxFit.cover,
+                      ),
+                      errorWidget: (c, u, e) => Container(color: Colors.black54),
+                    )
+                  else
+                    Container(color: Colors.black54),
+                  const Center(
+                    child: Icon(Icons.play_circle_fill, color: Colors.white70, size: 56),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        break;
+      default:
+        thumb = const SizedBox.shrink();
+    }
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MediaViewer(
+              mediaList: attachments.cast<Map<String, dynamic>>(),
+              initialIndex: 0,
+            ),
+          ),
+        );
+      },
+      child: Stack(
+        children: [
+          thumb,
+          if (attachments.length > 1)
+            Positioned(
+              right: 8,
+              bottom: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '+${attachments.length - 1}',
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+
   }
 
   void _showLikesDialog(BuildContext context, List<dynamic> likerIds) {
