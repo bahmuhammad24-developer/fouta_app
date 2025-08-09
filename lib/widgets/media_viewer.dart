@@ -52,7 +52,7 @@ class _MediaViewerState extends State<MediaViewer> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).colorScheme.onSurface,
       extendBodyBehindAppBar: true,
       body: GestureDetector(
         onTap: () => Navigator.of(context).pop(),
@@ -96,7 +96,7 @@ class _MediaViewerState extends State<MediaViewer> {
                       width: isActive ? 12 : 8,
                       height: isActive ? 12 : 8,
                       decoration: BoxDecoration(
-                        color: isActive ? Colors.white : Colors.white54,
+                        color: isActive ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onPrimary.withOpacity(0.54),
                         shape: BoxShape.circle,
                       ),
                     );
@@ -186,18 +186,18 @@ class _MediaFilePageState extends State<_MediaFilePage> {
           child: CachedNetworkImage(
             imageUrl: widget.url,
             fit: BoxFit.contain,
-            placeholder: (context, url) => const Center(child: CircularProgressIndicator(color: Colors.white)),
-            errorWidget: (context, url, error) => const Center(child: Icon(Icons.broken_image, color: Colors.white)),
+            placeholder: (context, url) => Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.onPrimary)),
+            errorWidget: (context, url, error) => Center(child: Icon(Icons.broken_image, color: Theme.of(context).colorScheme.onPrimary)),
           ),
         ),
       );
     }
     // Video case
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
+      return Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.onPrimary));
     }
     if (!_isVideoInitialized || _controller == null) {
-      return const Center(child: Text('Error loading video.', style: TextStyle(color: Colors.white)));
+      return Center(child: Text('Error loading video.', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)));
     }
     return GestureDetector(
       onTap: () => setState(() => _showControls = !_showControls),
@@ -221,7 +221,7 @@ class _MediaFilePageState extends State<_MediaFilePage> {
                   IconButton(
                     icon: Icon(
                       _player!.state.playing ? Icons.pause_circle_filled : Icons.play_circle_fill,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       size: 48,
                     ),
                     onPressed: () {

@@ -30,7 +30,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).colorScheme.onSurface,
       // Extend behind any app bars for a truly full‑screen experience
       extendBodyBehindAppBar: true,
       body: GestureDetector(
@@ -44,7 +44,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
               errorBuilder: (context, error, stackTrace) => const Center(
                 child: Text(
                   'Could not load image.',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
                 ),
               ),
             ),

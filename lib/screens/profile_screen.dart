@@ -87,7 +87,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: msg.contains('successful') ? Colors.green : Theme.of(context).colorScheme.error,
+        backgroundColor: msg.contains('successful') ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
       ),
     );
   }
@@ -291,9 +291,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             ? CachedNetworkImageProvider(profileImageUrl)
                             : null,
                         child: profileImageUrl.isEmpty
-                            ? const Icon(Icons.person, color: Colors.white)
+                            ? Icon(Icons.person, color: Theme.of(context).colorScheme.onPrimary)
                             : null,
-                        backgroundColor: Colors.grey[300],
+                        backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                       ),
                       title: Text(displayName),
                       onTap: () {
@@ -371,9 +371,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           ? FileImage(File(_newProfileImageFile!.path)) as ImageProvider
                           : (_currentProfileImageUrl.isNotEmpty ? CachedNetworkImageProvider(_currentProfileImageUrl) : null),
                   child: (_currentProfileImageUrl.isEmpty && _newProfileImageFile == null && _newProfileImageBytes == null)
-                      ? const Icon(Icons.person, size: 60, color: Colors.white)
+                      ? Icon(Icons.person, size: 60, color: Theme.of(context).colorScheme.onPrimary)
                       : null,
-                  backgroundColor: Colors.grey[300],
+                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                 ),
                 if (isMyProfile)
                   Positioned(
@@ -382,7 +382,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     child: CircleAvatar(
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       child: IconButton(
-                        icon: Icon(_isEditing ? Icons.check : Icons.edit, color: Colors.white),
+                        icon: Icon(_isEditing ? Icons.check : Icons.edit, color: Theme.of(context).colorScheme.onPrimary),
                         onPressed: () {
                           if (_isEditing) {
                             _updateProfile(_currentProfileImageUrl);
@@ -414,9 +414,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               textAlign: TextAlign.center,
             )
           else
-            Text(bio, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+            Text(bio, textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.outline)),
           const SizedBox(height: 16),
-          Text('Joined: ${_formatTimestamp(createdAt)}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text('Joined: ${_formatTimestamp(createdAt)}', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline)),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -426,7 +426,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 child: Column(
                   children: [
                     Text('${followers.length}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const Text('Followers', style: TextStyle(color: Colors.grey)),
+                    Text('Followers', style: TextStyle(color: Theme.of(context).colorScheme.outline)),
                   ],
                 ),
               ),
@@ -436,7 +436,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 child: Column(
                   children: [
                     Text('${following.length}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const Text('Following', style: TextStyle(color: Colors.grey)),
+                    Text('Following', style: TextStyle(color: Theme.of(context).colorScheme.outline)),
                   ],
                 ),
               ),
@@ -686,7 +686,7 @@ class _MediaGridTile extends StatelessWidget {
               imageUrl: mediaUrl,
               fit: BoxFit.cover,
               placeholder: (context, url) => Container(
-                color: Colors.grey[300],
+                color: Theme.of(context).colorScheme.surfaceVariant,
                 child: const Center(child: CircularProgressIndicator()),
               ),
               errorWidget: (context, url, error) => const Icon(Icons.error),
@@ -695,7 +695,7 @@ class _MediaGridTile extends StatelessWidget {
               const Positioned(
                 top: 4,
                 right: 4,
-                child: Icon(Icons.play_circle_filled, color: Colors.white, size: 20),
+                child: Icon(Icons.play_circle_filled, color: Theme.of(context).colorScheme.onPrimary, size: 20),
               ),
           ],
         ),

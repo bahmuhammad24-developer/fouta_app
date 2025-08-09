@@ -56,7 +56,7 @@ class _AuthScreenState extends State<AuthScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: msg.contains('successful') ? Colors.green : Theme.of(context).colorScheme.error,
+        backgroundColor: msg.contains('successful') ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
       ),
     );
   }
@@ -188,7 +188,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
                       spreadRadius: 2,
                       blurRadius: 8,
                       offset: const Offset(0, 4),

@@ -44,7 +44,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: msg.contains('successful') ? Colors.green : Colors.red,
+        backgroundColor: msg.contains('successful') ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
       ),
     );
   }
@@ -145,12 +145,12 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
             if (_message != null)
               Container(
                 padding: const EdgeInsets.all(8.0),
-                color: _message!.contains('successful') ? Colors.green[100] : Colors.red[100],
+                color: _message!.contains('successful') ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.errorContainer,
                 child: Center(
                   child: Text(
                     _message!,
                     style: TextStyle(
-                      color: _message!.contains('successful') ? Colors.green[700] : Colors.red[700],
+                      color: _message!.contains('successful') ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
                     ),
                   ),
                 ),

@@ -232,6 +232,7 @@ flutter test
 - 2025-08-08 02:05 UTC – Added documentation and logging guidelines to the README.
 - 2025-08-07 22:02 UTC – Updated platform configuration and dependencies to support camera and microphone permissions.
 - 2025-08-07 21:54 UTC – Handled camera and microphone permissions in the story camera screen to prevent a crash when creating stories.
+- 2025-08-09 00:43 UTC – Adopted Material 3 design system with tokenized theme and removed hard-coded colors.
 
 ## Contributing
 - Follow the logging and documentation guidelines outlined above.
