@@ -89,6 +89,9 @@ class _ProfileScreenState extends State<ProfileScreen>
     super.dispose();
   }
 
+  @override
+  bool get wantKeepAlive => true;
+
   void _showMessage(String msg) {
     if (!mounted) return;
 

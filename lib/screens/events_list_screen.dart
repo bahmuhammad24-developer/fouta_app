@@ -18,8 +18,9 @@ class EventsListScreen extends StatefulWidget {
   State<EventsListScreen> createState() => _EventsListScreenState();
 }
 
-class _EventsListScreenState extends State<EventsListScreen>
-    with AutomaticKeepAliveClientMixin {
+
+class _EventsListScreenState extends State<EventsListScreen> with AutomaticKeepAliveClientMixin {
+
   final User? currentUser = FirebaseAuth.instance.currentUser;
 
   // Filtering and sorting state. By default, show all upcoming events and sort by date ascending.
