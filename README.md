@@ -19,6 +19,12 @@
 ## Overview
 Fouta App is a cross-platform Flutter application that integrates Firebase services and supports story creation with camera and microphone features.
 
+## Chat Pro Features
+- Composer supports text and attachments
+- Message bubbles expose basic status, replies, reactions placeholders
+- Audio messages behind feature flag `kChatAudioEnabled`
+- Offline queue and retry logic planned
+
 ## App Structure
 
 ### Directory Structure
@@ -240,7 +246,9 @@ flutter test
 ```
 
 ## Change Log
+
 - 2025-08-09 01:39 UTC – Introduced new story models, tray, viewer scaffolding, and documented gestures and accessibility.
+- 2025-08-09 01:39 UTC – Introduced chat composer, message models, and placeholders for advanced chat features.
 - 2025-08-08 23:10 UTC – Aligned story timestamps with the app-wide relative format for consistency.
 - 2025-08-08 11:50 UTC – Adjusted bottom navigation bar height to account for device padding and prevent overflow errors.
 - 2025-08-08 06:18 UTC – Marked Firebase Messaging background handler as an entry point and logged notification open events to enable push notifications when the app is closed.

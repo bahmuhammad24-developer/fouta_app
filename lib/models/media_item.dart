@@ -1,3 +1,4 @@
+
 /// Represents an image or video used in a story.
 class MediaItem {
   /// URL for a small thumbnail image.
@@ -29,5 +30,24 @@ class MediaItem {
     required this.width,
     required this.height,
     this.duration,
+
+// lib/models/media_item.dart
+
+class MediaItem {
+  final String id;
+  final String url;
+  final String type; // e.g. image, video, audio
+  final String? thumbnailUrl;
+  final String? previewUrl;
+  final String? blurHash;
+
+  MediaItem({
+    required this.id,
+    required this.url,
+    required this.type,
+    this.thumbnailUrl,
+    this.previewUrl,
+    this.blurHash,
+
   });
 }
