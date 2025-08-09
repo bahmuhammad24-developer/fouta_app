@@ -13,6 +13,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:fouta_app/utils/video_controller_extensions.dart';
 import 'package:fouta_app/utils/date_utils.dart';
+import 'package:fouta_app/utils/snackbar.dart';
 
 class StoryViewerScreen extends StatefulWidget {
   final List<Story> stories;
@@ -256,10 +257,13 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                   if (currentSlide.mediaType == 'video')
                     Center(
                       child: _videoController != null
-                          ? Video(
-                              key: ValueKey(currentSlide.id),
-                              controller: _videoController!,
-                              fit: BoxFit.contain,
+                          ? Semantics(
+                              label: 'Story video',
+                              child: Video(
+                                key: ValueKey(currentSlide.id),
+                                controller: _videoController!,
+                                fit: BoxFit.contain,
+                              ),
                             )
                           : Center(
                               child: CircularProgressIndicator(
@@ -269,11 +273,22 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                     )
                   else
                     Center(
+
                       child: CachedNetworkImage(
                         imageUrl: currentSlide.url,
                         fit: BoxFit.contain,
                         placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
                         errorWidget: (context, url, error) => Center(child: Icon(Icons.error, color: scheme.onSurface)),
+
+                      child: Semantics(
+                        label: 'Story image',
+                        child: CachedNetworkImage(
+                          imageUrl: currentSlide.url,
+                          fit: BoxFit.contain,
+                          placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                          errorWidget: (context, url, error) => const Center(child: Icon(Icons.error, color: Colors.white)),
+                        ),
+
                       ),
                     ),
                   _buildOverlay(context, currentStory, currentSlide),
@@ -456,8 +471,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to delete story')));
+        AppSnackBar.show(context, 'Failed to delete story', isError: true);
       }
     }
   }

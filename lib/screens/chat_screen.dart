@@ -24,6 +24,7 @@ import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/widgets/chat_audio_player.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:fouta_app/utils/snackbar.dart';
 
 class ChatScreen extends StatefulWidget {
   final String? chatId;
@@ -202,7 +203,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _pickMediaForChat(ImageSource source, {bool isVideo = false}) async {
     if (_isUploading) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Upload in progress...')));
+      AppSnackBar.show(context, 'Upload in progress...', isError: true);
       return;
     }
 
@@ -212,7 +213,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ? await _picker.pickVideo(source: source)
         : await _picker.pickImage(source: source);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error picking media: $e')));
+      AppSnackBar.show(context, 'Error picking media: $e', isError: true);
     }
 
     if (pickedFile != null) {
@@ -220,8 +221,10 @@ class _ChatScreenState extends State<ChatScreen> {
       if (isVideo && !kIsWeb) {
         final fileSize = File(pickedFile.path).lengthSync();
         if (fileSize > _maxVideoFileSize) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Video is too large. Please select a video under 500 MB.')),
+          AppSnackBar.show(
+            context,
+            'Video is too large. Please select a video under 500 MB.',
+            isError: true,
           );
           return;
         }
@@ -234,8 +237,10 @@ class _ChatScreenState extends State<ChatScreen> {
         final duration = player.state.duration;
         if (duration.inSeconds > _maxVideoDurationSeconds) {
           await player.dispose();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Video is too long. Please select a video under 5 minutes.')),
+          AppSnackBar.show(
+            context,
+            'Video is too long. Please select a video under 5 minutes.',
+            isError: true,
           );
           return;
         }
@@ -298,8 +303,10 @@ class _ChatScreenState extends State<ChatScreen> {
       // Prevent media uploads while offline. Text messages will still be queued via Firestore offline persistence.
       final connectivity = context.read<ConnectivityProvider>();
       if (!connectivity.isOnline) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('You are offline. Cannot send media in chat.')),
+        AppSnackBar.show(
+          context,
+          'You are offline. Cannot send media in chat.',
+          isError: true,
         );
         return;
       }
@@ -341,9 +348,7 @@ class _ChatScreenState extends State<ChatScreen> {
       } else if (fileToUpload != null) {
         uploadTask = ref.putFile(fileToUpload, metadata);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid media data for upload.')),
-        );
+        AppSnackBar.show(context, 'Invalid media data for upload.', isError: true);
         setState(() => _isUploading = false);
         return;
       }

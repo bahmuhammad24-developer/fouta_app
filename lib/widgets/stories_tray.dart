@@ -149,38 +149,48 @@ class StoriesTray extends StatelessWidget {
     final bool hasStory = yourIndex != -1;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: GestureDetector(
-        // Always allow the user to create or append a story when tapping the
-        // avatar.  Long‑pressing the avatar opens the viewer for any existing
-        // story.
-        onTap: () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const StoryCameraScreen()));
-        },
-        onLongPress: hasStory
-            ? () {
-                final stories = sortedDocs.map((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  return Story(
-                    userId: doc.id,
-                    userName: data['authorName'] ?? 'User',
-                    userImageUrl: data['authorImageUrl'] ?? '',
-                    slides: [],
-                  );
-                }).toList();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => StoryViewerScreen(
-                      stories: stories,
-                      initialStoryIndex: yourIndex,
+      child: Semantics(
+        label: hasStory ? 'Your story' : 'Create a story',
+        button: true,
+        child: GestureDetector(
+          // Always allow the user to create or append a story when tapping the
+          // avatar.  Long‑pressing the avatar opens the viewer for any existing
+          // story.
+          onTap: () {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const StoryCameraScreen()));
+          },
+          onLongPress: hasStory
+              ? () {
+                  final stories = sortedDocs.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    return Story(
+                      userId: doc.id,
+                      userName: data['authorName'] ?? 'User',
+                      userImageUrl: data['authorImageUrl'] ?? '',
+                      slides: [],
+                    );
+                  }).toList();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => StoryViewerScreen(
+                        stories: stories,
+                        initialStoryIndex: yourIndex,
+                      ),
                     ),
+
                   ),
                 );
               }
             : null,
         child: Semantics(
           label: 'Your story',
+
+                  );
+                }
+              : null,
+
           child: Column(
             children: [
             Stack(
@@ -244,12 +254,22 @@ class _StoryAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
+
       child: InkWell(
         onTap: onTap,
         child: Semantics(
           label: 'Story from $userName',
           child: Column(
           children: [
+
+      child: Semantics(
+        label: "$userName's story",
+        button: true,
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            children: [
+
             Container(
               padding: const EdgeInsets.all(2.0),
               decoration: BoxDecoration(

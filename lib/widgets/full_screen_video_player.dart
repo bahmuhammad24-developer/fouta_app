@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:fouta_app/utils/video_controller_extensions.dart';
+import 'package:fouta_app/utils/snackbar.dart';
 
 class FullScreenVideoPlayer extends StatefulWidget {
   final String videoUrl;
@@ -52,7 +53,7 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
       debugPrint("Error initializing fullscreen player: $e");
       if(mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Could not play video.")));
+        AppSnackBar.show(context, 'Could not play video.', isError: true);
       }
     }
   }

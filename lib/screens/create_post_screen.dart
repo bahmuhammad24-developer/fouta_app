@@ -12,6 +12,7 @@ import 'package:image/image.dart' as img;
 import 'package:provider/provider.dart';
 import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
+import 'package:fouta_app/utils/snackbar.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 
@@ -87,12 +88,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     setState(() {
       _message = msg;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: msg.contains('successful') ? Colors.green : Theme.of(context).colorScheme.error,
-      ),
-    );
+    final lower = msg.toLowerCase();
+    final isError = lower.contains('fail') || lower.contains('error');
+    AppSnackBar.show(context, msg, isError: isError);
   }
 
   Future<void> _pickMedia(ImageSource source, {bool isVideo = false}) async {
@@ -268,12 +266,26 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         final String storagePath = '${type}s/${user.uid}/${DateTime.now().millisecondsSinceEpoch}_${user.uid}_$i.$fileExtension';
         final storageRef = FirebaseStorage.instance.ref().child(storagePath);
 
+        // Create Firestore document to receive processing metadata
+        final mediaDoc = FirebaseFirestore.instance
+            .collection('artifacts/$APP_ID/public/data/media')
+            .doc();
+        await mediaDoc.set({
+          'ownerId': user.uid,
+          'type': type,
+          'storagePath': storagePath,
+        });
+
         // Ensure a correct content type so that Firebase Storage serves the
         // file with the proper headers.  Without this, uploaded videos can be
         // stored as `application/octet-stream`, preventing some clients from
         // recognizing them as playable media.
         final SettableMetadata metadata = SettableMetadata(
           contentType: type == 'video' ? 'video/mp4' : 'image/jpeg',
+          customMetadata: {
+            'docId': mediaDoc.id,
+            'ownerId': user.uid,
+          },
         );
 
         UploadTask uploadTask;
@@ -306,12 +318,44 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           setState(() { _isUploading = false; });
           return;
         }
-        if (url != null) {
-          attachments.add({
-            'url': url,
-            'type': type,
-            if (type == 'video') 'aspectRatio': aspect,
-          });
+
+        // Wait for Cloud Function to populate metadata
+        Map<String, dynamic>? processed;
+        try {
+          final snap = await mediaDoc.snapshots().firstWhere(
+            (doc) => doc.data() != null && doc.data()!.containsKey('fullUrl'),
+          );
+          processed = snap.data();
+        } catch (e) {
+          debugPrint('Timed out waiting for media processing: $e');
+        }
+
+        if (processed != null) {
+          if (type == 'image') {
+            attachments.add({
+              'type': type,
+              'url': processed['fullUrl'],
+              'thumbUrl': processed['thumbUrl'],
+              'previewUrl': processed['previewUrl'],
+              'blurhash': processed['blurhash'],
+              'width': processed['width'],
+              'height': processed['height'],
+            });
+          } else {
+            final double? ratio = processed['width'] != null && processed['height'] != null
+                ? (processed['width'] as num).toDouble() / (processed['height'] as num).toDouble()
+                : aspect;
+            attachments.add({
+              'type': type,
+              'url': url,
+              'thumbUrl': processed['thumbUrl'],
+              'previewUrl': processed['previewUrl'],
+              'blurhash': processed['blurhash'],
+              'width': processed['width'],
+              'height': processed['height'],
+              if (ratio != null) 'aspectRatio': ratio,
+            });
+          }
         }
         uploadedCount++;
       }

@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 // Import the story creation screen widget used after capturing media.
 import 'package:fouta_app/screens/story_creation_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:fouta_app/utils/snackbar.dart';
 
 /// A camera interface for creating a story. Users can tap the shutter button
 /// to take a photo or press and hold to record a video. They can also
@@ -37,12 +38,9 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
         statuses[Permission.microphone] == PermissionStatus.granted;
     if (!cameraGranted || !micGranted) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content:
-                Text('Camera and microphone permissions are required.'),
-          ),
-        );
+        AppSnackBar.show(context,
+            'Camera and microphone permissions are required.',
+            isError: true);
         Navigator.pop(context);
       }
       return;
@@ -125,11 +123,8 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
         statuses[Permission.storage] == PermissionStatus.granted;
     if (!photosGranted && !storageGranted) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Photo library permission is required.'),
-          ),
-        );
+        AppSnackBar.show(context, 'Photo library permission is required.',
+            isError: true);
       }
       return;
     }
@@ -201,41 +196,46 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
                     IconButton(
                       iconSize: 32,
                       icon: const Icon(Icons.photo_library, color: Colors.white),
+                      tooltip: 'Pick from gallery',
                       onPressed: _pickFromGallery,
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                GestureDetector(
-                  onTap: _takePhoto,
-                  onLongPressStart: (_) {
-                    setState(() => _isRecording = true);
-                    _startVideoRecording();
-                  },
-                  onLongPressEnd: (_) async {
-                    if (_isRecording) {
-                      setState(() => _isRecording = false);
-                      await _stopVideoRecording();
-                    }
-                  },
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.2),
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 4,
+                Semantics(
+                  label: 'Capture story',
+                  button: true,
+                  child: GestureDetector(
+                    onTap: _takePhoto,
+                    onLongPressStart: (_) {
+                      setState(() => _isRecording = true);
+                      _startVideoRecording();
+                    },
+                    onLongPressEnd: (_) async {
+                      if (_isRecording) {
+                        setState(() => _isRecording = false);
+                        await _stopVideoRecording();
+                      }
+                    },
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.2),
+                        border: Border.all(
+                          color: Colors.white,
+                          width: 4,
+                        ),
                       ),
-                    ),
-                    child: Center(
-                      child: Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _isRecording ? Colors.red : Colors.white,
+                      child: Center(
+                        child: Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _isRecording ? Colors.red : Colors.white,
+                          ),
                         ),
                       ),
                     ),
