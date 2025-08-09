@@ -12,7 +12,8 @@ import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/create_post_screen.dart';
 import 'package:fouta_app/screens/profile_screen.dart';
 // Use the unified MediaViewer instead of separate full screen image/video widgets
-import 'package:fouta_app/widgets/media_viewer.dart';
+import '../models/media_item.dart';
+import 'media/post_media.dart';
 import 'package:fouta_app/widgets/share_post_dialog.dart';
 import 'package:fouta_app/widgets/fouta_card.dart';
 
@@ -558,105 +559,11 @@ class _PostCardWidgetState extends State<PostCardWidget> {
   /// opens a full‑screen [MediaViewer] with all attachments for this post.
   Widget _buildAttachmentThumbnail(List<dynamic> attachments) {
     if (attachments.isEmpty) return const SizedBox.shrink();
-    final Map<String, dynamic> first = attachments.first as Map<String, dynamic>;
-    final String type = first['type'] ?? 'image';
-    final String url = first['url'] ?? '';
-    final double? aspectRatio = first['aspectRatio'] as double?;
-    final bool allowAutoplay = !widget.isDataSaverOn || !widget.isOnMobileData;
-    Widget thumb;
-    switch (type) {
-      case 'image':
-        thumb = ClipRRect(
-          borderRadius: BorderRadius.circular(8.0),
-          child: CachedNetworkImage(
-            imageUrl: url,
-            placeholder: (context, url) => AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Container(
-                color: Colors.grey[300],
-                child: const Center(child: CircularProgressIndicator()),
-              ),
-            ),
-            errorWidget: (context, url, error) => Container(
-              height: 200,
-              color: Colors.grey[300],
-              child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 50)),
-            ),
-            width: double.infinity,
-            fit: BoxFit.cover,
-          ),
-        );
-        break;
-      case 'video':
-        if (allowAutoplay) {
-          thumb = ClipRRect(
-            borderRadius: BorderRadius.circular(8.0),
-            child: VideoPlayerWidget(
-              videoUrl: url,
-              videoId: widget.postId,
-              aspectRatio: aspectRatio,
-              areControlsVisible: false,
-              shouldInitialize: _isPostVisible,
-            ),
-          );
-        } else {
-          thumb = ClipRRect(
-            borderRadius: BorderRadius.circular(8.0),
-            child: AspectRatio(
-              aspectRatio: aspectRatio ?? 16 / 9,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Thumbnail placeholder for video.  Currently we just show a dark
-                  // container with a play icon overlay.  In the future, we can
-                  // generate actual video thumbnails during upload.
-                  Container(color: Colors.black54),
-                  const Center(
-                    child: Icon(Icons.play_circle_fill, color: Colors.white70, size: 56),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-        break;
-      default:
-        thumb = const SizedBox.shrink();
-    }
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => MediaViewer(
-              mediaList: attachments.cast<Map<String, dynamic>>(),
-              initialIndex: 0,
-            ),
-          ),
-        );
-      },
-      child: Stack(
-        children: [
-          thumb,
-          if (attachments.length > 1)
-            Positioned(
-              right: 8,
-              bottom: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '+${attachments.length - 1}',
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
+    final items = attachments
+        .whereType<Map<String, dynamic>>()
+        .map(MediaItem.fromMap)
+        .toList();
+    return PostMedia(media: items);
   }
 
   void _showLikesDialog(BuildContext context, List<dynamic> likerIds) {
