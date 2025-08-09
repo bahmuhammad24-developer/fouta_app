@@ -102,7 +102,7 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
         centerTitle: true,
         title: Text(
           chatData['groupName'] ?? 'Group Chat',
-          style: const TextStyle(color: Colors.white, shadows: [Shadow(color: Colors.black, blurRadius: 8)]),
+          style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, shadows: [Shadow(color: Theme.of(context).colorScheme.shadow, blurRadius: 8)]),
         ),
         background: SafeArea(
           child: SingleChildScrollView( // FIX: Added SingleChildScrollView to prevent overflow
@@ -115,7 +115,7 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Text(
                     chatData['groupName'] ?? 'Group Chat',
-                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 24, fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                     maxLines: 2,
                   ),
@@ -169,7 +169,7 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
                   const SizedBox(height: 12),
                   Text(
                     userData['displayName'] ?? 'User',
-                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -199,7 +199,7 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
                     : null,
                 ),
                 const SizedBox(height: 4),
-                Text(userData['firstName'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 12)),
+                Text(userData['firstName'] ?? '', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 12)),
               ],
             ),
           ),
@@ -320,8 +320,8 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
           Text('Actions', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           ListTile(
-            leading: Icon(isGroupChat ? Icons.logout : Icons.block, color: Colors.red),
-            title: Text(isGroupChat ? 'Leave Group' : 'Block User', style: const TextStyle(color: Colors.red)),
+            leading: Icon(isGroupChat ? Icons.logout : Icons.block, color: Theme.of(context).colorScheme.error),
+            title: Text(isGroupChat ? 'Leave Group' : 'Block User', style: TextStyle(color: Theme.of(context).colorScheme.error)),
             onTap: () {
               if (isGroupChat) {
                 _leaveGroup();

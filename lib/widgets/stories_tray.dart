@@ -179,15 +179,17 @@ class StoriesTray extends StatelessWidget {
                 );
               }
             : null,
-        child: Column(
-          children: [
+        child: Semantics(
+          label: 'Your story',
+          child: Column(
+            children: [
             Stack(
               alignment: Alignment.bottomRight,
               children: [
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 32.0,
-                  backgroundColor: Colors.grey,
-                  child: Icon(Icons.person, color: Colors.white, size: 32),
+                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                  child: Icon(Icons.person, color: Theme.of(context).colorScheme.onSurface, size: 32),
                 ),
                 if (!hasStory)
                   Container(
@@ -215,7 +217,8 @@ class StoriesTray extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -243,21 +246,27 @@ class _StoryAvatar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
       child: InkWell(
         onTap: onTap,
-        child: Column(
+        child: Semantics(
+          label: 'Story from $userName',
+          child: Column(
           children: [
             Container(
               padding: const EdgeInsets.all(2.0),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: hasUnseen ? Theme.of(context).colorScheme.secondary : Colors.grey,
+                  color: hasUnseen
+                      ? Theme.of(context).colorScheme.secondary
+                      : Theme.of(context).colorScheme.outline,
                   width: 2.0,
                 ),
               ),
               child: CircleAvatar(
                 radius: 30.0,
                 backgroundImage: imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
-                child: imageUrl.isEmpty ? const Icon(Icons.person) : null,
+                child: imageUrl.isEmpty
+                    ? Icon(Icons.person, color: Theme.of(context).colorScheme.onSurface)
+                    : null,
               ),
             ),
             const SizedBox(height: 2.0),
@@ -274,6 +283,7 @@ class _StoryAvatar extends StatelessWidget {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

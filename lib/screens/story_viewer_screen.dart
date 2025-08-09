@@ -219,6 +219,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
   }
 
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onVerticalDragUpdate: _handleVerticalDragUpdate,
       onVerticalDragEnd: _handleVerticalDragEnd,
@@ -228,7 +229,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
         child: Opacity(
           opacity: (1 - (_verticalDrag / 300)).clamp(0.0, 1.0),
           child: Scaffold(
-            backgroundColor: Colors.black,
+            backgroundColor: scheme.background,
             body: PageView.builder(
               controller: _pageController,
               onPageChanged: (index) {
@@ -260,9 +261,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                               controller: _videoController!,
                               fit: BoxFit.contain,
                             )
-                          : const Center(
+                          : Center(
                               child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(scheme.onSurface),
                               ),
                             ),
                     )
@@ -272,7 +273,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                         imageUrl: currentSlide.url,
                         fit: BoxFit.contain,
                         placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                        errorWidget: (context, url, error) => const Center(child: Icon(Icons.error, color: Colors.white)),
+                        errorWidget: (context, url, error) => Center(child: Icon(Icons.error, color: scheme.onSurface)),
                       ),
                     ),
                   _buildOverlay(context, currentStory, currentSlide),
@@ -306,15 +307,15 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                           builder: (context, child) {
                             return LinearProgressIndicator(
                               value: _animationController.value,
-                              backgroundColor: Colors.white38,
-                              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                              backgroundColor: scheme.onSurface.withOpacity(0.38),
+                              valueColor: AlwaysStoppedAnimation<Color>(scheme.onSurface),
                             );
                           },
                         )
                       : LinearProgressIndicator(
                           value: _currentSlideIndex > index ? 1.0 : 0.0,
-                          backgroundColor: Colors.white38,
-                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                          backgroundColor: scheme.onSurface.withOpacity(0.38),
+                          valueColor: AlwaysStoppedAnimation<Color>(scheme.onSurface),
                         ),
                 ),
               );
@@ -335,29 +336,29 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
               const SizedBox(width: 8.0),
               Text(
                 story.userName,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: scheme.onSurface,
                   fontWeight: FontWeight.bold,
-                  shadows: [Shadow(blurRadius: 2)],
+                  shadows: const [Shadow(blurRadius: 2)],
                 ),
               ),
               const SizedBox(width: 8.0),
               Text(
                 DateUtilsHelper.formatRelative(slide.timestamp.toDate()),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: scheme.onSurface,
                   fontSize: 12,
-                  shadows: [Shadow(blurRadius: 2)],
+                  shadows: const [Shadow(blurRadius: 2)],
                 ),
               ),
               const Spacer(),
               if (FirebaseAuth.instance.currentUser?.uid == story.userId)
                 IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.white),
+                  icon: Icon(Icons.delete, color: scheme.onSurface),
                   onPressed: () => _deleteStory(story.userId),
                 ),
               IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: Icon(Icons.close, color: scheme.onSurface),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ],
