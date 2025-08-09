@@ -162,9 +162,28 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
+  Widget _buildChatIcon(BuildContext context, {required bool selected}) {
+    return badges.Badge(
+      showBadge: _unreadChatsCount > 0,
+      badgeStyle: badges.BadgeStyle(
+        badgeColor: Theme.of(context).colorScheme.error,
+      ),
+      badgeContent: Text(
+        _unreadChatsCount > 99 ? '99+' : '$_unreadChatsCount',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+        ),
+      ),
+      position: badges.BadgePosition.topEnd(top: 6, end: -12),
+      child: Icon(selected ? Icons.chat_bubble : Icons.chat_bubble_outline),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
+    final isWide = MediaQuery.of(context).size.width >= 900;
 
     return PopScope(
       canPop: false,
@@ -181,155 +200,168 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           floatingActionButton: (_selectedIndex == 1 && _showNewChatFab)
               ? _buildNewChatFab(context)
               : null,
-          bottomNavigationBar: AnimatedBuilder(
-            animation: _navBarController,
-            builder: (context, child) {
-              final bottomPadding = MediaQuery.of(context).padding.bottom;
-              final totalHeight = kBottomNavigationBarHeight + bottomPadding;
-              return SizedBox(
-                height: totalHeight * _navBarController.value,
-                child: Transform.translate(
-                  offset: Offset(0, totalHeight * (1 - _navBarController.value)),
-                  child: child,
-                ),
-              );
-            },
-            child: BottomNavigationBar(
-              currentIndex: _selectedIndex,
-              onTap: _onItemTapped,
-              type: BottomNavigationBarType.fixed,
-              selectedItemColor: Theme.of(context).colorScheme.primary,
-              unselectedItemColor: Colors.grey[600],
-              items: [
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.home_outlined),
-                  activeIcon: Icon(Icons.home),
-                  label: 'Feed',
-                ),
-                BottomNavigationBarItem(
-                  icon: badges.Badge(
-                    showBadge: _unreadChatsCount > 0,
-                    badgeStyle: badges.BadgeStyle(
-                      badgeColor: Theme.of(context).colorScheme.error,
-                    ),
-                    badgeContent: Text(
-                      _unreadChatsCount > 99
-                          ? '99+'
-                          : '$_unreadChatsCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
+          bottomNavigationBar: isWide
+              ? null
+              : AnimatedBuilder(
+                  animation: _navBarController,
+                  builder: (context, child) {
+                    final bottomPadding = MediaQuery.of(context).padding.bottom;
+                    const double navBarHeight = 80.0;
+                    final totalHeight = navBarHeight + bottomPadding;
+                    return SizedBox(
+                      height: totalHeight * _navBarController.value,
+                      child: Transform.translate(
+                        offset: Offset(0, totalHeight * (1 - _navBarController.value)),
+                        child: child,
                       ),
-                    ),
-                    position: badges.BadgePosition.topEnd(top: 6, end: -12),
-                    child: const Icon(Icons.chat_bubble_outline),
-                  ),
-                  activeIcon: badges.Badge(
-                    showBadge: _unreadChatsCount > 0,
-                    badgeStyle: badges.BadgeStyle(
-                      badgeColor: Theme.of(context).colorScheme.error,
-                    ),
-                    badgeContent: Text(
-                      _unreadChatsCount > 99
-                          ? '99+'
-                          : '$_unreadChatsCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
+                    );
+                  },
+                  child: NavigationBar(
+                    selectedIndex: _selectedIndex,
+                    onDestinationSelected: _onItemTapped,
+                    destinations: [
+                      const NavigationDestination(
+                        icon: Icon(Icons.home_outlined),
+                        selectedIcon: Icon(Icons.home),
+                        label: 'Feed',
                       ),
-                    ),
-                    position: badges.BadgePosition.topEnd(top: 6, end: -12),
-                    child: const Icon(Icons.chat_bubble),
-                  ),
-                  label: 'Chats',
-                ),
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.event_outlined),
-                  activeIcon: Icon(Icons.event),
-                  label: 'Events',
-                ),
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.people_outline),
-                  activeIcon: Icon(Icons.people),
-                  label: 'People',
-                ),
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.person_outline),
-                  activeIcon: Icon(Icons.person),
-                  label: 'Profile',
-                ),
-              ],
-            ),
-          ),
-          body: Consumer<ConnectivityProvider>(
-            builder: (context, connectivity, _) {
-              return Column(
-                children: [
-                  if (!connectivity.isOnline)
-                  MaterialBanner(
-                    backgroundColor:
-                        Theme.of(context).colorScheme.errorContainer,
-                    leading: const Icon(Icons.wifi_off),
-                    content: const Text('You are offline'),
-                    actions: [
-                      TextButton(
-                        onPressed: connectivity.refresh,
-                        child: const Text('Retry'),
+                      NavigationDestination(
+                        icon: _buildChatIcon(context, selected: false),
+                        selectedIcon: _buildChatIcon(context, selected: true),
+                        label: 'Chats',
+                      ),
+                      const NavigationDestination(
+                        icon: Icon(Icons.event_outlined),
+                        selectedIcon: Icon(Icons.event),
+                        label: 'Events',
+                      ),
+                      const NavigationDestination(
+                        icon: Icon(Icons.people_outline),
+                        selectedIcon: Icon(Icons.people),
+                        label: 'People',
+                      ),
+                      const NavigationDestination(
+                        icon: Icon(Icons.person_outline),
+                        selectedIcon: Icon(Icons.person),
+                        label: 'Profile',
                       ),
                     ],
                   ),
-                Expanded(
-                  child: NestedScrollView(
-                    headerSliverBuilder: (context, innerBoxIsScrolled) {
-                      return <Widget>[
-                        SliverAppBar(
-                          title: Text(_getAppBarTitle()),
-                          // Keep the app bar visible while scrolling
-                          pinned: true,
-                          actions: [
-                            IconButton(
-                              icon: const Icon(Icons.add_circle_outline),
-                              tooltip: 'Create Post',
-                              onPressed: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const CreatePostScreen(),
-                                ),
-                              ),
-                            ),
-                            _NotificationsButton(
-                                unreadStream: _unreadNotificationsStream),
-                            Builder(
-                              builder: (context) => IconButton(
-                                icon: const Icon(Icons.menu),
-                                onPressed: () =>
-                                    Scaffold.of(context).openEndDrawer(),
-                              ),
-                            ),
-                          ],
+                ),
+          body: Consumer<ConnectivityProvider>(
+            builder: (context, connectivity, _) {
+              Widget content = Column(
+                children: [
+                  if (!connectivity.isOnline)
+                    MaterialBanner(
+                      backgroundColor:
+                          Theme.of(context).colorScheme.errorContainer,
+                      leading: const Icon(Icons.wifi_off),
+                      content: const Text('You are offline'),
+                      actions: [
+                        TextButton(
+                          onPressed: connectivity.refresh,
+                          child: const Text('Retry'),
                         ),
-                      ];
-                    },
-                    body: IndexedStack(
-                      index: _selectedIndex,
-                      children: <Widget>[
-                        _buildOffstageNavigator(
-                            0, FeedTab(setNavBarVisibility: _setNavBarVisibility)),
-                        _buildOffstageNavigator(
-                            1, ChatsTab(setNavBarVisibility: _setNavBarVisibility, setShowNewChatFab: _setShowNewChatFab)),
-                        _buildOffstageNavigator(
-                            2, const EventsListScreen()),
-                        _buildOffstageNavigator(3, const PeopleTab()),
-                        _buildOffstageNavigator(
-                            4, ProfileScreen(userId: currentUser?.uid ?? '')),
                       ],
                     ),
+                  Expanded(
+                    child: NestedScrollView(
+                      headerSliverBuilder: (context, innerBoxIsScrolled) {
+                        return <Widget>[
+                          SliverAppBar(
+                            title: Text(_getAppBarTitle()),
+                            // Keep the app bar visible while scrolling
+                            pinned: true,
+                            actions: [
+                              IconButton(
+                                icon: const Icon(Icons.add_circle_outline),
+                                tooltip: 'Create Post',
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const CreatePostScreen(),
+                                  ),
+                                ),
+                              ),
+                              _NotificationsButton(
+                                  unreadStream: _unreadNotificationsStream),
+                              Builder(
+                                builder: (context) => IconButton(
+                                  icon: const Icon(Icons.menu),
+                                  onPressed: () =>
+                                      Scaffold.of(context).openEndDrawer(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ];
+                      },
+                      body: IndexedStack(
+                        index: _selectedIndex,
+                        children: <Widget>[
+                          _buildOffstageNavigator(
+                              0, FeedTab(setNavBarVisibility: _setNavBarVisibility)),
+                          _buildOffstageNavigator(
+                              1,
+                              ChatsTab(
+                                  setNavBarVisibility: _setNavBarVisibility,
+                                  setShowNewChatFab: _setShowNewChatFab)),
+                          _buildOffstageNavigator(
+                              2, const EventsListScreen()),
+                          _buildOffstageNavigator(3, const PeopleTab()),
+                          _buildOffstageNavigator(
+                              4, ProfileScreen(userId: currentUser?.uid ?? '')),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+              if (isWide) {
+                return Row(
+                  children: [
+                    NavigationRail(
+                      selectedIndex: _selectedIndex,
+                      onDestinationSelected: _onItemTapped,
+                      labelType: NavigationRailLabelType.selected,
+                      destinations: [
+                        const NavigationRailDestination(
+                          icon: Icon(Icons.home_outlined),
+                          selectedIcon: Icon(Icons.home),
+                          label: Text('Feed'),
+                        ),
+                        NavigationRailDestination(
+                          icon: _buildChatIcon(context, selected: false),
+                          selectedIcon: _buildChatIcon(context, selected: true),
+                          label: const Text('Chats'),
+                        ),
+                        const NavigationRailDestination(
+                          icon: Icon(Icons.event_outlined),
+                          selectedIcon: Icon(Icons.event),
+                          label: Text('Events'),
+                        ),
+                        const NavigationRailDestination(
+                          icon: Icon(Icons.people_outline),
+                          selectedIcon: Icon(Icons.people),
+                          label: Text('People'),
+                        ),
+                        const NavigationRailDestination(
+                          icon: Icon(Icons.person_outline),
+                          selectedIcon: Icon(Icons.person),
+                          label: Text('Profile'),
+                        ),
+                      ],
+                    ),
+                    const VerticalDivider(width: 1),
+                    Expanded(child: content),
+                  ],
+                );
+              }
+              return content;
+            },
+          ),
         ),
       ),
     );
@@ -473,7 +505,7 @@ class FeedTab extends StatefulWidget {
 }
 
 // Extend TickerProviderStateMixin to use TabController for the feed toggle
-class _FeedTabState extends State<FeedTab> {
+class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
   bool _showFollowingFeed = false;
   List<String> _currentUserFollowingIds = [];
   StreamSubscription? _followingSubscription;
@@ -524,6 +556,9 @@ class _FeedTabState extends State<FeedTab> {
       }
     });
   }
+
+  @override
+  bool get wantKeepAlive => true;
 
   void _setupFollowingListener() {
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -643,6 +678,7 @@ class _FeedTabState extends State<FeedTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final currentUser = FirebaseAuth.instance.currentUser;
     final filteredPosts = _posts.where((doc) {
       final postData = doc.data() as Map<String, dynamic>;
@@ -789,7 +825,7 @@ class ChatsTab extends StatefulWidget {
   State<ChatsTab> createState() => _ChatsTabState();
 }
 
-class _ChatsTabState extends State<ChatsTab> {
+class _ChatsTabState extends State<ChatsTab> with AutomaticKeepAliveClientMixin {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
@@ -816,7 +852,11 @@ class _ChatsTabState extends State<ChatsTab> {
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null || currentUser.isAnonymous) {
       return const Center(child: Text('Please log in to view your chats.'));
@@ -1141,7 +1181,7 @@ class PeopleTab extends StatefulWidget {
   State<PeopleTab> createState() => _PeopleTabState();
 }
 
-class _PeopleTabState extends State<PeopleTab> {
+class _PeopleTabState extends State<PeopleTab> with AutomaticKeepAliveClientMixin {
   final TextEditingController _userSearchController = TextEditingController();
   
   @override
@@ -1168,7 +1208,11 @@ class _PeopleTabState extends State<PeopleTab> {
   }
   
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null || currentUser.isAnonymous) {
       return const Center(child: Text('Please log in to view other users.'));

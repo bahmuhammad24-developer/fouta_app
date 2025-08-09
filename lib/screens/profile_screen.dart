@@ -31,7 +31,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 // Add SingleTickerProviderStateMixin for the TabController
-class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
+class _ProfileScreenState extends State<ProfileScreen>
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   final _bioController = TextEditingController();
   late bool _isEditing;
   String _currentProfileImageUrl = '';
@@ -81,6 +82,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     _connectivitySubscription?.cancel();
     super.dispose();
   }
+
+  @override
+  bool get wantKeepAlive => true;
 
   void _showMessage(String msg) {
     if (!mounted) return;
@@ -595,6 +599,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final currentUser = FirebaseAuth.instance.currentUser;
     final bool isMyProfile = currentUser?.uid == widget.userId;
 

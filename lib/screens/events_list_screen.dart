@@ -17,7 +17,7 @@ class EventsListScreen extends StatefulWidget {
   State<EventsListScreen> createState() => _EventsListScreenState();
 }
 
-class _EventsListScreenState extends State<EventsListScreen> {
+class _EventsListScreenState extends State<EventsListScreen> with AutomaticKeepAliveClientMixin {
   final User? currentUser = FirebaseAuth.instance.currentUser;
 
   // Filtering and sorting state. By default, show all upcoming events and sort by date ascending.
@@ -25,7 +25,11 @@ class _EventsListScreenState extends State<EventsListScreen> {
   String _sortOption = 'date'; // options: date, popularity
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     return DefaultTabController(
       length: 3,
       child: Scaffold(
