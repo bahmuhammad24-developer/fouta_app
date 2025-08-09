@@ -13,6 +13,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:fouta_app/utils/video_controller_extensions.dart';
 import 'package:fouta_app/utils/date_utils.dart';
+import 'package:fouta_app/utils/snackbar.dart';
 
 class StoryViewerScreen extends StatefulWidget {
   final List<Story> stories;
@@ -455,8 +456,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to delete story')));
+        AppSnackBar.show(context, 'Failed to delete story', isError: true);
       }
     }
   }

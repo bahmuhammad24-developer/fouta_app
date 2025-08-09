@@ -16,7 +16,7 @@ import 'dart:async';
 import 'package:badges/badges.dart' as badges;
 // Explicitly import ScrollDirection enum for userScrollDirection checks
 // Import ScrollDirection from widgets to compare user scroll direction
-import 'package:flutter/widgets.dart' show ScrollDirection;
+import 'package:flutter/widgets.dart' show ScrollDirection, AutomaticKeepAliveClientMixin;
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/chat_screen.dart';
@@ -29,6 +29,8 @@ import 'package:fouta_app/widgets/post_card_widget.dart';
 import 'package:fouta_app/utils/firestore_paths.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
 import 'package:fouta_app/widgets/fouta_card.dart';
+import 'package:fouta_app/widgets/skeletons/feed_skeleton.dart';
+import 'package:fouta_app/utils/snackbar.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -98,12 +100,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   void _showMessage(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: msg.contains('successful') ? Colors.green : Theme.of(context).colorScheme.error,
-      ),
-    );
+    final lower = msg.toLowerCase();
+    final isError = lower.contains('fail') || lower.contains('error');
+    AppSnackBar.show(context, msg, isError: isError);
   }
 
   void _setNavBarVisibility(bool isVisible) {
@@ -164,6 +163,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final currentUser = FirebaseAuth.instance.currentUser;
 
     return PopScope(
@@ -263,22 +263,28 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ),
           body: Consumer<ConnectivityProvider>(
             builder: (context, connectivity, _) {
-              return Column(
-                children: [
-                  if (!connectivity.isOnline)
-                  MaterialBanner(
-                    backgroundColor:
-                        Theme.of(context).colorScheme.errorContainer,
-                    leading: const Icon(Icons.wifi_off),
-                    content: const Text('You are offline'),
+              if (!connectivity.isOnline) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  AppSnackBar.showBanner(
+                    context,
+                    'You are offline',
+                    isError: true,
                     actions: [
                       TextButton(
                         onPressed: connectivity.refresh,
                         child: const Text('Retry'),
                       ),
                     ],
-                  ),
-                Expanded(
+                  );
+                });
+              } else {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ScaffoldMessenger.of(context).clearMaterialBanners();
+                });
+              }
+              return Column(
+                children: [
+                  Expanded(
                   child: NestedScrollView(
                     headerSliverBuilder: (context, innerBoxIsScrolled) {
                       return <Widget>[
@@ -473,7 +479,7 @@ class FeedTab extends StatefulWidget {
 }
 
 // Extend TickerProviderStateMixin to use TabController for the feed toggle
-class _FeedTabState extends State<FeedTab> {
+class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
   bool _showFollowingFeed = false;
   List<String> _currentUserFollowingIds = [];
   StreamSubscription? _followingSubscription;
@@ -525,6 +531,9 @@ class _FeedTabState extends State<FeedTab> {
     });
   }
 
+  @override
+  bool get wantKeepAlive => true;
+
   void _setupFollowingListener() {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null && !currentUser.isAnonymous) {
@@ -553,12 +562,9 @@ class _FeedTabState extends State<FeedTab> {
 
   void _showMessage(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: msg.contains('successful') ? Colors.green : Theme.of(context).colorScheme.error,
-      ),
-    );
+    final lower = msg.toLowerCase();
+    final isError = lower.contains('fail') || lower.contains('error');
+    AppSnackBar.show(context, msg, isError: isError);
   }
 
   Future<void> _fetchFirstPosts() async {
@@ -720,7 +726,7 @@ class _FeedTabState extends State<FeedTab> {
           ),
           Expanded(
             child: (_posts.isEmpty && _isLoading)
-                ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.secondary))
+                ? const FeedSkeleton()
                 : (filteredPosts.isEmpty)
                     ? Center(
                         child: Column(
@@ -789,7 +795,7 @@ class ChatsTab extends StatefulWidget {
   State<ChatsTab> createState() => _ChatsTabState();
 }
 
-class _ChatsTabState extends State<ChatsTab> {
+class _ChatsTabState extends State<ChatsTab> with AutomaticKeepAliveClientMixin {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
@@ -816,7 +822,11 @@ class _ChatsTabState extends State<ChatsTab> {
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null || currentUser.isAnonymous) {
       return const Center(child: Text('Please log in to view your chats.'));
@@ -1073,9 +1083,9 @@ class _ChatListItem extends StatelessWidget {
       confirmDismiss: (direction) async {
         // Placeholder for future functionality
         if (direction == DismissDirection.endToStart) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Archive not implemented yet.')));
+          AppSnackBar.show(context, 'Archive not implemented yet.', isError: true);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mute not implemented yet.')));
+          AppSnackBar.show(context, 'Mute not implemented yet.', isError: true);
         }
         return false;
       },
@@ -1141,7 +1151,7 @@ class PeopleTab extends StatefulWidget {
   State<PeopleTab> createState() => _PeopleTabState();
 }
 
-class _PeopleTabState extends State<PeopleTab> {
+class _PeopleTabState extends State<PeopleTab> with AutomaticKeepAliveClientMixin {
   final TextEditingController _userSearchController = TextEditingController();
   
   @override
@@ -1168,7 +1178,11 @@ class _PeopleTabState extends State<PeopleTab> {
   }
   
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null || currentUser.isAnonymous) {
       return const Center(child: Text('Please log in to view other users.'));

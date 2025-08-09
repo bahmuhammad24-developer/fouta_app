@@ -12,6 +12,7 @@ import 'package:image/image.dart' as img;
 import 'package:provider/provider.dart';
 import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
+import 'package:fouta_app/utils/snackbar.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 
@@ -87,12 +88,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     setState(() {
       _message = msg;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: msg.contains('successful') ? Colors.green : Theme.of(context).colorScheme.error,
-      ),
-    );
+    final lower = msg.toLowerCase();
+    final isError = lower.contains('fail') || lower.contains('error');
+    AppSnackBar.show(context, msg, isError: isError);
   }
 
   Future<void> _pickMedia(ImageSource source, {bool isVideo = false}) async {
