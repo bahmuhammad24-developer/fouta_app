@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:fouta_app/services/video_cache_service.dart';
 import 'package:fouta_app/utils/video_controller_extensions.dart';
+import 'package:fouta_app/utils/snackbar.dart';
 
 /// A unified full‑screen media viewer that can display a list of images and
 /// videos.  Users can swipe between items, pinch to zoom on photos, and
@@ -52,7 +54,7 @@ class _MediaViewerState extends State<MediaViewer> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).colorScheme.onSurface,
       extendBodyBehindAppBar: true,
       body: GestureDetector(
         onTap: () => Navigator.of(context).pop(),
@@ -71,12 +73,16 @@ class _MediaViewerState extends State<MediaViewer> {
                 final media = widget.mediaList[index];
                 final String type = media['type'] ?? 'image';
                 final String url = media['url'] ?? '';
+                final String previewUrl = media['previewUrl'] ?? url;
+                final String blurhash = media['blurhash'] ?? '';
                 final double? aspectRatio = media['aspectRatio'] as double?;
                 return _MediaFilePage(
                   key: ValueKey(url),
                   url: url,
                   type: type,
                   aspectRatio: aspectRatio,
+                  previewUrl: previewUrl,
+                  blurhash: blurhash,
                 );
               },
             ),
@@ -96,7 +102,7 @@ class _MediaViewerState extends State<MediaViewer> {
                       width: isActive ? 12 : 8,
                       height: isActive ? 12 : 8,
                       decoration: BoxDecoration(
-                        color: isActive ? Colors.white : Colors.white54,
+                        color: isActive ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onPrimary.withOpacity(0.54),
                         shape: BoxShape.circle,
                       ),
                     );
@@ -114,6 +120,8 @@ class _MediaViewerState extends State<MediaViewer> {
 /// video.  Videos are automatically cached and played with simple controls.
 class _MediaFilePage extends StatefulWidget {
   final String url;
+  final String previewUrl;
+  final String blurhash;
   final String type;
   final double? aspectRatio;
 
@@ -122,6 +130,8 @@ class _MediaFilePage extends StatefulWidget {
     required this.url,
     required this.type,
     this.aspectRatio,
+    required this.previewUrl,
+    required this.blurhash,
   }) : super(key: key ?? ValueKey(url));
 
   @override
@@ -166,7 +176,7 @@ class _MediaFilePageState extends State<_MediaFilePage> {
         setState(() {
           _isLoading = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not play video.')));
+        AppSnackBar.show(context, 'Could not play video.', isError: true);
       }
     }
   }
@@ -182,22 +192,37 @@ class _MediaFilePageState extends State<_MediaFilePage> {
   Widget build(BuildContext context) {
     if (widget.type == 'image') {
       return Center(
+
+        child: Semantics(
+          label: 'Image preview',
+          child: InteractiveViewer(
+            child: CachedNetworkImage(
+              imageUrl: widget.url,
+              fit: BoxFit.contain,
+              placeholder: (context, url) =>
+                  const Center(child: CircularProgressIndicator(color: Colors.white)),
+              errorWidget: (context, url, error) =>
+                  const Center(child: Icon(Icons.broken_image, color: Colors.white)),
+            ),
+
         child: InteractiveViewer(
           child: CachedNetworkImage(
             imageUrl: widget.url,
             fit: BoxFit.contain,
-            placeholder: (context, url) => const Center(child: CircularProgressIndicator(color: Colors.white)),
-            errorWidget: (context, url, error) => const Center(child: Icon(Icons.broken_image, color: Colors.white)),
+
+            placeholder: (context, url) => Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.onPrimary)),
+            errorWidget: (context, url, error) => Center(child: Icon(Icons.broken_image, color: Theme.of(context).colorScheme.onPrimary)),
+
           ),
         ),
       );
     }
     // Video case
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
+      return Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.onPrimary));
     }
     if (!_isVideoInitialized || _controller == null) {
-      return const Center(child: Text('Error loading video.', style: TextStyle(color: Colors.white)));
+      return Center(child: Text('Error loading video.', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)));
     }
     return GestureDetector(
       onTap: () => setState(() => _showControls = !_showControls),
@@ -206,10 +231,13 @@ class _MediaFilePageState extends State<_MediaFilePage> {
         children: [
           AspectRatio(
             aspectRatio: widget.aspectRatio ?? 16 / 9,
-            child: Video(
-              key: ValueKey(widget.url),
-              controller: _controller!,
-              controls: AdaptiveVideoControls,
+            child: Semantics(
+              label: 'Video preview',
+              child: Video(
+                key: ValueKey(widget.url),
+                controller: _controller!,
+                controls: AdaptiveVideoControls,
+              ),
             ),
           ),
           if (_showControls)
@@ -221,7 +249,7 @@ class _MediaFilePageState extends State<_MediaFilePage> {
                   IconButton(
                     icon: Icon(
                       _player!.state.playing ? Icons.pause_circle_filled : Icons.play_circle_fill,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       size: 48,
                     ),
                     onPressed: () {

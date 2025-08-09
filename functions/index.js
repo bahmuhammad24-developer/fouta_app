@@ -106,3 +106,105 @@ exports.syncUnreadMessageCountOnRead = onDocumentUpdated(
         }
         return null;
     });
+const {onObjectFinalized} = require("firebase-functions/v2/storage");
+const sharp = require("sharp");
+const {encode} = require("blurhash");
+const path = require("path");
+const os = require("os");
+const fs = require("fs");
+const ffmpeg = require("@ffmpeg-installer/ffmpeg");
+const ffmpegLib = require("fluent-ffmpeg");
+ffmpegLib.setFfmpegPath(ffmpeg.path);
+
+exports.processMedia = onObjectFinalized(async (event) => {
+  const object = event.data;
+  const contentType = object.contentType || "";
+  const filePath = object.name;
+  const metadata = object.metadata || {};
+  const docId = metadata.docId;
+  if (!docId) {
+    console.log("No docId metadata on uploaded file.");
+    return;
+  }
+  const bucket = admin.storage().bucket(object.bucket);
+  const tempLocalFile = path.join(os.tmpdir(), path.basename(filePath));
+  await bucket.file(filePath).download({destination: tempLocalFile});
+  const mediaRef = db.collection("artifacts/fouta-app/public/data/media").doc(docId);
+
+  try {
+    if (contentType.startsWith("image/")) {
+      const image = sharp(tempLocalFile);
+      const meta = await image.metadata();
+      const {width, height} = meta;
+      const sizes = [
+        {name: "thumb", width: 128},
+        {name: "preview", width: 480},
+        {name: "full", width: 1080},
+      ];
+      const urls = {};
+      for (const s of sizes) {
+        const tempPath = path.join(os.tmpdir(), `${s.name}_${path.basename(filePath)}`);
+        await image.clone().resize({width: s.width, withoutEnlargement: true}).jpeg({quality: 80}).toFile(tempPath);
+        const destPath = `${path.dirname(filePath)}/${path.parse(filePath).name}_${s.name}.jpg`;
+        await bucket.upload(tempPath, {destination: destPath, metadata: {contentType: "image/jpeg"}});
+        fs.unlinkSync(tempPath);
+        const [signedUrl] = await bucket.file(destPath).getSignedUrl({action: "read", expires: "03-09-2491"});
+        urls[`${s.name}Url`] = signedUrl;
+      }
+      const {data, info} = await image.clone().raw().ensureAlpha().resize(32, 32, {fit: "inside"}).toBuffer({resolveWithObject: true});
+      const blurhash = encode(new Uint8ClampedArray(data), info.width, info.height, 4, 4);
+      await mediaRef.set({
+        ...urls,
+        blurhash,
+        width,
+        height,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, {merge: true});
+    } else if (contentType.startsWith("video/")) {
+      const posterTemp = path.join(os.tmpdir(), `poster_${path.basename(filePath)}.jpg`);
+      await new Promise((resolve, reject) => {
+        ffmpegLib(tempLocalFile)
+          .on("end", resolve)
+          .on("error", reject)
+          .screenshots({
+            count: 1,
+            folder: path.dirname(posterTemp),
+            filename: path.basename(posterTemp),
+            size: "1280x?",
+          });
+      });
+      const posterImage = sharp(posterTemp);
+      const meta = await posterImage.metadata();
+      const {width, height} = meta;
+      const sizes = [
+        {name: "thumb", width: 128},
+        {name: "preview", width: 480},
+        {name: "full", width: 1080},
+      ];
+      const urls = {};
+      for (const s of sizes) {
+        const tempPath = path.join(os.tmpdir(), `${s.name}_poster_${path.basename(filePath)}`);
+        await posterImage.clone().resize({width: s.width, withoutEnlargement: true}).jpeg({quality: 80}).toFile(tempPath);
+        const destPath = `${path.dirname(filePath)}/${path.parse(filePath).name}_${s.name}.jpg`;
+        await bucket.upload(tempPath, {destination: destPath, metadata: {contentType: "image/jpeg"}});
+        fs.unlinkSync(tempPath);
+        const [signedUrl] = await bucket.file(destPath).getSignedUrl({action: "read", expires: "03-09-2491"});
+        urls[`${s.name}Url`] = signedUrl;
+      }
+      const {data, info} = await posterImage.clone().raw().ensureAlpha().resize(32, 32, {fit: "inside"}).toBuffer({resolveWithObject: true});
+      const blurhash = encode(new Uint8ClampedArray(data), info.width, info.height, 4, 4);
+      await mediaRef.set({
+        ...urls,
+        blurhash,
+        width,
+        height,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, {merge: true});
+      fs.unlinkSync(posterTemp);
+    }
+  } catch (err) {
+    console.error("Error processing media", err);
+  }
+  fs.unlinkSync(tempLocalFile);
+});
+

@@ -122,11 +122,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       return AspectRatio(
         aspectRatio: widget.aspectRatio ?? 16 / 9,
         child: Container(
-          color: Colors.black,
+          color: Theme.of(context).colorScheme.onSurface,
           alignment: Alignment.center,
           child: const Text(
             'Video unavailable. Please try again later.',
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+            style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.70), fontSize: 14),
             textAlign: TextAlign.center,
           ),
         ),
@@ -141,8 +141,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   Widget _buildPlaceholder() {
     return Container(
-      color: Colors.black,
-      child: const Center(child: CircularProgressIndicator(color: Colors.white)),
+      color: Theme.of(context).colorScheme.onSurface,
+      child: Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.onPrimary)),
     );
   }
 
@@ -165,7 +165,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                   final isPlaying = snapshot.data ?? false;
                   if (isPlaying || widget.areControlsVisible) return const SizedBox.shrink();
                   return const IgnorePointer(
-                    child: Icon(Icons.play_arrow, color: Colors.white70, size: 60.0),
+                    child: Icon(Icons.play_arrow, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.70), size: 60.0),
                   );
                 },
               ),
@@ -196,7 +196,7 @@ class _DynamicVideoControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black.withOpacity(0.6),
+      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
       child: Column(
         children: [
           StreamBuilder<Duration>(
@@ -211,7 +211,7 @@ class _DynamicVideoControls extends StatelessWidget {
               return LinearProgressIndicator(
                 value: progress.isNaN ? 0 : progress,
                 minHeight: 2,
-                backgroundColor: Colors.white.withOpacity(0.3),
+                backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
                 valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.secondary),
               );
             },
@@ -226,7 +226,7 @@ class _DynamicVideoControls extends StatelessWidget {
                       final isPlaying = snapshot.data ?? false;
                       return Icon(
                         isPlaying ? Icons.pause : Icons.play_arrow,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       );
                     },
                   ),
@@ -250,7 +250,7 @@ class _DynamicVideoControls extends StatelessWidget {
                           max: duration.inMilliseconds.toDouble() + 1,
                           onChanged: (val) => player.seek(Duration(milliseconds: val.toInt())),
                           activeColor: Theme.of(context).colorScheme.secondary,
-                          inactiveColor: Colors.white.withOpacity(0.5),
+                          inactiveColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
                         ),
                       );
                     },
@@ -263,7 +263,7 @@ class _DynamicVideoControls extends StatelessWidget {
                       final volume = snapshot.data ?? 100.0;
                       return Icon(
                         volume == 0 ? Icons.volume_off : Icons.volume_up,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       );
                     },
                   ),
@@ -273,7 +273,7 @@ class _DynamicVideoControls extends StatelessWidget {
                   },
                 ),
                 IconButton(
-                  icon: const Icon(Icons.fullscreen, color: Colors.white),
+                  icon: Icon(Icons.fullscreen, color: Theme.of(context).colorScheme.onPrimary),
                   onPressed: () {
                     player.pause();
                     Navigator.push(

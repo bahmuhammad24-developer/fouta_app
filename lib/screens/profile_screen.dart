@@ -20,6 +20,9 @@ import 'package:fouta_app/widgets/fouta_button.dart';
 import 'package:fouta_app/screens/create_post_screen.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fouta_app/utils/firestore_paths.dart';
+import 'package:fouta_app/widgets/skeletons/profile_skeleton.dart';
+import 'package:fouta_app/utils/snackbar.dart';
+import 'package:fouta_app/widgets/skeletons/feed_skeleton.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userId;
@@ -76,6 +79,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void dispose() {
     _bioController.dispose();
     _tabController.dispose();
@@ -88,12 +94,18 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   void _showMessage(String msg) {
     if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: msg.contains('successful') ? Colors.green : Theme.of(context).colorScheme.error,
+        backgroundColor: msg.contains('successful') ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
       ),
     );
+
+    final lower = msg.toLowerCase();
+    final isError = lower.contains('fail') || lower.contains('error');
+    AppSnackBar.show(context, msg, isError: isError);
+
   }
 
   Future<void> _loadDataSaverPreference() async {
@@ -295,9 +307,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ? CachedNetworkImageProvider(profileImageUrl)
                             : null,
                         child: profileImageUrl.isEmpty
-                            ? const Icon(Icons.person, color: Colors.white)
+                            ? Icon(Icons.person, color: Theme.of(context).colorScheme.onPrimary)
                             : null,
-                        backgroundColor: Colors.grey[300],
+                        backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                       ),
                       title: Text(displayName),
                       onTap: () {
@@ -375,9 +387,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           ? FileImage(File(_newProfileImageFile!.path)) as ImageProvider
                           : (_currentProfileImageUrl.isNotEmpty ? CachedNetworkImageProvider(_currentProfileImageUrl) : null),
                   child: (_currentProfileImageUrl.isEmpty && _newProfileImageFile == null && _newProfileImageBytes == null)
-                      ? const Icon(Icons.person, size: 60, color: Colors.white)
+                      ? Icon(Icons.person, size: 60, color: Theme.of(context).colorScheme.onPrimary)
                       : null,
-                  backgroundColor: Colors.grey[300],
+                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                 ),
                 if (isMyProfile)
                   Positioned(
@@ -386,7 +398,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     child: CircleAvatar(
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       child: IconButton(
-                        icon: Icon(_isEditing ? Icons.check : Icons.edit, color: Colors.white),
+                        icon: Icon(_isEditing ? Icons.check : Icons.edit, color: Theme.of(context).colorScheme.onPrimary),
                         onPressed: () {
                           if (_isEditing) {
                             _updateProfile(_currentProfileImageUrl);
@@ -418,9 +430,9 @@ class _ProfileScreenState extends State<ProfileScreen>
               textAlign: TextAlign.center,
             )
           else
-            Text(bio, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+            Text(bio, textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.outline)),
           const SizedBox(height: 16),
-          Text('Joined: ${_formatTimestamp(createdAt)}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text('Joined: ${_formatTimestamp(createdAt)}', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline)),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -430,7 +442,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 child: Column(
                   children: [
                     Text('${followers.length}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const Text('Followers', style: TextStyle(color: Colors.grey)),
+                    Text('Followers', style: TextStyle(color: Theme.of(context).colorScheme.outline)),
                   ],
                 ),
               ),
@@ -440,7 +452,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 child: Column(
                   children: [
                     Text('${following.length}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const Text('Following', style: TextStyle(color: Colors.grey)),
+                    Text('Following', style: TextStyle(color: Theme.of(context).colorScheme.outline)),
                   ],
                 ),
               ),
@@ -486,7 +498,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           .orderBy('timestamp', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData) return const FeedSkeleton();
         if (snapshot.data!.docs.isEmpty) {
           return Center(
             child: Padding(
@@ -547,7 +559,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const FeedSkeleton();
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           final bool isMyProfile = currentUser != null && currentUser.uid == widget.userId;
@@ -610,7 +622,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               stream: FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(widget.userId).snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const ProfileSkeleton();
                 }
                 if (!snapshot.hasData || !snapshot.data!.exists) {
                   return const Center(child: Text('User not found.'));
@@ -691,7 +703,7 @@ class _MediaGridTile extends StatelessWidget {
               imageUrl: mediaUrl,
               fit: BoxFit.cover,
               placeholder: (context, url) => Container(
-                color: Colors.grey[300],
+                color: Theme.of(context).colorScheme.surfaceVariant,
                 child: const Center(child: CircularProgressIndicator()),
               ),
               errorWidget: (context, url, error) => const Icon(Icons.error),
@@ -700,7 +712,7 @@ class _MediaGridTile extends StatelessWidget {
               const Positioned(
                 top: 4,
                 right: 4,
-                child: Icon(Icons.play_circle_filled, color: Colors.white, size: 20),
+                child: Icon(Icons.play_circle_filled, color: Theme.of(context).colorScheme.onPrimary, size: 20),
               ),
           ],
         ),

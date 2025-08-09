@@ -8,6 +8,7 @@ import 'package:fouta_app/screens/profile_screen.dart';
 import 'package:fouta_app/screens/create_post_screen.dart';
 import 'package:fouta_app/utils/date_utils.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
+import 'package:fouta_app/widgets/skeletons/notifications_skeleton.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -46,7 +47,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         stream: notificationsQuery.snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const NotificationsSkeleton();
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return Center(
@@ -92,25 +93,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 switch (type) {
                   case 'like':
                     iconData = Icons.favorite;
-                    iconColor = Colors.red;
+                    iconColor = Theme.of(context).colorScheme.error;
                     break;
                   case 'comment':
                     iconData = Icons.comment;
-                    iconColor = Colors.blue;
+                    iconColor = Theme.of(context).colorScheme.primary;
                     break;
                   case 'follow':
                     iconData = Icons.person_add;
-                    iconColor = Colors.green;
+                    iconColor = Theme.of(context).colorScheme.primary;
                     break;
                   default:
                     iconData = Icons.notifications;
-                    iconColor = Colors.grey;
+                    iconColor = Theme.of(context).colorScheme.outline;
                 }
 
                 return ListTile(
                   leading: CircleAvatar(
                     backgroundColor: iconColor,
-                    child: Icon(iconData, color: Colors.white),
+                    child: Icon(iconData, color: Theme.of(context).colorScheme.onPrimary),
                   ),
                   title: Text.rich(
                     TextSpan(

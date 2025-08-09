@@ -12,6 +12,7 @@ import 'package:image/image.dart' as img;
 import 'package:provider/provider.dart';
 import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
+import 'package:fouta_app/utils/snackbar.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 
@@ -87,12 +88,18 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     setState(() {
       _message = msg;
     });
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: msg.contains('successful') ? Colors.green : Theme.of(context).colorScheme.error,
+        backgroundColor: msg.contains('successful') ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
       ),
     );
+
+    final lower = msg.toLowerCase();
+    final isError = lower.contains('fail') || lower.contains('error');
+    AppSnackBar.show(context, msg, isError: isError);
+
   }
 
   Future<void> _pickMedia(ImageSource source, {bool isVideo = false}) async {
@@ -268,12 +275,26 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         final String storagePath = '${type}s/${user.uid}/${DateTime.now().millisecondsSinceEpoch}_${user.uid}_$i.$fileExtension';
         final storageRef = FirebaseStorage.instance.ref().child(storagePath);
 
+        // Create Firestore document to receive processing metadata
+        final mediaDoc = FirebaseFirestore.instance
+            .collection('artifacts/$APP_ID/public/data/media')
+            .doc();
+        await mediaDoc.set({
+          'ownerId': user.uid,
+          'type': type,
+          'storagePath': storagePath,
+        });
+
         // Ensure a correct content type so that Firebase Storage serves the
         // file with the proper headers.  Without this, uploaded videos can be
         // stored as `application/octet-stream`, preventing some clients from
         // recognizing them as playable media.
         final SettableMetadata metadata = SettableMetadata(
           contentType: type == 'video' ? 'video/mp4' : 'image/jpeg',
+          customMetadata: {
+            'docId': mediaDoc.id,
+            'ownerId': user.uid,
+          },
         );
 
         UploadTask uploadTask;
@@ -306,12 +327,44 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           setState(() { _isUploading = false; });
           return;
         }
-        if (url != null) {
-          attachments.add({
-            'url': url,
-            'type': type,
-            if (type == 'video') 'aspectRatio': aspect,
-          });
+
+        // Wait for Cloud Function to populate metadata
+        Map<String, dynamic>? processed;
+        try {
+          final snap = await mediaDoc.snapshots().firstWhere(
+            (doc) => doc.data() != null && doc.data()!.containsKey('fullUrl'),
+          );
+          processed = snap.data();
+        } catch (e) {
+          debugPrint('Timed out waiting for media processing: $e');
+        }
+
+        if (processed != null) {
+          if (type == 'image') {
+            attachments.add({
+              'type': type,
+              'url': processed['fullUrl'],
+              'thumbUrl': processed['thumbUrl'],
+              'previewUrl': processed['previewUrl'],
+              'blurhash': processed['blurhash'],
+              'width': processed['width'],
+              'height': processed['height'],
+            });
+          } else {
+            final double? ratio = processed['width'] != null && processed['height'] != null
+                ? (processed['width'] as num).toDouble() / (processed['height'] as num).toDouble()
+                : aspect;
+            attachments.add({
+              'type': type,
+              'url': url,
+              'thumbUrl': processed['thumbUrl'],
+              'previewUrl': processed['previewUrl'],
+              'blurhash': processed['blurhash'],
+              'width': processed['width'],
+              'height': processed['height'],
+              if (ratio != null) 'aspectRatio': ratio,
+            });
+          }
         }
         uploadedCount++;
       }
@@ -441,9 +494,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       return Container(
                         width: 300,
                         height: 200,
-                        color: Colors.black12,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.12),
                         child: const Center(
-                          child: Icon(Icons.videocam, size: 64, color: Colors.grey),
+                          child: Icon(Icons.videocam, size: 64, color: Theme.of(context).colorScheme.outline),
                         ),
                       );
                     }
@@ -499,12 +552,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             if (_message != null)
               Container(
                 padding: const EdgeInsets.all(8.0),
-                color: _message!.contains('successful') ? Colors.green[100] : Colors.red[100],
+                color: _message!.contains('successful') ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.errorContainer,
                 child: Center(
                   child: Text(
                     _message!,
                     style: TextStyle(
-                      color: _message!.contains('successful') ? Colors.green[700] : Colors.red[700],
+                      color: _message!.contains('successful') ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
                     ),
                   ),
                 ),
@@ -552,7 +605,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             if (_isUploading)
               LinearProgressIndicator(
                 value: _uploadProgress,
-                backgroundColor: Colors.grey[300],
+                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
               ),
             const SizedBox(height: 16),
             Row(
@@ -611,16 +664,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     } else if (mediaType == 'video') {
       return Container(
         height: 200,
-        color: Colors.black,
+        color: Theme.of(context).colorScheme.onSurface,
         child: const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Icon(Icons.play_circle_fill, color: Colors.white, size: 50),
+              Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary, size: 50),
               SizedBox(height: 8),
               Text(
                 'Video Preview (Not supported on Web yet)',
-                style: TextStyle(color: Colors.white, fontSize: 12),
+                style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 12),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -642,16 +695,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     } else if (mediaType == 'video') {
       return Container(
         height: 200,
-        color: Colors.black,
+        color: Theme.of(context).colorScheme.onSurface,
         child: const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.play_circle_fill, color: Colors.white, size: 50),
+              Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary, size: 50),
               SizedBox(height: 8),
               Text(
                 'Video Selected',
-                style: TextStyle(color: Colors.white, fontSize: 12),
+                style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 12),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -674,24 +727,24 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) => Container(
               height: 200,
-              color: Colors.grey[300],
-              child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 50)),
+              color: Theme.of(context).colorScheme.surfaceVariant,
+              child: Center(child: Icon(Icons.broken_image, color: Theme.of(context).colorScheme.outline, size: 50)),
             ),
           ),
         );
       case 'video':
         return Container(
           height: 200,
-          color: Colors.black,
+          color: Theme.of(context).colorScheme.onSurface,
           child: const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.play_circle_fill, color: Colors.white, size: 50),
+                Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary, size: 50),
                 SizedBox(height: 8),
                 Text(
                   'Existing Video',
-                  style: TextStyle(color: Colors.white, fontSize: 12),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 12),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -739,9 +792,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         preview = Container(
           width: 150,
           height: 150,
-          color: Colors.black,
+          color: Theme.of(context).colorScheme.onSurface,
           child: const Center(
-            child: Icon(Icons.play_circle_fill, color: Colors.white, size: 50),
+            child: Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary, size: 50),
           ),
         );
       }

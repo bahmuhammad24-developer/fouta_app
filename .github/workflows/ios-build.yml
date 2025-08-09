@@ -1,0 +1,25 @@
+# .github/workflows/ios-build.yml
+name: iOS CI (Xcode 16)
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+jobs:
+  build-ipa:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16'
+      - name: Install FVM & Flutter (project version)
+        run: |
+          brew tap leoafarias/fvm
+          brew install fvm
+          fvm install
+          fvm flutter --version
+      - name: Build IPA
+        run: |
+          fvm flutter pub get
+          fvm flutter build ipa --release
+      # Add fastlane or App Store Connect upload here if desired

@@ -59,7 +59,7 @@ class DataSaverScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: Text(
                   'When enabled, Data Saver helps reduce your mobile data usage. Videos will not play automatically in your feed, and other data-saving measures may be applied.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ),
             ],

@@ -16,7 +16,7 @@ import 'dart:async';
 import 'package:badges/badges.dart' as badges;
 // Explicitly import ScrollDirection enum for userScrollDirection checks
 // Import ScrollDirection from widgets to compare user scroll direction
-import 'package:flutter/widgets.dart' show ScrollDirection;
+import 'package:flutter/widgets.dart' show ScrollDirection, AutomaticKeepAliveClientMixin;
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/chat_screen.dart';
@@ -29,6 +29,8 @@ import 'package:fouta_app/widgets/post_card_widget.dart';
 import 'package:fouta_app/utils/firestore_paths.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
 import 'package:fouta_app/widgets/fouta_card.dart';
+import 'package:fouta_app/widgets/skeletons/feed_skeleton.dart';
+import 'package:fouta_app/utils/snackbar.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -98,12 +100,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   void _showMessage(String msg) {
     if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: msg.contains('successful') ? Colors.green : Theme.of(context).colorScheme.error,
+        backgroundColor: msg.contains('successful') ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
       ),
     );
+
+    final lower = msg.toLowerCase();
+    final isError = lower.contains('fail') || lower.contains('error');
+    AppSnackBar.show(context, msg, isError: isError);
+
   }
 
   void _setNavBarVisibility(bool isVisible) {
@@ -182,6 +190,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final currentUser = FirebaseAuth.instance.currentUser;
     final isWide = MediaQuery.of(context).size.width >= 900;
 
@@ -200,6 +209,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           floatingActionButton: (_selectedIndex == 1 && _showNewChatFab)
               ? _buildNewChatFab(context)
               : null,
+
           bottomNavigationBar: isWide
               ? null
               : AnimatedBuilder(
@@ -224,6 +234,63 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         icon: Icon(Icons.home_outlined),
                         selectedIcon: Icon(Icons.home),
                         label: 'Feed',
+
+          bottomNavigationBar: AnimatedBuilder(
+            animation: _navBarController,
+            builder: (context, child) {
+              final bottomPadding = MediaQuery.of(context).padding.bottom;
+              final totalHeight = kBottomNavigationBarHeight + bottomPadding;
+              return SizedBox(
+                height: totalHeight * _navBarController.value,
+                child: Transform.translate(
+                  offset: Offset(0, totalHeight * (1 - _navBarController.value)),
+                  child: child,
+                ),
+              );
+            },
+            child: BottomNavigationBar(
+              currentIndex: _selectedIndex,
+              onTap: _onItemTapped,
+              type: BottomNavigationBarType.fixed,
+              selectedItemColor: Theme.of(context).colorScheme.primary,
+              unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
+              items: [
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.home_outlined),
+                  activeIcon: Icon(Icons.home),
+                  label: 'Feed',
+                ),
+                BottomNavigationBarItem(
+                  icon: badges.Badge(
+                    showBadge: _unreadChatsCount > 0,
+                    badgeStyle: badges.BadgeStyle(
+                      badgeColor: Theme.of(context).colorScheme.error,
+                    ),
+                    badgeContent: Text(
+                      _unreadChatsCount > 99
+                          ? '99+'
+                          : '$_unreadChatsCount',
+                      style: const TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontSize: 10,
+                      ),
+                    ),
+                    position: badges.BadgePosition.topEnd(top: 6, end: -12),
+                    child: const Icon(Icons.chat_bubble_outline),
+                  ),
+                  activeIcon: badges.Badge(
+                    showBadge: _unreadChatsCount > 0,
+                    badgeStyle: badges.BadgeStyle(
+                      badgeColor: Theme.of(context).colorScheme.error,
+                    ),
+                    badgeContent: Text(
+                      _unreadChatsCount > 99
+                          ? '99+'
+                          : '$_unreadChatsCount',
+                      style: const TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontSize: 10,
+
                       ),
                       NavigationDestination(
                         icon: _buildChatIcon(context, selected: false),
@@ -250,6 +317,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
           body: Consumer<ConnectivityProvider>(
             builder: (context, connectivity, _) {
+
               Widget content = Column(
                 children: [
                   if (!connectivity.isOnline)
@@ -283,6 +351,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                     builder: (context) =>
                                         const CreatePostScreen(),
                                   ),
+
                                 ),
                               ),
                               _NotificationsButton(
@@ -421,7 +490,7 @@ class _NotificationsButton extends StatelessWidget {
             ),
             badgeContent: Text(
               unreadCount > 99 ? '99+' : '$unreadCount',
-              style: const TextStyle(color: Colors.white, fontSize: 10),
+              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 10),
             ),
             position: badges.BadgePosition.topEnd(top: -4, end: -4),
             child: const Icon(Icons.notifications_outlined),
@@ -588,12 +657,18 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
 
   void _showMessage(String msg) {
     if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: msg.contains('successful') ? Colors.green : Theme.of(context).colorScheme.error,
+        backgroundColor: msg.contains('successful') ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
       ),
     );
+
+    final lower = msg.toLowerCase();
+    final isError = lower.contains('fail') || lower.contains('error');
+    AppSnackBar.show(context, msg, isError: isError);
+
   }
 
   Future<void> _fetchFirstPosts() async {
@@ -756,14 +831,14 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
           ),
           Expanded(
             child: (_posts.isEmpty && _isLoading)
-                ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.secondary))
+                ? const FeedSkeleton()
                 : (filteredPosts.isEmpty)
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Text('No posts to display.',
-                                style: TextStyle(fontSize: 16, color: Colors.grey)),
+                                style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.outline)),
                             const SizedBox(height: 16),
                             FoutaButton(
                               label: 'Create Post',
@@ -871,7 +946,7 @@ class _ChatsTabState extends State<ChatsTab> with AutomaticKeepAliveClientMixin 
               hintText: 'Search chats...',
               prefixIcon: const Icon(Icons.search),
               filled: true,
-              fillColor: Colors.grey[200],
+              fillColor: Theme.of(context).colorScheme.surfaceVariant,
               contentPadding: EdgeInsets.zero,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(30.0),
@@ -1099,23 +1174,23 @@ class _ChatListItem extends StatelessWidget {
       key: Key(chatDocId),
       direction: DismissDirection.endToStart,
       background: Container(
-        color: Colors.grey[700],
+        color: Theme.of(context).colorScheme.outline[700],
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        child: const Icon(Icons.archive_outlined, color: Colors.white),
+        child: Icon(Icons.archive_outlined, color: Theme.of(context).colorScheme.onPrimary),
       ),
       secondaryBackground: Container(
-        color: Colors.blue,
+        color: Theme.of(context).colorScheme.primary,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        child: const Icon(Icons.volume_mute_outlined, color: Colors.white),
+        child: Icon(Icons.volume_mute_outlined, color: Theme.of(context).colorScheme.onPrimary),
       ),
       confirmDismiss: (direction) async {
         // Placeholder for future functionality
         if (direction == DismissDirection.endToStart) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Archive not implemented yet.')));
+          AppSnackBar.show(context, 'Archive not implemented yet.', isError: true);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mute not implemented yet.')));
+          AppSnackBar.show(context, 'Mute not implemented yet.', isError: true);
         }
         return false;
       },
@@ -1136,7 +1211,7 @@ class _ChatListItem extends StatelessWidget {
                   width: 16,
                   height: 16,
                   decoration: BoxDecoration(
-                    color: Colors.green,
+                    color: Theme.of(context).colorScheme.primary,
                     shape: BoxShape.circle,
                     border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 3),
                   ),
@@ -1149,19 +1224,19 @@ class _ChatListItem extends StatelessWidget {
           subtitle, 
           maxLines: 1, 
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: subtitle == "typing..." ? Theme.of(context).primaryColor : Colors.grey[600]),
+          style: TextStyle(color: subtitle == "typing..." ? Theme.of(context).primaryColor : Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(timestamp, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+            Text(timestamp, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
             const SizedBox(height: 4),
             if (unreadCount > 0)
               CircleAvatar(
                 radius: 10,
                 backgroundColor: Theme.of(context).colorScheme.primary,
-                child: Text('$unreadCount', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                child: Text('$unreadCount', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 10, fontWeight: FontWeight.bold)),
               )
             else 
               const SizedBox(height: 20),
@@ -1398,8 +1473,8 @@ class _PeopleTabState extends State<PeopleTab> with AutomaticKeepAliveClientMixi
             trailing: ElevatedButton(
               onPressed: () => _toggleFollow(currentUser.uid, userDoc.id, isFollowing),
               style: ElevatedButton.styleFrom(
-                backgroundColor: isFollowing ? Colors.grey : Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: isFollowing ? Theme.of(context).colorScheme.outline : Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
               child: Text(isFollowing ? 'Unfollow' : 'Follow'),
             ),

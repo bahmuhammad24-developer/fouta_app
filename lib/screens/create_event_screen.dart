@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:fouta_app/screens/event_invite_screen.dart';
+import 'package:fouta_app/utils/snackbar.dart';
 
 class CreateEventScreen extends StatefulWidget {
   const CreateEventScreen({super.key});
@@ -62,17 +63,13 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   Future<void> _saveEvent() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDate == null || _selectedTime == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a date and time.')),
-      );
+      AppSnackBar.show(context, 'Please select a date and time.', isError: true);
       return;
     }
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You must be logged in to create an event.')),
-      );
+      AppSnackBar.show(context, 'You must be logged in to create an event.', isError: true);
       return;
     }
 
@@ -135,7 +132,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         height: 150,
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
+                          border: Border.all(color: Theme.of(context).colorScheme.outline),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: _headerImageFile != null
@@ -146,7 +143,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                           : const Center(child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.camera_alt, size: 40, color: Colors.grey),
+                              Icon(Icons.camera_alt, size: 40, color: Theme.of(context).colorScheme.outline),
                               Text('Add Header Image')
                             ],
                           )),

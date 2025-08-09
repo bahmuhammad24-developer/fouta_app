@@ -11,12 +11,20 @@
 - [Documentation & Logging Guidelines](#documentation--logging-guidelines)
   - [AI Collaboration](#ai-collaboration)
 - [Development Notes](#development-notes)
+- [Media Pipeline](#media-pipeline)
+- [Stories](#stories)
 - [Testing](#testing)
 - [Change Log](#change-log)
 - [Contributing](#contributing)
 
 ## Overview
 Fouta App is a cross-platform Flutter application that integrates Firebase services and supports story creation with camera and microphone features.
+
+## Chat Pro Features
+- Composer supports text and attachments
+- Message bubbles expose basic status, replies, reactions placeholders
+- Audio messages behind feature flag `kChatAudioEnabled`
+- Offline queue and retry logic planned
 
 ## App Structure
 
@@ -215,6 +223,37 @@ For help getting started with Flutter development, view the [online documentatio
 - **Bundle ID and Firebase plist:** The project uses bundle ID `com.example.foutaApp`. If you register a new Firebase app, replace `ios/Runner/GoogleService-Info.plist` with the file downloaded from Firebase.
 - **Record plugin:** The `record` plugin was upgraded to 6.x to resolve Swift compilation errors. Future plugin upgrades should follow the clean sequence above.
 
+
+## Media Pipeline
+Uploads are processed server-side to improve delivery speed and quality. A Cloud Function listens for new files in Firebase Storage and:
+
+- Resizes images to thumb (128w), preview (480w), and full (~1080w) using **sharp**.
+- Captures a poster frame for videos and generates the same sizes.
+- Computes a BlurHash for each media item.
+- Writes the resulting URLs, dimensions, and blurhash to `artifacts/fouta-app/public/data/media/{docId}` in Firestore.
+
+When creating a post, the app waits for this metadata and then stores the progressive URLs. Feeds display the blurhash first, then the preview image, and finally the full version.
+
+To attach captions to a video, upload a WebVTT file to Storage and set its download URL in the media document's `captionUrl` field. The app will include this subtitle track when available.
+
+## Stories
+
+### Gestures
+- Tap right/left to move between items.
+- Long-press to pause or resume.
+- Swipe down to dismiss the viewer.
+
+### Accessibility
+- Avatars have 48dp tap targets and semantic labels like
+  "<Author> story, unread, posted 5m ago".
+
+### Data Saver
+- Videos start muted and do not autoplay when Data Saver is enabled.
+
+### Seen Tracking
+- Items are marked seen after being visible for at least one second and cached locally for instant tray updates.
+
+
 ## Testing
 Run the test suite with:
 ```bash
@@ -222,6 +261,10 @@ flutter test
 ```
 
 ## Change Log
+
+- 2025-08-09 01:30 UTC – Implemented server-side media pipeline generating progressive images, video posters, and blurhash placeholders.
+- 2025-08-09 01:39 UTC – Introduced new story models, tray, viewer scaffolding, and documented gestures and accessibility.
+- 2025-08-09 01:39 UTC – Introduced chat composer, message models, and placeholders for advanced chat features.
 - 2025-08-08 23:10 UTC – Aligned story timestamps with the app-wide relative format for consistency.
 - 2025-08-08 11:50 UTC – Adjusted bottom navigation bar height to account for device padding and prevent overflow errors.
 - 2025-08-08 06:18 UTC – Marked Firebase Messaging background handler as an entry point and logged notification open events to enable push notifications when the app is closed.
@@ -232,6 +275,7 @@ flutter test
 - 2025-08-08 02:05 UTC – Added documentation and logging guidelines to the README.
 - 2025-08-07 22:02 UTC – Updated platform configuration and dependencies to support camera and microphone permissions.
 - 2025-08-07 21:54 UTC – Handled camera and microphone permissions in the story camera screen to prevent a crash when creating stories.
+- 2025-08-09 00:43 UTC – Adopted Material 3 design system with tokenized theme and removed hard-coded colors.
 
 ## Contributing
 - Follow the logging and documentation guidelines outlined above.

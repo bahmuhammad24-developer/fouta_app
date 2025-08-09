@@ -9,6 +9,7 @@ import 'package:fouta_app/screens/data_saver_screen.dart';
 import 'package:fouta_app/screens/privacy_settings_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:fouta_app/services/theme_provider.dart';
+import 'package:fouta_app/utils/snackbar.dart';
 
 class UnifiedSettingsScreen extends StatefulWidget {
   const UnifiedSettingsScreen({super.key});
@@ -28,12 +29,14 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
 
   void _showMessage(String msg, {bool isError = false}) {
     if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: isError ? Colors.red : Colors.green,
+        backgroundColor: isError ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
       ),
     );
+
   }
 
   Future<void> _changePassword() async {
@@ -112,8 +115,8 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
               },
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Delete', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+              child: Text('Delete', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
               onPressed: () async {
                 try {
                   // This is a sensitive operation, so we close the dialog first
@@ -216,19 +219,28 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
           
           _buildSectionHeader('APP'),
 
-          // Dark mode toggle using ThemeProvider. Wrap in Builder to ensure context has access to the provider.
+          // Theme mode selection using ThemeProvider.
           Builder(
             builder: (context) {
               return Consumer<ThemeProvider>(
                 builder: (context, themeProvider, _) {
-                  return SwitchListTile(
-                    secondary: const Icon(Icons.dark_mode_outlined),
-                    title: const Text('Dark Mode'),
-                    subtitle: const Text('Enable dark theme'),
-                    value: themeProvider.isDarkMode,
-                    onChanged: (value) {
-                      themeProvider.setDarkMode(value);
-                    },
+                  return ListTile(
+                    leading: const Icon(Icons.dark_mode_outlined),
+                    title: const Text('Theme Mode'),
+                    subtitle: const Text('Auto, Light, or Dark'),
+                    trailing: DropdownButton<ThemeMode>(
+                      value: themeProvider.themeMode,
+                      onChanged: (mode) {
+                        if (mode != null) {
+                          themeProvider.setThemeMode(mode);
+                        }
+                      },
+                      items: const [
+                        DropdownMenuItem(value: ThemeMode.system, child: Text('Auto')),
+                        DropdownMenuItem(value: ThemeMode.light, child: Text('Light')),
+                        DropdownMenuItem(value: ThemeMode.dark, child: Text('Dark')),
+                      ],
+                    ),
                   );
                 },
               );
@@ -243,8 +255,8 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
             },
           ),
           ListTile(
-            leading: Icon(Icons.delete_forever_outlined, color: Colors.red.shade700),
-            title: Text('Delete Account', style: TextStyle(color: Colors.red.shade700)),
+            leading: Icon(Icons.delete_forever_outlined, color: Theme.of(context).colorScheme.error.shade700),
+            title: Text('Delete Account', style: TextStyle(color: Theme.of(context).colorScheme.error.shade700)),
             onTap: _deleteAccount,
           ),
         ],
