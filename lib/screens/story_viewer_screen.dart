@@ -255,10 +255,13 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                   if (currentSlide.mediaType == 'video')
                     Center(
                       child: _videoController != null
-                          ? Video(
-                              key: ValueKey(currentSlide.id),
-                              controller: _videoController!,
-                              fit: BoxFit.contain,
+                          ? Semantics(
+                              label: 'Story video',
+                              child: Video(
+                                key: ValueKey(currentSlide.id),
+                                controller: _videoController!,
+                                fit: BoxFit.contain,
+                              ),
                             )
                           : const Center(
                               child: CircularProgressIndicator(
@@ -268,11 +271,14 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                     )
                   else
                     Center(
-                      child: CachedNetworkImage(
-                        imageUrl: currentSlide.url,
-                        fit: BoxFit.contain,
-                        placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                        errorWidget: (context, url, error) => const Center(child: Icon(Icons.error, color: Colors.white)),
+                      child: Semantics(
+                        label: 'Story image',
+                        child: CachedNetworkImage(
+                          imageUrl: currentSlide.url,
+                          fit: BoxFit.contain,
+                          placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                          errorWidget: (context, url, error) => const Center(child: Icon(Icons.error, color: Colors.white)),
+                        ),
                       ),
                     ),
                   _buildOverlay(context, currentStory, currentSlide),

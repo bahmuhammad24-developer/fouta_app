@@ -58,7 +58,7 @@ class MyApp extends StatelessWidget {
           // Use the Diaspora Connection theme definitions for light and dark modes
           theme: FoutaThemeDiaspora.lightTheme,
           darkTheme: FoutaThemeDiaspora.darkTheme,
-          themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+          themeMode: themeProvider.themeMode,
           home: const SplashScreen(),
         );
       },

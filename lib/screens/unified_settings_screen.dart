@@ -216,19 +216,28 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
           
           _buildSectionHeader('APP'),
 
-          // Dark mode toggle using ThemeProvider. Wrap in Builder to ensure context has access to the provider.
+          // Theme mode selection using ThemeProvider.
           Builder(
             builder: (context) {
               return Consumer<ThemeProvider>(
                 builder: (context, themeProvider, _) {
-                  return SwitchListTile(
-                    secondary: const Icon(Icons.dark_mode_outlined),
-                    title: const Text('Dark Mode'),
-                    subtitle: const Text('Enable dark theme'),
-                    value: themeProvider.isDarkMode,
-                    onChanged: (value) {
-                      themeProvider.setDarkMode(value);
-                    },
+                  return ListTile(
+                    leading: const Icon(Icons.dark_mode_outlined),
+                    title: const Text('Theme Mode'),
+                    subtitle: const Text('Auto, Light, or Dark'),
+                    trailing: DropdownButton<ThemeMode>(
+                      value: themeProvider.themeMode,
+                      onChanged: (mode) {
+                        if (mode != null) {
+                          themeProvider.setThemeMode(mode);
+                        }
+                      },
+                      items: const [
+                        DropdownMenuItem(value: ThemeMode.system, child: Text('Auto')),
+                        DropdownMenuItem(value: ThemeMode.light, child: Text('Light')),
+                        DropdownMenuItem(value: ThemeMode.dark, child: Text('Dark')),
+                      ],
+                    ),
                   );
                 },
               );
