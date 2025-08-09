@@ -11,6 +11,7 @@
 - [Documentation & Logging Guidelines](#documentation--logging-guidelines)
   - [AI Collaboration](#ai-collaboration)
 - [Development Notes](#development-notes)
+- [Stories](#stories)
 - [Testing](#testing)
 - [Change Log](#change-log)
 - [Contributing](#contributing)
@@ -221,6 +222,23 @@ For help getting started with Flutter development, view the [online documentatio
 - **Bundle ID and Firebase plist:** The project uses bundle ID `com.example.foutaApp`. If you register a new Firebase app, replace `ios/Runner/GoogleService-Info.plist` with the file downloaded from Firebase.
 - **Record plugin:** The `record` plugin was upgraded to 6.x to resolve Swift compilation errors. Future plugin upgrades should follow the clean sequence above.
 
+## Stories
+
+### Gestures
+- Tap right/left to move between items.
+- Long-press to pause or resume.
+- Swipe down to dismiss the viewer.
+
+### Accessibility
+- Avatars have 48dp tap targets and semantic labels like
+  "<Author> story, unread, posted 5m ago".
+
+### Data Saver
+- Videos start muted and do not autoplay when Data Saver is enabled.
+
+### Seen Tracking
+- Items are marked seen after being visible for at least one second and cached locally for instant tray updates.
+
 ## Testing
 Run the test suite with:
 ```bash
@@ -228,6 +246,8 @@ flutter test
 ```
 
 ## Change Log
+
+- 2025-08-09 01:39 UTC – Introduced new story models, tray, viewer scaffolding, and documented gestures and accessibility.
 - 2025-08-09 01:39 UTC – Introduced chat composer, message models, and placeholders for advanced chat features.
 - 2025-08-08 23:10 UTC – Aligned story timestamps with the app-wide relative format for consistency.
 - 2025-08-08 11:50 UTC – Adjusted bottom navigation bar height to account for device padding and prevent overflow errors.
