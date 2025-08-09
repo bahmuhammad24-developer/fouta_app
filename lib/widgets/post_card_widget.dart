@@ -7,12 +7,14 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:fouta_app/widgets/video_player_widget.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:fouta_app/utils/date_utils.dart';
+import 'package:flutter_blurhash/flutter_blurhash.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/create_post_screen.dart';
 import 'package:fouta_app/screens/profile_screen.dart';
 // Use the unified MediaViewer instead of separate full screen image/video widgets
-import 'package:fouta_app/widgets/media_viewer.dart';
+import '../models/media_item.dart';
+import 'media/post_media.dart';
 import 'package:fouta_app/widgets/share_post_dialog.dart';
 import 'package:fouta_app/widgets/fouta_card.dart';
 
@@ -558,9 +560,12 @@ class _PostCardWidgetState extends State<PostCardWidget> {
   /// opens a full‑screen [MediaViewer] with all attachments for this post.
   Widget _buildAttachmentThumbnail(List<dynamic> attachments) {
     if (attachments.isEmpty) return const SizedBox.shrink();
+
     final Map<String, dynamic> first = attachments.first as Map<String, dynamic>;
     final String type = first['type'] ?? 'image';
     final String url = first['url'] ?? '';
+    final String previewUrl = first['previewUrl'] ?? url;
+    final String blurhash = first['blurhash'] ?? '';
     final double? aspectRatio = first['aspectRatio'] as double?;
     final bool allowAutoplay = !widget.isDataSaverOn || !widget.isOnMobileData;
     Widget thumb;
@@ -570,12 +575,14 @@ class _PostCardWidgetState extends State<PostCardWidget> {
           borderRadius: BorderRadius.circular(8.0),
           child: CachedNetworkImage(
             imageUrl: url,
-            placeholder: (context, url) => AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Container(
-                color: Colors.grey[300],
-                child: const Center(child: CircularProgressIndicator()),
+            placeholder: (context, url) => CachedNetworkImage(
+              imageUrl: previewUrl,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => BlurHash(
+                hash: blurhash,
+                imageFit: BoxFit.cover,
               ),
+              errorWidget: (c, u, e) => Container(color: Colors.grey[300]),
             ),
             errorWidget: (context, url, error) => Container(
               height: 200,
@@ -607,10 +614,18 @@ class _PostCardWidgetState extends State<PostCardWidget> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Thumbnail placeholder for video.  Currently we just show a dark
-                  // container with a play icon overlay.  In the future, we can
-                  // generate actual video thumbnails during upload.
-                  Container(color: Colors.black54),
+                  if (previewUrl.isNotEmpty)
+                    CachedNetworkImage(
+                      imageUrl: previewUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => BlurHash(
+                        hash: blurhash,
+                        imageFit: BoxFit.cover,
+                      ),
+                      errorWidget: (c, u, e) => Container(color: Colors.black54),
+                    )
+                  else
+                    Container(color: Colors.black54),
                   const Center(
                     child: Icon(Icons.play_circle_fill, color: Colors.white70, size: 56),
                   ),
@@ -657,6 +672,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
         ],
       ),
     );
+
   }
 
   void _showLikesDialog(BuildContext context, List<dynamic> likerIds) {
