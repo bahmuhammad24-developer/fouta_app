@@ -89,7 +89,7 @@ class _EventInviteScreenState extends State<EventInviteScreen> {
             onPressed: () {
               Navigator.pop(context, _selectedIds);
             },
-            child: const Text('Done', style: TextStyle(color: Colors.white)),
+            child: Text('Done', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
           ),
         ],
       ),

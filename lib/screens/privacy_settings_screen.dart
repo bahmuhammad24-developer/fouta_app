@@ -31,9 +31,18 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
     setState(() {
       _message = msg;
     });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: msg.contains('successful') ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
+      ),
+    );
+
     final lower = msg.toLowerCase();
     final isError = lower.contains('fail') || lower.contains('error');
     AppSnackBar.show(context, msg, isError: isError);
+
   }
 
   Future<void> _loadPrivacySettings() async {
@@ -113,12 +122,12 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
             if (_message != null)
               Container(
                 padding: const EdgeInsets.all(8.0),
-                color: _message!.contains('successful') ? Colors.green[100] : Colors.red[100],
+                color: _message!.contains('successful') ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.errorContainer,
                 child: Center(
                   child: Text(
                     _message!,
                     style: TextStyle(
-                      color: _message!.contains('successful') ? Colors.green[700] : Colors.red[700],
+                      color: _message!.contains('successful') ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
                     ),
                   ),
                 ),

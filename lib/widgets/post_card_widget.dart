@@ -580,7 +580,9 @@ class _PostCardWidgetState extends State<PostCardWidget> {
             placeholder: (context, url) => AspectRatio(
               aspectRatio: 16 / 9,
               child: Container(
-                color: scheme.surfaceVariant,
+
+                color: Theme.of(context).colorScheme.surfaceVariant,
+
                 child: const Center(child: CircularProgressIndicator()),
 
             placeholder: (context, url) => CachedNetworkImage(
@@ -595,8 +597,10 @@ class _PostCardWidgetState extends State<PostCardWidget> {
             ),
             errorWidget: (context, url, error) => Container(
               height: 200,
-              color: scheme.surfaceVariant,
-              child: Center(child: Icon(Icons.broken_image, color: scheme.onSurface, size: 50)),
+
+              color: Theme.of(context).colorScheme.surfaceVariant,
+              child: Center(child: Icon(Icons.broken_image, color: Theme.of(context).colorScheme.outline, size: 50)),
+
             ),
             width: double.infinity,
             fit: BoxFit.cover,
@@ -627,24 +631,10 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                   // Thumbnail placeholder for video.  Currently we just show a dark
                   // container with a play icon overlay.  In the future, we can
                   // generate actual video thumbnails during upload.
-                  Container(color: scheme.onSurface.withOpacity(0.54)),
-                  Center(
-                    child: Icon(Icons.play_circle_fill, color: scheme.onSurface.withOpacity(0.7), size: 56),
 
-                  if (previewUrl.isNotEmpty)
-                    CachedNetworkImage(
-                      imageUrl: previewUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => BlurHash(
-                        hash: blurhash,
-                        imageFit: BoxFit.cover,
-                      ),
-                      errorWidget: (c, u, e) => Container(color: Colors.black54),
-                    )
-                  else
-                    Container(color: Colors.black54),
+                  Container(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54)),
                   const Center(
-                    child: Icon(Icons.play_circle_fill, color: Colors.white70, size: 56),
+                    child: Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.70), size: 56),
 
                   ),
                 ],
@@ -678,12 +668,16 @@ class _PostCardWidgetState extends State<PostCardWidget> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: scheme.onSurface.withOpacity(0.54),
+
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
+
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '+${attachments.length - 1}',
-                  style: TextStyle(color: scheme.onSurface, fontSize: 12),
+
+                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 12),
+
                 ),
               ),
             ),
@@ -730,7 +724,9 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                             ? CachedNetworkImageProvider(profileImageUrl)
                             : null,
                         child: profileImageUrl.isEmpty
-                            ? Icon(Icons.person, color: Theme.of(context).colorScheme.onSurface)
+
+                            ? Icon(Icons.person, color: Theme.of(context).colorScheme.onPrimary)
+
                             : null,
                         backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                       ),
@@ -802,12 +798,16 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                   padding: const EdgeInsets.only(bottom: 8.0),
                   child: Row(
                     children: [
-                      Icon(Icons.repeat, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), size: 18),
+
+                      Icon(Icons.repeat, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 18),
+
                       const SizedBox(width: 4),
                       Text(
                         'Shared by $authorDisplayName',
                         style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+
                           fontStyle: FontStyle.italic,
                           fontSize: 13,
                         ),
@@ -832,7 +832,9 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                           ? CachedNetworkImageProvider(authorProfileImageUrl)
                           : null,
                       child: authorProfileImageUrl.isEmpty
-                          ? Icon(Icons.person, color: Theme.of(context).colorScheme.onSurface)
+
+                          ? Icon(Icons.person, color: Theme.of(context).colorScheme.onPrimary)
+
                           : null,
                       backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                     ),
@@ -859,7 +861,9 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                   const Spacer(),
                   Text(
                     _formatTimestamp(widget.post['timestamp'] as Timestamp?),
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 12),
+
+                    style: TextStyle(color: Theme.of(context).colorScheme.outline, fontSize: 12),
+
                   ),
                   if (isMyPost)
                     PopupMenuButton<String>(
@@ -932,7 +936,9 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surfaceVariant,
                     borderRadius: BorderRadius.circular(12.0),
-                    border: Border.all(color: Theme.of(context).colorScheme.outline),
+
+                    border: Border.all(color: Theme.of(context).colorScheme.surfaceVariant!),
+
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -941,7 +947,9 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                         'Original post by $originalPostAuthorDisplayName',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Theme.of(context).colorScheme.onSurface,
+
+                          color: Theme.of(context).colorScheme.outline[700],
+
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -993,7 +1001,9 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                         IconButton(
                           icon: Icon(
                             _isLiked ? Icons.favorite : Icons.favorite_border,
-                            color: _isLiked ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurface,
+
+                            color: _isLiked ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.outline,
+
                           ),
                           onPressed: _toggleLike,
                         ),
@@ -1095,7 +1105,9 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                             child: Container(
                               padding: const EdgeInsets.all(8.0),
                               decoration: BoxDecoration(
-                                color: scheme.surfaceVariant,
+
+                                color: Theme.of(context).colorScheme.outline[100],
+
                                 borderRadius: BorderRadius.circular(8.0),
                               ),
                               child: Row(
@@ -1107,9 +1119,11 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                                         ? CachedNetworkImageProvider(commentAuthorProfileImageUrl)
                                         : null,
                                     child: commentAuthorProfileImageUrl.isEmpty
-                                        ? Icon(Icons.person, size: 12, color: scheme.onSurface)
+
+                                        ? Icon(Icons.person, size: 12, color: Theme.of(context).colorScheme.onPrimary)
                                         : null,
-                                    backgroundColor: scheme.surfaceVariant,
+                                    backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
@@ -1118,13 +1132,17 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                                       children: [
                                         Text(
                                           comment['content'],
-                                          style: TextStyle(color: scheme.onSurface, fontSize: 14),
+
+                                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14),
+
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           '$commentAuthorDisplayName - ${_formatTimestamp(comment['timestamp'] as Timestamp?)}',
-                                          style: TextStyle(
-                                              color: scheme.onSurface.withOpacity(0.6), fontSize: 10),
+
+                                          style: const TextStyle(
+                                              color: Theme.of(context).colorScheme.outline, fontSize: 10),
+
                                         ),
                                       ],
                                     ),

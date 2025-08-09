@@ -29,7 +29,14 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
 
   void _showMessage(String msg, {bool isError = false}) {
     if (!mounted) return;
-    AppSnackBar.show(context, msg, isError: isError);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
+      ),
+    );
+
   }
 
   Future<void> _changePassword() async {
@@ -108,8 +115,8 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
               },
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Delete', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+              child: Text('Delete', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
               onPressed: () async {
                 try {
                   // This is a sensitive operation, so we close the dialog first
@@ -248,8 +255,8 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
             },
           ),
           ListTile(
-            leading: Icon(Icons.delete_forever_outlined, color: Colors.red.shade700),
-            title: Text('Delete Account', style: TextStyle(color: Colors.red.shade700)),
+            leading: Icon(Icons.delete_forever_outlined, color: Theme.of(context).colorScheme.error.shade700),
+            title: Text('Delete Account', style: TextStyle(color: Theme.of(context).colorScheme.error.shade700)),
             onTap: _deleteAccount,
           ),
         ],

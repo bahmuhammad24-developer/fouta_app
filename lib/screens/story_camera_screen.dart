@@ -155,13 +155,13 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).colorScheme.onSurface,
       body: Stack(
         children: [
           Positioned.fill(
             child: (_controller != null && _controller!.value.isInitialized)
                 ? CameraPreview(_controller!)
-                : Container(color: Colors.black),
+                : Container(color: Theme.of(context).colorScheme.onSurface),
           ),
           // Top controls: flash, switch camera (placeholders)
           Positioned(
@@ -172,11 +172,11 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.flash_off, color: Colors.white),
+                  icon: Icon(Icons.flash_off, color: Theme.of(context).colorScheme.onPrimary),
                   onPressed: () {},
                 ),
                 IconButton(
-                  icon: const Icon(Icons.cameraswitch, color: Colors.white),
+                  icon: Icon(Icons.cameraswitch, color: Theme.of(context).colorScheme.onPrimary),
                   onPressed: _switchCamera,
                 ),
               ],
@@ -195,13 +195,46 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
                   children: [
                     IconButton(
                       iconSize: 32,
-                      icon: const Icon(Icons.photo_library, color: Colors.white),
-                      tooltip: 'Pick from gallery',
+
+                      icon: Icon(Icons.photo_library, color: Theme.of(context).colorScheme.onPrimary),
+
                       onPressed: _pickFromGallery,
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
+
+                GestureDetector(
+                  onTap: _takePhoto,
+                  onLongPressStart: (_) {
+                    setState(() => _isRecording = true);
+                    _startVideoRecording();
+                  },
+                  onLongPressEnd: (_) async {
+                    if (_isRecording) {
+                      setState(() => _isRecording = false);
+                      await _stopVideoRecording();
+                    }
+                  },
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        width: 4,
+                      ),
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _isRecording ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onPrimary,
+
                 Semantics(
                   label: 'Capture story',
                   button: true,

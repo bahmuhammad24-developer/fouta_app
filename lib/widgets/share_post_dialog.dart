@@ -44,8 +44,8 @@ class _SharePostDialogState extends State<SharePostDialog> {
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) => Container(
               height: 150,
-              color: Colors.grey[300],
-              child: const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 40)),
+              color: Theme.of(context).colorScheme.surfaceVariant,
+              child: Center(child: Icon(Icons.broken_image, color: Theme.of(context).colorScheme.outline, size: 40)),
             ),
           ),
         );
@@ -53,16 +53,16 @@ class _SharePostDialogState extends State<SharePostDialog> {
         return Container(
           width: double.infinity,
           height: 150,
-          color: Colors.black,
+          color: Theme.of(context).colorScheme.onSurface,
           child: const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.play_circle_fill, color: Colors.white, size: 40),
+                Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary, size: 40),
                 SizedBox(height: 8),
                 Text(
                   'Video Preview',
-                  style: TextStyle(color: Colors.white, fontSize: 10),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 10),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -112,16 +112,16 @@ class _SharePostDialogState extends State<SharePostDialog> {
                 Container(
                   padding: const EdgeInsets.all(8.0),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: Theme.of(context).colorScheme.outline[100],
                     borderRadius: BorderRadius.circular(8.0),
-                    border: Border.all(color: Colors.grey[300]!),
+                    border: Border.all(color: Theme.of(context).colorScheme.surfaceVariant!),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'by $originalPostAuthorDisplayName',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                        style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline[700]),
                       ),
                       const SizedBox(height: 4),
                       if (originalPostMediaUrl.isNotEmpty)

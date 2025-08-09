@@ -198,8 +198,10 @@ class StoriesTray extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 32.0,
-                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                  child: Icon(Icons.person, color: Theme.of(context).colorScheme.onSurface, size: 32),
+
+                  backgroundColor: Theme.of(context).colorScheme.outline,
+                  child: Icon(Icons.person, color: Theme.of(context).colorScheme.onPrimary, size: 32),
+
                 ),
                 if (!hasStory)
                   Container(
@@ -275,9 +277,9 @@ class _StoryAvatar extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: hasUnseen
-                      ? Theme.of(context).colorScheme.secondary
-                      : Theme.of(context).colorScheme.outline,
+
+                  color: hasUnseen ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.outline,
+
                   width: 2.0,
                 ),
               ),

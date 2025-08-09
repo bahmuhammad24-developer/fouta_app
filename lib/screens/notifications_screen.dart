@@ -93,25 +93,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 switch (type) {
                   case 'like':
                     iconData = Icons.favorite;
-                    iconColor = Colors.red;
+                    iconColor = Theme.of(context).colorScheme.error;
                     break;
                   case 'comment':
                     iconData = Icons.comment;
-                    iconColor = Colors.blue;
+                    iconColor = Theme.of(context).colorScheme.primary;
                     break;
                   case 'follow':
                     iconData = Icons.person_add;
-                    iconColor = Colors.green;
+                    iconColor = Theme.of(context).colorScheme.primary;
                     break;
                   default:
                     iconData = Icons.notifications;
-                    iconColor = Colors.grey;
+                    iconColor = Theme.of(context).colorScheme.outline;
                 }
 
                 return ListTile(
                   leading: CircleAvatar(
                     backgroundColor: iconColor,
-                    child: Icon(iconData, color: Colors.white),
+                    child: Icon(iconData, color: Theme.of(context).colorScheme.onPrimary),
                   ),
                   title: Text.rich(
                     TextSpan(

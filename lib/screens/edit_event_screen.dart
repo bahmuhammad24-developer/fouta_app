@@ -156,7 +156,7 @@ class _EditEventScreenState extends State<EditEventScreen> {
                         height: 150,
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
+                          border: Border.all(color: Theme.of(context).colorScheme.outline),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: _buildImage(),
@@ -210,12 +210,12 @@ class _EditEventScreenState extends State<EditEventScreen> {
           imageUrl: _currentHeaderImageUrl!,
           fit: BoxFit.cover,
           placeholder: (context, url) => Container(
-            color: Colors.grey[200],
+            color: Theme.of(context).colorScheme.surfaceVariant,
             child: const Center(child: CircularProgressIndicator()),
           ),
           errorWidget: (context, url, error) => Container(
-            color: Colors.grey[300],
-            child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
+            color: Theme.of(context).colorScheme.surfaceVariant,
+            child: Icon(Icons.broken_image, size: 40, color: Theme.of(context).colorScheme.outline),
           ),
         ),
       );
@@ -223,7 +223,7 @@ class _EditEventScreenState extends State<EditEventScreen> {
     return const Center(child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.camera_alt, size: 40, color: Colors.grey),
+        Icon(Icons.camera_alt, size: 40, color: Theme.of(context).colorScheme.outline),
         Text('Change Header Image')
       ],
     ));

@@ -102,7 +102,9 @@ class _ChatDetailsScreenState extends State<ChatDetailsScreen> {
         centerTitle: true,
         title: Text(
           chatData['groupName'] ?? 'Group Chat',
-          style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, shadows: [Shadow(color: Theme.of(context).colorScheme.shadow, blurRadius: 8)]),
+
+          style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, shadows: [Shadow(color: Theme.of(context).colorScheme.onSurface, blurRadius: 8)]),
+
         ),
         background: SafeArea(
           child: SingleChildScrollView( // FIX: Added SingleChildScrollView to prevent overflow

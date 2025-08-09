@@ -100,9 +100,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   void _showMessage(String msg) {
     if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: msg.contains('successful') ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
+      ),
+    );
+
     final lower = msg.toLowerCase();
     final isError = lower.contains('fail') || lower.contains('error');
     AppSnackBar.show(context, msg, isError: isError);
+
   }
 
   void _setNavBarVisibility(bool isVisible) {
@@ -199,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               onTap: _onItemTapped,
               type: BottomNavigationBarType.fixed,
               selectedItemColor: Theme.of(context).colorScheme.primary,
-              unselectedItemColor: Colors.grey[600],
+              unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
               items: [
                 const BottomNavigationBarItem(
                   icon: Icon(Icons.home_outlined),
@@ -217,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           ? '99+'
                           : '$_unreadChatsCount',
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                         fontSize: 10,
                       ),
                     ),
@@ -234,7 +243,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           ? '99+'
                           : '$_unreadChatsCount',
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                         fontSize: 10,
                       ),
                     ),
@@ -395,7 +404,7 @@ class _NotificationsButton extends StatelessWidget {
             ),
             badgeContent: Text(
               unreadCount > 99 ? '99+' : '$unreadCount',
-              style: const TextStyle(color: Colors.white, fontSize: 10),
+              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 10),
             ),
             position: badges.BadgePosition.topEnd(top: -4, end: -4),
             child: const Icon(Icons.notifications_outlined),
@@ -562,9 +571,18 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
 
   void _showMessage(String msg) {
     if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: msg.contains('successful') ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
+      ),
+    );
+
     final lower = msg.toLowerCase();
     final isError = lower.contains('fail') || lower.contains('error');
     AppSnackBar.show(context, msg, isError: isError);
+
   }
 
   Future<void> _fetchFirstPosts() async {
@@ -733,7 +751,7 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Text('No posts to display.',
-                                style: TextStyle(fontSize: 16, color: Colors.grey)),
+                                style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.outline)),
                             const SizedBox(height: 16),
                             FoutaButton(
                               label: 'Create Post',
@@ -841,7 +859,7 @@ class _ChatsTabState extends State<ChatsTab> with AutomaticKeepAliveClientMixin 
               hintText: 'Search chats...',
               prefixIcon: const Icon(Icons.search),
               filled: true,
-              fillColor: Colors.grey[200],
+              fillColor: Theme.of(context).colorScheme.surfaceVariant,
               contentPadding: EdgeInsets.zero,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(30.0),
@@ -1069,16 +1087,16 @@ class _ChatListItem extends StatelessWidget {
       key: Key(chatDocId),
       direction: DismissDirection.endToStart,
       background: Container(
-        color: Colors.grey[700],
+        color: Theme.of(context).colorScheme.outline[700],
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        child: const Icon(Icons.archive_outlined, color: Colors.white),
+        child: Icon(Icons.archive_outlined, color: Theme.of(context).colorScheme.onPrimary),
       ),
       secondaryBackground: Container(
-        color: Colors.blue,
+        color: Theme.of(context).colorScheme.primary,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        child: const Icon(Icons.volume_mute_outlined, color: Colors.white),
+        child: Icon(Icons.volume_mute_outlined, color: Theme.of(context).colorScheme.onPrimary),
       ),
       confirmDismiss: (direction) async {
         // Placeholder for future functionality
@@ -1106,7 +1124,7 @@ class _ChatListItem extends StatelessWidget {
                   width: 16,
                   height: 16,
                   decoration: BoxDecoration(
-                    color: Colors.green,
+                    color: Theme.of(context).colorScheme.primary,
                     shape: BoxShape.circle,
                     border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 3),
                   ),
@@ -1119,19 +1137,19 @@ class _ChatListItem extends StatelessWidget {
           subtitle, 
           maxLines: 1, 
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: subtitle == "typing..." ? Theme.of(context).primaryColor : Colors.grey[600]),
+          style: TextStyle(color: subtitle == "typing..." ? Theme.of(context).primaryColor : Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(timestamp, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+            Text(timestamp, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
             const SizedBox(height: 4),
             if (unreadCount > 0)
               CircleAvatar(
                 radius: 10,
                 backgroundColor: Theme.of(context).colorScheme.primary,
-                child: Text('$unreadCount', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                child: Text('$unreadCount', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 10, fontWeight: FontWeight.bold)),
               )
             else 
               const SizedBox(height: 20),
@@ -1368,8 +1386,8 @@ class _PeopleTabState extends State<PeopleTab> with AutomaticKeepAliveClientMixi
             trailing: ElevatedButton(
               onPressed: () => _toggleFollow(currentUser.uid, userDoc.id, isFollowing),
               style: ElevatedButton.styleFrom(
-                backgroundColor: isFollowing ? Colors.grey : Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: isFollowing ? Theme.of(context).colorScheme.outline : Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
               child: Text(isFollowing ? 'Unfollow' : 'Follow'),
             ),

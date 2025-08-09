@@ -54,9 +54,18 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() {
       _message = msg;
     });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: msg.contains('successful') ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
+      ),
+    );
+
     final lower = msg.toLowerCase();
     final isError = lower.contains('fail') || lower.contains('error');
     AppSnackBar.show(context, msg, isError: isError);
+
   }
 
   Future<void> _authenticate() async {
@@ -186,7 +195,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
                       spreadRadius: 2,
                       blurRadius: 8,
                       offset: const Offset(0, 4),

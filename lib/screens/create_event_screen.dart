@@ -132,7 +132,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         height: 150,
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
+                          border: Border.all(color: Theme.of(context).colorScheme.outline),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: _headerImageFile != null
@@ -143,7 +143,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                           : const Center(child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.camera_alt, size: 40, color: Colors.grey),
+                              Icon(Icons.camera_alt, size: 40, color: Theme.of(context).colorScheme.outline),
                               Text('Add Header Image')
                             ],
                           )),

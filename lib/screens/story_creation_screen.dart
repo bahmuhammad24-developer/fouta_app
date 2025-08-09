@@ -78,7 +78,7 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
               controller: _controller!,
               fit: BoxFit.contain,
             )
-          : const CircularProgressIndicator(color: Colors.white);
+          : CircularProgressIndicator(color: Theme.of(context).colorScheme.onPrimary);
     } else {
       preview = Image.file(
         File(widget.initialMediaPath),
@@ -90,10 +90,10 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
       appBar: AppBar(
         title: const Text('Create Story'),
       ),
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).colorScheme.onSurface,
       body: Center(
         child: _isUploading
-            ? const CircularProgressIndicator(color: Colors.white)
+            ? CircularProgressIndicator(color: Theme.of(context).colorScheme.onPrimary)
             : preview,
       ),
       floatingActionButton: FloatingActionButton(
