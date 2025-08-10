@@ -5,8 +5,8 @@ class AppTheme {
   static ThemeData light() {
     const primary = Color(0xFF7ED6A0); // pastel green
     const secondary = Color(0xFFF5D98B); // pastel gold
-    const tertiary = Color(0xFF2D3A8C); // deep indigo (accent)
-    const coral = Color(0xFFE85A5A); // coral (accent)
+    const tertiary = Color(0xFF2D3A8C); // deep indigo
+    const coral = Color(0xFFE85A5A); // coral
 
     final scheme = const ColorScheme.light(
       primary: primary,
@@ -16,9 +16,9 @@ class AppTheme {
       tertiary: tertiary,
       onTertiary: Colors.white,
       error: coral,
-      onError: Colors.white,
+      onError: Colors.black,
       background: Color(0xFFF7F9F8),
-      onBackground: Color(0xFF0D1215),
+      onBackground: Color(0xFF111418),
       surface: Colors.white,
       onSurface: Color(0xFF111418),
     );
@@ -38,8 +38,7 @@ class AppTheme {
       bottomSheetTheme: const BottomSheetThemeData(surfaceTintColor: Colors.transparent),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: scheme.surface,
-        indicatorColor: Colors.transparent, // keep our custom selected icon animation
-        labelTextStyle: MaterialStateProperty.all(const TextStyle(fontWeight: FontWeight.w600)),
+        indicatorColor: Colors.transparent, // keep custom glow/animation
       ),
     );
   }

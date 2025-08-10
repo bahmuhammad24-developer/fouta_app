@@ -1,10 +1,9 @@
-# Component Rules (Brand v1)
+# Components & Behavior (v1)
+- Bottom Nav: 5 items; selected icon uses primaryGlow gradient; labels show on selection; animation unchanged.
+- Stories Tray: first tile "Your Story" with gradient ring; tapping opens camera; long-press for video; 15s cap; progress ring during recording.
+- Story Viewer: tap right/left to advance/rewind; press & hold to pause; swipe down to dismiss.
+- Post Card: airy layout; action bar icons + counts; subtle reaction burst on like.
+- Event Card: gradient overlay for text legibility; large Join button (gold/coral).
+- Chat: group header may use muted gradient; invite modal uses pastel backgrounds; selected items get gold outline.
+- Accessibility: min 48dp targets; content resizes to 200% text scale; AA contrast.
 
-- **Buttons**
-  - Use primary color (#7ED6A0 light / #3BAF7C dark).
-  - Danger buttons use #E85A5A (light) or #E2726E (dark).
-- **Cards**
-  - Surface color on background (#F7F9F8 light / #0E1512 dark).
-- **Navigation Bar**
-  - Order items: Feed, Chat, Events, People, Profile.
-  - Highlight the active item with the primary color.

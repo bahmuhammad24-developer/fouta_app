@@ -1,8 +1,10 @@
-# AI Guardrails (Brand v1)
+# AI Guardrails (Fouta)
+- Do not change bottom nav order/labels: Feed, Chat, Events, People, Profile.
+- Follow system appearance; do not force dark or light by default.
+- Use Material 3; use ColorScheme roles ONLY (no hard-coded Colors.*).
+- Keep component surfaceTintColor transparent unless specifically needed.
+- Gradients are limited to: selected nav icon glow; story ring; subtle photo overlays.
+- Stories: tap = photo; long-press = video (≤15s); pass captured media to composer.
+- Any new component must use tokens in /brand/tokens.json; if a color/token is missing, add it there first.
+- Check AA contrast for text; run scripts/validate.sh before PR.
 
-- Use only the approved palette:
-  - Light: #7ED6A0, #F5D98B, #2D3A8C, #E85A5A, background #F7F9F8, surface #FFFFFF
-  - Dark: #3BAF7C, #E1C376, #8791C5, #E2726E, background #0E1512, surface #101D15
-- Keep navigation ordered: Feed, Chat, Events, People, Profile.
-- Maintain a friendly and concise tone in all responses.
-- Avoid introducing new colors or navigation labels.
