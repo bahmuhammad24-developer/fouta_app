@@ -1129,8 +1129,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                                         Text(
                                           '$commentAuthorDisplayName - ${_formatTimestamp(comment['timestamp'] as Timestamp?)}',
 
-                                          style: const TextStyle(
-                                              color: Theme.of(context).colorScheme.outline, fontSize: 10),
+                                            style: TextStyle(
+                                                color: Theme.of(context).colorScheme.outline, fontSize: 10),
 
                                         ),
                                       ],
