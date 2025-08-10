@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:fouta_app/theme/theme_controller.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/screens/report_bug_screen.dart';
+import 'package:fouta_app/utils/overlays.dart';
 
 class UnifiedSettingsScreen extends StatefulWidget {
   const UnifiedSettingsScreen({super.key});
@@ -47,10 +48,8 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
       return;
     }
 
-    showDialog(
+    showFoutaDialog(
       context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Change Password'),
@@ -104,10 +103,8 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
       return;
     }
 
-    showDialog(
+    showFoutaDialog(
       context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete Account'),

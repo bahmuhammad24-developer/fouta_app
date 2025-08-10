@@ -20,7 +20,7 @@ class FullScreenMediaViewer extends StatefulWidget {
 
 class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
   late final PageController _pageController;
-  bool _showUi = true;
+  bool _showChrome = true;
   late final Player _player = Player();
   late final VideoController _videoController = VideoController(_player);
 
@@ -40,7 +40,7 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
     super.dispose();
   }
 
-  void _toggleUi() => setState(() => _showUi = !_showUi);
+  void _toggleChrome() => setState(() => _showChrome = !_showChrome);
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +65,7 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
     switch (item.type) {
       case MediaType.image:
         return GestureDetector(
-          onTap: _toggleUi,
+          onTap: _toggleChrome,
           child: PhotoView(
             imageProvider: CachedNetworkImageProvider(item.url),
             backgroundDecoration: const BoxDecoration(color: Colors.black),
@@ -73,7 +73,7 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
         );
       case MediaType.video:
           return GestureDetector(
-            onTap: _toggleUi,
+            onTap: _toggleChrome,
             onLongPress: () {
               final rate = _player.state.rate == 1.0 ? 2.0 : 1.0;
               _player.setRate(rate);
@@ -83,10 +83,10 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
               children: [
                 Video(controller: _videoController, fit: BoxFit.contain),
                 IgnorePointer(
-                  ignoring: !_showUi,
+                  ignoring: !_showChrome,
                   child: AnimatedOpacity(
                     duration: const Duration(milliseconds: 180),
-                    opacity: _showUi ? 1.0 : 0.0,
+                    opacity: _showChrome ? 1.0 : 0.0,
                     child: Container(
                       color: Colors.black.withOpacity(0.45),
                       child: _buildVideoOverlay(),

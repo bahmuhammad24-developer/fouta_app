@@ -18,6 +18,7 @@ import 'media/post_media.dart';
 import 'package:fouta_app/screens/fullscreen_media_viewer.dart';
 import 'package:fouta_app/widgets/share_post_dialog.dart';
 import 'package:fouta_app/widgets/fouta_card.dart';
+import 'package:fouta_app/utils/overlays.dart';
 
 class PostCardWidget extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -66,10 +67,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
   }
 
   Future<void> _editSharedPost(String postId, String currentContent) async {
-    final String? updatedContent = await showDialog<String>(
+    final String? updatedContent = await showFoutaDialog<String>(
       context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return SharePostDialog(
           originalPostData: widget.post,
@@ -92,10 +91,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
   }
 
   Future<void> _deleteSharedPost(String postId, String originalPostId) async {
-    bool confirmDelete = await showDialog(
+    bool confirmDelete = await showFoutaDialog<bool>(
       context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete Shared Post'),
@@ -300,10 +297,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
       final sharerDisplayName = sharerDoc.data()?['displayName'] ?? 'Anonymous';
       final sharerProfileImageUrl = sharerDoc.data()?['profileImageUrl'] ?? '';
 
-      final String? sharedContent = await showDialog<String>(
+      final String? sharedContent = await showFoutaDialog<String>(
         context: context,
-        barrierDismissible: true,
-        barrierColor: Colors.black54,
         builder: (BuildContext context) {
           return SharePostDialog(originalPostData: originalPostData);
         },
@@ -375,10 +370,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
       return;
     }
 
-    bool confirmDelete = await showDialog(
+    bool confirmDelete = await showFoutaDialog<bool>(
       context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete Post'),
@@ -444,10 +437,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
       return;
     }
 
-    bool confirmDelete = await showDialog(
+    bool confirmDelete = await showFoutaDialog<bool>(
       context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete Comment'),
@@ -506,10 +497,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
 
     final TextEditingController editController = TextEditingController(text: currentContent);
 
-    bool confirmEdit = await showDialog(
+    bool confirmEdit = await showFoutaDialog<bool>(
       context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Edit Comment'),
@@ -698,10 +687,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
       return;
     }
 
-    showDialog(
+    showFoutaDialog(
       context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Likes'),

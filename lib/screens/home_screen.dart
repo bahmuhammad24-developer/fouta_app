@@ -35,6 +35,7 @@ import 'package:fouta_app/widgets/fouta_card.dart';
 import 'package:fouta_app/widgets/skeletons/feed_skeleton.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/models/story.dart';
+import 'package:fouta_app/widgets/system/offline_banner.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -210,79 +211,58 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ),
           body: Consumer<ConnectivityProvider>(
             builder: (context, connectivity, _) {
-
-              Widget content = Column(
-                children: [
-                  if (!connectivity.isOnline)
-                    MaterialBanner(
-                      backgroundColor:
-                          Theme.of(context).colorScheme.errorContainer,
-                      leading: const Icon(Icons.wifi_off),
-                      content: const Text('You are offline'),
+              Widget content = NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) {
+                  return <Widget>[
+                    SliverAppBar(
+                      title: Text(_getAppBarTitle()),
+                      // Keep the app bar visible while scrolling
+                      pinned: true,
                       actions: [
-                        TextButton(
-                          onPressed: connectivity.refresh,
-                          child: const Text('Retry'),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline),
+                          tooltip: 'Create Post',
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CreatePostScreen(),
+                            ),
+                          ),
+                        ),
+                        _NotificationsButton(
+                            unreadStream: _unreadNotificationsStream),
+                        Builder(
+                          builder: (context) => IconButton(
+                            icon: const Icon(Icons.menu),
+                            onPressed: () =>
+                                Scaffold.of(context).openEndDrawer(),
+                          ),
                         ),
                       ],
                     ),
-                  Expanded(
-                    child: NestedScrollView(
-                      headerSliverBuilder: (context, innerBoxIsScrolled) {
-                        return <Widget>[
-                          SliverAppBar(
-                            title: Text(_getAppBarTitle()),
-                            // Keep the app bar visible while scrolling
-                            pinned: true,
-                            actions: [
-                              IconButton(
-                                icon: const Icon(Icons.add_circle_outline),
-                                tooltip: 'Create Post',
-                                onPressed: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const CreatePostScreen(),
-                                  ),
-
-                                ),
-                              ),
-                              _NotificationsButton(
-                                  unreadStream: _unreadNotificationsStream),
-                              Builder(
-                                builder: (context) => IconButton(
-                                  icon: const Icon(Icons.menu),
-                                  onPressed: () =>
-                                      Scaffold.of(context).openEndDrawer(),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ];
-                      },
-                      body: IndexedStack(
-                        index: _selectedIndex,
-                        children: <Widget>[
-                          _buildOffstageNavigator(
-                              0, FeedTab(setNavBarVisibility: _setNavBarVisibility)),
-                          _buildOffstageNavigator(
-                              1,
-                              ChatsTab(
-                                  setNavBarVisibility: _setNavBarVisibility,
-                                  setShowNewChatFab: _setShowNewChatFab)),
-                          _buildOffstageNavigator(
-                              2, const EventsListScreen()),
-                          _buildOffstageNavigator(3, const PeopleTab()),
-                          _buildOffstageNavigator(
-                              4, ProfileScreen(userId: currentUser?.uid ?? '')),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                  ];
+                },
+                body: IndexedStack(
+                  index: _selectedIndex,
+                  children: <Widget>[
+                    _buildOffstageNavigator(
+                        0, FeedTab(setNavBarVisibility: _setNavBarVisibility)),
+                    _buildOffstageNavigator(
+                        1,
+                        ChatsTab(
+                            setNavBarVisibility: _setNavBarVisibility,
+                            setShowNewChatFab: _setShowNewChatFab)),
+                    _buildOffstageNavigator(2, const EventsListScreen()),
+                    _buildOffstageNavigator(3, const PeopleTab()),
+                    _buildOffstageNavigator(
+                        4, ProfileScreen(userId: currentUser?.uid ?? '')),
+                  ],
+                ),
               );
+
+              Widget page;
               if (isWide) {
-                return Row(
+                page = Row(
                   children: [
                     NavigationRail(
                       selectedIndex: _selectedIndex,
@@ -320,10 +300,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     Expanded(child: content),
                   ],
                 );
+              } else {
+                page = content;
               }
-              return content;
+
+              return Stack(
+                children: [
+                  Positioned.fill(child: page),
+                  if (!connectivity.isOnline) const OfflineBanner(),
+                ],
+              );
             },
-            ),
           ),
         );
   }

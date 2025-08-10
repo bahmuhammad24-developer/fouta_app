@@ -26,6 +26,7 @@ import 'package:fouta_app/widgets/chat_audio_player.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:fouta_app/utils/snackbar.dart';
+import 'package:fouta_app/utils/overlays.dart';
 
 class ChatScreen extends StatefulWidget {
   final String? chatId;
@@ -625,11 +626,8 @@ class _ChatScreenState extends State<ChatScreen> {
   void _showReactionReplySheet(DocumentSnapshot messageDoc) {
     final messageData = messageDoc.data() as Map<String, dynamic>;
     final String messageId = messageDoc.id;
-    showModalBottomSheet(
+    showFoutaBottomSheet(
       context: context,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black54,
       builder: (context) {
         return SafeArea(
           child: Padding(

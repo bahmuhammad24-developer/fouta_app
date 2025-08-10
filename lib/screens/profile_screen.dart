@@ -24,6 +24,7 @@ import 'package:fouta_app/utils/firestore_paths.dart';
 import 'package:fouta_app/widgets/skeletons/profile_skeleton.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/widgets/skeletons/feed_skeleton.dart';
+import 'package:fouta_app/utils/overlays.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userId;
@@ -274,10 +275,8 @@ class _ProfileScreenState extends State<ProfileScreen>
       return;
     }
 
-    showDialog(
+    showFoutaDialog(
       context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(title),
