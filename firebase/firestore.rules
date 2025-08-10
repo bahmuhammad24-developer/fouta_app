@@ -151,6 +151,12 @@ service cloud.firestore {
         allow read, update, delete: if isOwner(userId);
         allow create: if authed();
       }
+
+      // Bug reports: allow authenticated users to create; no public read
+      match /bug_reports/{reportId} {
+        allow create: if authed();
+        allow read, update, delete: if false;
+      }
     }
   }
 }

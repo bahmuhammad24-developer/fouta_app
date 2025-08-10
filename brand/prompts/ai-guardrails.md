@@ -10,3 +10,13 @@
 - Any new component must use tokens in /brand/tokens.json; if a color/token is missing, add it there first.
 - Check AA contrast for text; run scripts/validate.sh before PR.
 
+## Changelog
+### v1.2
+Do not remove Bug Reporter entry points.
+
+Keep screenshot boundary at MaterialApp.builder.
+
+Store reports only under /artifacts/{appId}/public/data/bug_reports and /bug_reports in Storage.
+
+Preserve privacy: read=false by default in rules.
+

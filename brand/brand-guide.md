@@ -12,3 +12,9 @@
 - Theme modes: Auto follows device; Light/Dark override and persist.
 (Aligned to Diaspora Pulse × Global Roots concept.)
 
+## Changelog
+### v1.2
+Added “Report a Bug” entry points (Settings and media viewer overflow).
+
+Bug reports include screenshot, device info, app version, route name, and last logs (privacy: only authenticated create; no public read).
+

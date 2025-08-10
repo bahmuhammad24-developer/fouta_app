@@ -1,5 +1,6 @@
 # Code Map
 
+
 ## Navigation
 - **Entry point:** `main.dart` initializes Firebase, loads `ThemeController`, and injects `ConnectivityProvider`, `VideoPlayerManager`, and `ThemeController` via `MultiProvider` before launching `MyApp` which sets `SplashScreen` as the home widget【F:lib/main.dart†L24-L68】
 - **Splash flow:** `SplashScreen` animates then decides between `AuthWrapper` and notification permission screen【F:lib/screens/splash_screen.dart†L21-L33】
@@ -115,4 +116,17 @@
 - `Story` class defined in both `models/story.dart` and `models/story_model.dart` with differing shapes【F:lib/models/story.dart†L4-L27】【F:lib/models/story_model.dart†L1-L24】
 - Export wrappers duplicate file names for `story_viewer_screen.dart`, `stories_tray.dart`, `chat_message_bubble.dart`
 - Storage rules include overlapping story paths `/stories` and legacy `/stories_media`【F:firebase/storage.rules†L39-L47】
+
+
+## Added
+- lib/utils/log_buffer.dart
+- lib/utils/bug_reporter.dart
+- lib/screens/report_bug_screen.dart
+- lib/widgets/report_bug_button.dart
+
+## Updated
+- lib/screens/unified_settings_screen.dart (settings entry)
+- lib/screens/media_viewer.dart (overflow entry)
+- firebase/firestore.rules (bug_reports match)
+- firebase/storage.rules (bug_reports attachments)
 
