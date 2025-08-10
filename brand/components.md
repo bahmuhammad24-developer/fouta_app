@@ -8,3 +8,13 @@
 - Chat: group header may use muted gradient; invite modal uses pastel backgrounds; selected items get gold outline.
 - Accessibility: min 48dp targets; content resizes to 200% text scale; AA contrast.
 
+## Changelog
+### v1.2 — Bug Reporter
+Component: ReportBugButton (Settings list tile; media viewer overflow action).
+
+Visual: Uses onSurface text/icon; primary/secondary on hover/pressed.
+
+Behavior: Captures screenshot via root RepaintBoundary; submits to Firestore/Storage; shows success toast.
+
+Accessibility: Button tap target ≥ 48dp; text area supports system font scaling.
+
