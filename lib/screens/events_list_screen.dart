@@ -131,6 +131,10 @@ class _EventsListScreenState extends State<EventsListScreen> with AutomaticKeepA
   void _showFilterDialog() {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
+      isScrollControlled: true,
       builder: (context) {
         String tempFilter = _timeFilter;
         String tempSort = _sortOption;

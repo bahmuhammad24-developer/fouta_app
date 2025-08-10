@@ -276,6 +276,8 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     showDialog(
       context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(title),

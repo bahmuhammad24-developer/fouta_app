@@ -68,6 +68,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
   Future<void> _editSharedPost(String postId, String currentContent) async {
     final String? updatedContent = await showDialog<String>(
       context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return SharePostDialog(
           originalPostData: widget.post,
@@ -92,6 +94,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
   Future<void> _deleteSharedPost(String postId, String originalPostId) async {
     bool confirmDelete = await showDialog(
       context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete Shared Post'),
@@ -298,6 +302,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
 
       final String? sharedContent = await showDialog<String>(
         context: context,
+        barrierDismissible: true,
+        barrierColor: Colors.black54,
         builder: (BuildContext context) {
           return SharePostDialog(originalPostData: originalPostData);
         },
@@ -371,6 +377,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
 
     bool confirmDelete = await showDialog(
       context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete Post'),
@@ -438,6 +446,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
 
     bool confirmDelete = await showDialog(
       context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete Comment'),
@@ -498,6 +508,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
 
     bool confirmEdit = await showDialog(
       context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Edit Comment'),
@@ -688,6 +700,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
 
     showDialog(
       context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Likes'),
