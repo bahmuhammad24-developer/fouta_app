@@ -5,6 +5,7 @@ import 'package:photo_view/photo_view.dart';
 import '../models/media_item.dart';
 import '../services/media_prefetcher.dart';
 import '../widgets/media/video_player_view.dart';
+import '../widgets/report_bug_button.dart';
 
 /// Displays a full‑screen gallery of media attachments.
 class MediaViewer extends StatefulWidget {
@@ -96,6 +97,29 @@ class _MediaViewerState extends State<MediaViewer> {
                   color: colorScheme.onSurface,
                   onPressed: () => Navigator.of(context).maybePop(),
                   tooltip: 'Close',
+                ),
+              ),
+            ),
+            SafeArea(
+              child: Align(
+                alignment: Alignment.topRight,
+                child: IconButton(
+                  icon: const Icon(Icons.more_horiz),
+                  color: colorScheme.onSurface,
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (_) => SafeArea(
+                        child: ReportBugButton(
+                          child: const ListTile(
+                            leading: Icon(Icons.bug_report_outlined),
+                            title: Text('Report a Bug'),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  tooltip: 'More',
                 ),
               ),
             ),

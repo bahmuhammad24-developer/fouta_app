@@ -12,3 +12,7 @@
 - Viewer: tap right/left, press-hold pause, swipe down to dismiss, auto-advance.
 - Rings: unviewed=primary→secondary gradient; viewed=grey.
 - Accessibility: captions/overlay text must meet AA contrast; tap targets ≥48dp.
+
+## Changelog
+### v1.2
+Added requirement: media viewer overflow includes “Report a Bug” for quick reporting of playback issues.

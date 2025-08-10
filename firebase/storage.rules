@@ -57,5 +57,11 @@ service firebase.storage {
     match /chat_media/{chatId}/{filePath=**} {
       allow read, write: if isChatMember(chatId);
     }
+
+    // Bug reports attachments
+    match /bug_reports/{reportId}/{filePath=**} {
+      allow write: if authed();
+      allow read: if false;
+    }
   }
 }

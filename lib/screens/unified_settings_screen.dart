@@ -10,6 +10,7 @@ import 'package:fouta_app/screens/privacy_settings_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:fouta_app/theme/theme_controller.dart';
 import 'package:fouta_app/utils/snackbar.dart';
+import 'package:fouta_app/screens/report_bug_screen.dart';
 
 class UnifiedSettingsScreen extends StatefulWidget {
   const UnifiedSettingsScreen({super.key});
@@ -251,15 +252,24 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                 ],
               );
             },
-          ),
+            ),
 
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: const Text('About Fouta'),
-            onTap: () {
-               _showMessage('Fouta App v1.9.0');
-            },
-          ),
+            ListTile(
+              leading: const Icon(Icons.bug_report_outlined),
+              title: const Text('Report a Bug'),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ReportBugScreen()),
+              ),
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: const Text('About Fouta'),
+              onTap: () {
+                 _showMessage('Fouta App v1.9.0');
+              },
+            ),
           ListTile(
             leading: Icon(Icons.delete_forever_outlined, color: Theme.of(context).colorScheme.error),
             title: Text('Delete Account', style: TextStyle(color: Theme.of(context).colorScheme.error)),

@@ -17,6 +17,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 // Use the Diaspora Connection theme instead of the original Baobab theme
 import 'package:fouta_app/theme/app_theme.dart';
 import 'firebase_options.dart';
+import 'package:flutter/foundation.dart';
+import 'utils/log_buffer.dart';
+import 'utils/bug_reporter.dart';
+import 'widgets/report_bug_button.dart';
 
 // Define a global constant for the app ID.
 const String APP_ID = 'fouta-app';
@@ -26,6 +30,9 @@ void main() async {
   // Required for media_kit to work
   MediaKit.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Capture logs for bug reports
+  LogBuffer.instance.init();
 
   // Enable Firestore offline persistence
   FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: true);
@@ -63,6 +70,23 @@ class MyApp extends StatelessWidget {
           theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),
           themeMode: controller.themeMode,
+
+          builder: (context, child) => RepaintBoundary(
+            key: BugReporter.repaintBoundaryKey,
+            child: Stack(
+              children: [
+                if (child != null) child,
+                if (!kReleaseMode && kShowBugFabInDebug)
+                  Positioned(
+                    right: 16,
+                    bottom: 16,
+                    child: ReportBugButton(
+                      child: const Text('🐞'),
+                    ),
+                  ),
+              ],
+            ),
+          ),
 
           home: const SplashScreen(),
         );
