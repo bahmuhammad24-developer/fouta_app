@@ -220,12 +220,16 @@ class _EditEventScreenState extends State<EditEventScreen> {
         ),
       );
     }
-    return const Center(child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.camera_alt, size: 40, color: Theme.of(context).colorScheme.outline),
-        Text('Change Header Image')
-      ],
-    ));
+      return Builder(
+        builder: (context) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.camera_alt, size: 40, color: Theme.of(context).colorScheme.outline),
+              const Text('Change Header Image')
+            ],
+          ),
+        ),
+      );
   }
 }

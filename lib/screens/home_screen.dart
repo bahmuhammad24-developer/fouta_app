@@ -298,10 +298,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               }
               return content;
             },
+            ),
           ),
-        ),
-      ),
-    );
+        );
   }
 
   String _getAppBarTitle() {
@@ -709,7 +708,7 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text('No posts to display.',
+                            Text('No posts to display.',
                                 style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.outline)),
                             const SizedBox(height: 16),
                             FoutaButton(

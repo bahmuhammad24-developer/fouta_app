@@ -165,10 +165,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 stream: _player!.stream.playing,
                 builder: (context, snapshot) {
                   final isPlaying = snapshot.data ?? false;
-                  if (isPlaying || widget.areControlsVisible) return const SizedBox.shrink();
-                  return const IgnorePointer(
-                    child: Icon(Icons.play_arrow, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.70), size: 60.0),
-                  );
+                    if (isPlaying || widget.areControlsVisible) return const SizedBox.shrink();
+                    return IgnorePointer(
+                      child: Icon(Icons.play_arrow, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.70), size: 60.0),
+                    );
                 },
               ),
             ],
