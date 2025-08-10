@@ -12,7 +12,7 @@ import 'package:fouta_app/screens/home_screen.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 import 'package:fouta_app/services/connectivity_provider.dart';
-import 'package:fouta_app/services/theme_provider.dart';
+import 'package:fouta_app/theme/theme_controller.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 // Use the Diaspora Connection theme instead of the original Baobab theme
 import 'package:fouta_app/theme/app_theme.dart';
@@ -30,12 +30,15 @@ void main() async {
   // Enable Firestore offline persistence
   FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: true);
 
+  final themeController = ThemeController();
+  await themeController.load();
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => ConnectivityProvider()),
         ChangeNotifierProvider(create: (context) => VideoPlayerManager()),
-        ChangeNotifierProvider(create: (context) => ThemeProvider()),
+        ChangeNotifierProvider.value(value: themeController),
       ],
       child: const MyApp(),
     ),
@@ -51,15 +54,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, _, __) {
+    return Consumer<ThemeController>(
+      builder: (context, controller, __) {
         return MaterialApp(
           title: 'Fouta',
 
           // Use the Material 3 themed definitions for light and dark modes
           theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),
-          themeMode: ThemeMode.system,
+          themeMode: controller.themeMode,
 
           home: const SplashScreen(),
         );

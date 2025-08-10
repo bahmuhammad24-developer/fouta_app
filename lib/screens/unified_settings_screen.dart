@@ -8,7 +8,7 @@ import 'package:fouta_app/screens/account_settings_screen.dart';
 import 'package:fouta_app/screens/data_saver_screen.dart';
 import 'package:fouta_app/screens/privacy_settings_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:fouta_app/services/theme_provider.dart';
+import 'package:fouta_app/theme/theme_controller.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 
 class UnifiedSettingsScreen extends StatefulWidget {
@@ -219,30 +219,36 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
           
           _buildSectionHeader('APP'),
 
-          // Theme mode selection using ThemeProvider.
-          Builder(
-            builder: (context) {
-              return Consumer<ThemeProvider>(
-                builder: (context, themeProvider, _) {
-                  return ListTile(
+          // Theme mode selection using ThemeController.
+          Consumer<ThemeController>(
+            builder: (context, controller, _) {
+              return Column(
+                children: [
+                  ListTile(
                     leading: const Icon(Icons.dark_mode_outlined),
-                    title: const Text('Theme Mode'),
-                    subtitle: const Text('Auto, Light, or Dark'),
-                    trailing: DropdownButton<ThemeMode>(
-                      value: themeProvider.themeMode,
-                      onChanged: (mode) {
-                        if (mode != null) {
-                          themeProvider.setThemeMode(mode);
-                        }
-                      },
-                      items: const [
-                        DropdownMenuItem(value: ThemeMode.system, child: Text('Auto')),
-                        DropdownMenuItem(value: ThemeMode.light, child: Text('Light')),
-                        DropdownMenuItem(value: ThemeMode.dark, child: Text('Dark')),
-                      ],
-                    ),
-                  );
-                },
+                    title: const Text('Theme: Auto'),
+                    trailing: controller.themeMode == ThemeMode.system
+                        ? const Icon(Icons.check)
+                        : null,
+                    onTap: () => controller.setMode(ThemeMode.system),
+                  ),
+                  ListTile(
+                    leading: const SizedBox(width: 24),
+                    title: const Text('Theme: Light'),
+                    trailing: controller.themeMode == ThemeMode.light
+                        ? const Icon(Icons.check)
+                        : null,
+                    onTap: () => controller.setMode(ThemeMode.light),
+                  ),
+                  ListTile(
+                    leading: const SizedBox(width: 24),
+                    title: const Text('Theme: Dark'),
+                    trailing: controller.themeMode == ThemeMode.dark
+                        ? const Icon(Icons.check)
+                        : null,
+                    onTap: () => controller.setMode(ThemeMode.dark),
+                  ),
+                ],
               );
             },
           ),

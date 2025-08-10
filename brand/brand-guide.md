@@ -8,6 +8,7 @@
 - Type: Inter; titles SemiBold; body Regular.
 - Motion: 120/200/300ms (fast/standard/large).
 - Accessibility: Tap ≥48dp; follow system light/dark; AA contrast on text.
-- Stories: Tap = photo; Press & hold = video (max 15s); swipe to navigate; press & hold on viewer = pause.
-(Aligned to Diaspora Pulse × Global Roots concept.) 
+- Stories: Tap = photo; Press & hold = video (max 15s); swipe to navigate; press & hold on viewer = pause. Rings: unviewed gradient green→gold; viewed grey.
+- Theme modes: Auto follows device; Light/Dark override and persist.
+(Aligned to Diaspora Pulse × Global Roots concept.)
 
