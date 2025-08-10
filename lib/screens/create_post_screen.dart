@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
 import 'package:fouta_app/utils/snackbar.dart';
+import 'package:fouta_app/utils/overlays.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 
@@ -477,10 +478,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     // Avoid showing multiple preview dialogs simultaneously
     if (_isPreviewing) return false;
     _isPreviewing = true;
-    final proceed = await showDialog<bool>(
+    final proceed = await showFoutaDialog<bool>(
       context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Preview'),
