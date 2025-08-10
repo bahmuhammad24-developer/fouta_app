@@ -175,12 +175,33 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           bottomNavigationBar: NavigationBar(
             selectedIndex: _selectedIndex,
             onDestinationSelected: _onItemTapped,
-            destinations: const [
-              NavigationDestination(icon: Icon(Icons.dynamic_feed_outlined), selectedIcon: Icon(Icons.dynamic_feed), label: 'Feed'),
-              NavigationDestination(icon: Icon(Icons.storefront_outlined),  selectedIcon: Icon(Icons.storefront),  label: 'Lumo'),
-              NavigationDestination(icon: Icon(Icons.groups_outlined),      selectedIcon: Icon(Icons.groups),      label: 'Groups'),
-              NavigationDestination(icon: Icon(Icons.event_outlined),       selectedIcon: Icon(Icons.event),       label: 'Events'),
-              NavigationDestination(icon: Icon(Icons.person_outline),       selectedIcon: Icon(Icons.person),      label: 'Profile'),
+            labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+            destinations: [
+              NavigationDestination(
+                icon: const Icon(Icons.dynamic_feed_outlined),
+                selectedIcon: const _GradientSelectedIcon(Icons.dynamic_feed),
+                label: 'Feed',
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.chat_bubble_outline),
+                selectedIcon: const _GradientSelectedIcon(Icons.chat_bubble),
+                label: 'Chat',
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.event_outlined),
+                selectedIcon: const _GradientSelectedIcon(Icons.event),
+                label: 'Events',
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.group_outlined),
+                selectedIcon: const _GradientSelectedIcon(Icons.group),
+                label: 'People',
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.person_outline),
+                selectedIcon: const _GradientSelectedIcon(Icons.person),
+                label: 'Profile',
+              ),
             ],
           ),
           body: Consumer<ConnectivityProvider>(
@@ -270,19 +291,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           label: Text('Feed'),
                         ),
                         NavigationRailDestination(
-                          icon: Icon(Icons.storefront_outlined),
-                          selectedIcon: Icon(Icons.storefront),
-                          label: Text('Lumo'),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(Icons.groups_outlined),
-                          selectedIcon: Icon(Icons.groups),
-                          label: Text('Groups'),
+                          icon: Icon(Icons.chat_bubble_outline),
+                          selectedIcon: Icon(Icons.chat_bubble),
+                          label: Text('Chat'),
                         ),
                         NavigationRailDestination(
                           icon: Icon(Icons.event_outlined),
                           selectedIcon: Icon(Icons.event),
                           label: Text('Events'),
+                        ),
+                        NavigationRailDestination(
+                          icon: Icon(Icons.group_outlined),
+                          selectedIcon: Icon(Icons.group),
+                          label: Text('People'),
                         ),
                         NavigationRailDestination(
                           icon: Icon(Icons.person_outline),
@@ -318,6 +339,42 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       default:
         return 'Fouta';
     }
+  }
+}
+
+class _GradientSelectedIcon extends StatelessWidget {
+  final IconData icon;
+  const _GradientSelectedIcon(this.icon);
+
+  @override
+  Widget build(BuildContext context) {
+    const g1 = Color(0xFF7ED6A0); // pastel green
+    const g2 = Color(0xFFF5D98B); // pastel gold
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // subtle glow
+        Container(
+          width: 36,
+          height: 36,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(color: Color(0x337ED6A0), blurRadius: 12, spreadRadius: 1),
+            ],
+          ),
+        ),
+        ShaderMask(
+          blendMode: BlendMode.srcIn,
+          shaderCallback: (Rect bounds) => const LinearGradient(
+            colors: [g1, g2],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ).createShader(bounds),
+          child: Icon(icon, size: 28, color: Colors.white),
+        ),
+      ],
+    );
   }
 }
 
