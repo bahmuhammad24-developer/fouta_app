@@ -52,14 +52,14 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, _) {
+      builder: (context, _, __) {
         return MaterialApp(
           title: 'Fouta',
 
           // Use the Material 3 themed definitions for light and dark modes
           theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),
-          themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+          themeMode: ThemeMode.system,
 
           home: const SplashScreen(),
         );
