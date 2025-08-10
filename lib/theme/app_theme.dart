@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
+  // Light stays aligned with the current palette
   static ThemeData light() {
     const primary = Color(0xFF7ED6A0); // pastel green
     const secondary = Color(0xFFF5D98B); // pastel gold
-    const tertiary = Color(0xFF2D3A8C); // deep indigo
-    const coral = Color(0xFFE85A5A); // coral red
+    const tertiary = Color(0xFF2D3A8C); // deep indigo (accent)
+    const coral = Color(0xFFE85A5A); // coral (accent)
 
     final scheme = const ColorScheme.light(
       primary: primary,
@@ -25,22 +26,30 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
+      scaffoldBackgroundColor: scheme.background,
+      canvasColor: scheme.surface,
+      appBarTheme: AppBarTheme(
+        backgroundColor: scheme.surface,
+        foregroundColor: scheme.onSurface,
+        surfaceTintColor: Colors.transparent,
+      ),
+      cardTheme: const CardTheme(surfaceTintColor: Colors.transparent),
+      dialogTheme: const DialogTheme(surfaceTintColor: Colors.transparent),
+      bottomSheetTheme: const BottomSheetThemeData(surfaceTintColor: Colors.transparent),
       navigationBarTheme: NavigationBarThemeData(
-        // We handle the glow/gradient in selectedIcon; disable the default pill.
-        indicatorColor: Colors.transparent,
-        iconTheme: MaterialStateProperty.resolveWith((states) {
-          return IconThemeData(size: states.contains(MaterialState.selected) ? 28 : 26);
-        }),
+        backgroundColor: scheme.surface,
+        indicatorColor: Colors.transparent, // keep our custom selected icon animation
         labelTextStyle: MaterialStateProperty.all(const TextStyle(fontWeight: FontWeight.w600)),
       ),
     );
   }
 
+  // Dark: deep teal backgrounds + emerald/gold accents; remove blue-ish tint
   static ThemeData dark() {
-    const primary = Color(0xFF3BAF7C);  // emerald
+    const primary = Color(0xFF3BAF7C); // emerald
     const secondary = Color(0xFFE1C376); // gold
-    const tertiary = Color(0xFF8791C5);  // muted indigo
-    const coral = Color(0xFFE2726E);     // coral
+    const tertiary = Color(0xFF8791C5); // muted indigo (subtle accent)
+    const coral = Color(0xFFE2726E); // coral
 
     final scheme = const ColorScheme.dark(
       primary: primary,
@@ -51,17 +60,28 @@ class AppTheme {
       onTertiary: Color(0xFF0B1024),
       error: coral,
       onError: Colors.black,
-      background: Color(0xFF0B1A20), // deep teal/indigo background
+      background: Color(0xFF0E1512), // deep teal, not blue
       onBackground: Color(0xFFE6ECEF),
-      surface: Color(0xFF0F2233),
+      surface: Color(0xFF101D15), // slightly lighter than background
       onSurface: Color(0xFFE4E8EA),
     );
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      navigationBarTheme: const NavigationBarThemeData(
-        indicatorColor: Colors.transparent,
+      scaffoldBackgroundColor: scheme.background,
+      canvasColor: scheme.surface,
+      appBarTheme: AppBarTheme(
+        backgroundColor: scheme.surface,
+        foregroundColor: scheme.onSurface,
+        surfaceTintColor: Colors.transparent,
+      ),
+      cardTheme: const CardTheme(surfaceTintColor: Colors.transparent),
+      dialogTheme: const DialogTheme(surfaceTintColor: Colors.transparent),
+      bottomSheetTheme: const BottomSheetThemeData(surfaceTintColor: Colors.transparent),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: scheme.surface,
+        indicatorColor: Colors.transparent, // keeps the nice glow animation you liked
       ),
     );
   }

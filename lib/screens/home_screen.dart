@@ -723,7 +723,16 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
                   children: [
                     Expanded(
                       child: StoriesTray(
-                        currentUserId: FirebaseAuth.instance.currentUser?.uid ?? '',
+                        currentUserId:
+                            FirebaseAuth.instance.currentUser?.uid ?? '',
+                        onAdd: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const CreatePostScreen(),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
