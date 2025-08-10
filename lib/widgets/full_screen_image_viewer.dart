@@ -41,10 +41,12 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
             child: Image.network(
               widget.imageUrl,
               fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => const Center(
-                child: Text(
-                  'Could not load image.',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+              errorBuilder: (context, error, stackTrace) => Center(
+                child: Builder(
+                  builder: (context) => Text(
+                    'Could not load image.',
+                    style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+                  ),
                 ),
               ),
             ),

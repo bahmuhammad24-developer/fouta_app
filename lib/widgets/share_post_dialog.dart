@@ -54,18 +54,20 @@ class _SharePostDialogState extends State<SharePostDialog> {
           width: double.infinity,
           height: 150,
           color: Theme.of(context).colorScheme.onSurface,
-          child: const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary, size: 40),
-                SizedBox(height: 8),
-                Text(
-                  'Video Preview',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 10),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+          child: Center(
+            child: Builder(
+              builder: (context) => Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary, size: 40),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Video Preview',
+                    style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 10),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ),
         );

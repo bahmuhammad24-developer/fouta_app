@@ -124,10 +124,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         child: Container(
           color: Theme.of(context).colorScheme.onSurface,
           alignment: Alignment.center,
-          child: const Text(
-            'Video unavailable. Please try again later.',
-            style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.70), fontSize: 14),
-            textAlign: TextAlign.center,
+          child: Builder(
+            builder: (context) => Text(
+              'Video unavailable. Please try again later.',
+              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.70), fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
       );
