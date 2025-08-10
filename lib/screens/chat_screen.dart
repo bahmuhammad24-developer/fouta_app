@@ -774,9 +774,14 @@ class _ChatScreenState extends State<ChatScreen> {
                       height: 100,
 
                       color: Theme.of(context).colorScheme.onSurface,
-                      child: const Center(
-                        child: Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary, size: 40),
-
+                      child: Center(
+                        child: Builder(
+                          builder: (context) => Icon(
+                            Icons.play_circle_fill,
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            size: 40,
+                          ),
+                        ),
                       ),
                     )
                   else

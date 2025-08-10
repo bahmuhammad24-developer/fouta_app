@@ -495,8 +495,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         width: 300,
                         height: 200,
                         color: Theme.of(context).colorScheme.onSurface.withOpacity(0.12),
-                        child: const Center(
-                          child: Icon(Icons.videocam, size: 64, color: Theme.of(context).colorScheme.outline),
+                        child: Center(
+                          child: Builder(
+                            builder: (context) => Icon(
+                              Icons.videocam,
+                              size: 64,
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                          ),
                         ),
                       );
                     }
@@ -665,18 +671,20 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       return Container(
         height: 200,
         color: Theme.of(context).colorScheme.onSurface,
-        child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary, size: 50),
-              SizedBox(height: 8),
-              Text(
-                'Video Preview (Not supported on Web yet)',
-                style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 12),
-                textAlign: TextAlign.center,
-              ),
-            ],
+        child: Center(
+          child: Builder(
+            builder: (context) => Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary, size: 50),
+                const SizedBox(height: 8),
+                Text(
+                  'Video Preview (Not supported on Web yet)',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 12),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -696,18 +704,20 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       return Container(
         height: 200,
         color: Theme.of(context).colorScheme.onSurface,
-        child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary, size: 50),
-              SizedBox(height: 8),
-              Text(
-                'Video Selected',
-                style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 12),
-                textAlign: TextAlign.center,
-              ),
-            ],
+        child: Center(
+          child: Builder(
+            builder: (context) => Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary, size: 50),
+                const SizedBox(height: 8),
+                Text(
+                  'Video Selected',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 12),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -736,18 +746,20 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         return Container(
           height: 200,
           color: Theme.of(context).colorScheme.onSurface,
-          child: const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary, size: 50),
-                SizedBox(height: 8),
-                Text(
-                  'Existing Video',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 12),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+          child: Center(
+            child: Builder(
+              builder: (context) => Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary, size: 50),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Existing Video',
+                    style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -793,8 +805,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           width: 150,
           height: 150,
           color: Theme.of(context).colorScheme.onSurface,
-          child: const Center(
-            child: Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary, size: 50),
+          child: Center(
+            child: Builder(
+              builder: (context) => Icon(
+                Icons.play_circle_fill,
+                color: Theme.of(context).colorScheme.onPrimary,
+                size: 50,
+              ),
+            ),
           ),
         );
       }

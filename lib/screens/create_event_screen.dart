@@ -136,17 +136,21 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: _headerImageFile != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.file(_headerImageFile!, fit: BoxFit.cover),
-                            )
-                          : const Center(child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.camera_alt, size: 40, color: Theme.of(context).colorScheme.outline),
-                              Text('Add Header Image')
-                            ],
-                          )),
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.file(_headerImageFile!, fit: BoxFit.cover),
+                              )
+                            : Center(
+                                child: Builder(
+                                  builder: (context) => Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.camera_alt, size: 40, color: Theme.of(context).colorScheme.outline),
+                                      const Text('Add Header Image'),
+                                    ],
+                                  ),
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 16),

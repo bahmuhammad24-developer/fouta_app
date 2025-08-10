@@ -172,19 +172,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ? _buildNewChatFab(context)
               : null,
 
-          bottomNavigationBar: isWide || !_isNavBarVisible
-              ? null
-              : NavigationBar(
-                  selectedIndex: _selectedIndex,
-                  onDestinationSelected: _onItemTapped,
-                  destinations: const [
-                    NavigationDestination(icon: Icon(Icons.dynamic_feed_outlined), selectedIcon: Icon(Icons.dynamic_feed), label: 'Feed'),
-                    NavigationDestination(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront), label: 'Lumo'),
-                    NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups), label: 'Groups'),
-                    NavigationDestination(icon: Icon(Icons.event_outlined), selectedIcon: Icon(Icons.event), label: 'Events'),
-                    NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
-                  ],
-                ),
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: _onItemTapped,
+            destinations: const [
+              NavigationDestination(icon: Icon(Icons.dynamic_feed_outlined), selectedIcon: Icon(Icons.dynamic_feed), label: 'Feed'),
+              NavigationDestination(icon: Icon(Icons.storefront_outlined),  selectedIcon: Icon(Icons.storefront),  label: 'Lumo'),
+              NavigationDestination(icon: Icon(Icons.groups_outlined),      selectedIcon: Icon(Icons.groups),      label: 'Groups'),
+              NavigationDestination(icon: Icon(Icons.event_outlined),       selectedIcon: Icon(Icons.event),       label: 'Events'),
+              NavigationDestination(icon: Icon(Icons.person_outline),       selectedIcon: Icon(Icons.person),      label: 'Profile'),
+            ],
+          ),
           body: Consumer<ConnectivityProvider>(
             builder: (context, connectivity, _) {
 
@@ -665,9 +663,13 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
                 // FoutaCard previously expected a [Row] child. Wrapping the
                 // stories tray in a Row maintains that contract while letting
                 // the tray widget handle its own layout.
-                child: const Row(
+                child: Row(
                   children: [
-                    Expanded(child: StoriesTray()),
+                    Expanded(
+                      child: StoriesTray(
+                        currentUserId: FirebaseAuth.instance.currentUser?.uid ?? '',
+                      ),
+                    ),
                   ],
                 ),
               ),
