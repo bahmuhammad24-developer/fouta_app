@@ -33,8 +33,8 @@ class AppTheme {
         foregroundColor: scheme.onSurface,
         surfaceTintColor: Colors.transparent,
       ),
-      cardTheme: const CardTheme(surfaceTintColor: Colors.transparent),
-      dialogTheme: const DialogTheme(surfaceTintColor: Colors.transparent),
+      cardTheme: const CardThemeData(surfaceTintColor: Colors.transparent),
+      dialogTheme: const DialogThemeData(surfaceTintColor: Colors.transparent),
       bottomSheetTheme: const BottomSheetThemeData(surfaceTintColor: Colors.transparent),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: scheme.surface,
@@ -76,8 +76,8 @@ class AppTheme {
         foregroundColor: scheme.onSurface,
         surfaceTintColor: Colors.transparent,
       ),
-      cardTheme: const CardTheme(surfaceTintColor: Colors.transparent),
-      dialogTheme: const DialogTheme(surfaceTintColor: Colors.transparent),
+      cardTheme: const CardThemeData(surfaceTintColor: Colors.transparent),
+      dialogTheme: const DialogThemeData(surfaceTintColor: Colors.transparent),
       bottomSheetTheme: const BottomSheetThemeData(surfaceTintColor: Colors.transparent),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: scheme.surface,
