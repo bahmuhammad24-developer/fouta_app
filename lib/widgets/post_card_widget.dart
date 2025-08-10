@@ -15,6 +15,7 @@ import 'package:fouta_app/screens/profile_screen.dart';
 // Use the unified MediaViewer instead of separate full screen image/video widgets
 import '../models/media_item.dart';
 import 'media/post_media.dart';
+import 'package:fouta_app/screens/media_viewer.dart';
 import 'package:fouta_app/widgets/share_post_dialog.dart';
 import 'package:fouta_app/widgets/fouta_card.dart';
 
@@ -562,10 +563,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
     if (attachments.isEmpty) return const SizedBox.shrink();
 
     final Map<String, dynamic> first = attachments.first as Map<String, dynamic>;
-    final ColorScheme scheme = Theme.of(context).colorScheme;
     final String type = first['type'] ?? 'image';
     final String url = first['url'] ?? '';
-    final String previewUrl = first['previewUrl'] ?? url;
     final String blurhash = first['blurhash'] ?? '';
     final double? aspectRatio = first['aspectRatio'] as double?;
     final bool allowAutoplay = !widget.isDataSaverOn || !widget.isOnMobileData;
@@ -576,34 +575,18 @@ class _PostCardWidgetState extends State<PostCardWidget> {
           borderRadius: BorderRadius.circular(8.0),
           child: CachedNetworkImage(
             imageUrl: url,
-
-            placeholder: (context, url) => AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Container(
-
-                color: Theme.of(context).colorScheme.surfaceVariant,
-
-                child: const Center(child: CircularProgressIndicator()),
-
-            placeholder: (context, url) => CachedNetworkImage(
-              imageUrl: previewUrl,
-              fit: BoxFit.cover,
-              placeholder: (context, url) => BlurHash(
-                hash: blurhash,
-                imageFit: BoxFit.cover,
-
-              ),
-              errorWidget: (c, u, e) => Container(color: Colors.grey[300]),
-            ),
+            fit: BoxFit.cover,
+            placeholder: (context, url) => blurhash.isNotEmpty
+                ? BlurHash(hash: blurhash, imageFit: BoxFit.cover)
+                : Container(color: Theme.of(context).colorScheme.surfaceVariant),
             errorWidget: (context, url, error) => Container(
-              height: 200,
-
               color: Theme.of(context).colorScheme.surfaceVariant,
-              child: Center(child: Icon(Icons.broken_image, color: Theme.of(context).colorScheme.outline, size: 50)),
-
+              child: Center(
+                child: Icon(Icons.broken_image,
+                    color: Theme.of(context).colorScheme.outline, size: 50),
+              ),
             ),
             width: double.infinity,
-            fit: BoxFit.cover,
           ),
         );
         break;
@@ -627,15 +610,18 @@ class _PostCardWidgetState extends State<PostCardWidget> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-
-                  // Thumbnail placeholder for video.  Currently we just show a dark
-                  // container with a play icon overlay.  In the future, we can
-                  // generate actual video thumbnails during upload.
-
-                  Container(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54)),
-                  const Center(
-                    child: Icon(Icons.play_circle_fill, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.70), size: 56),
-
+                  Container(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.54)),
+                  Center(
+                    child: Icon(Icons.play_circle_fill,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withOpacity(0.70),
+                        size: 56),
                   ),
                 ],
               ),
@@ -652,7 +638,10 @@ class _PostCardWidgetState extends State<PostCardWidget> {
           context,
           MaterialPageRoute(
             builder: (_) => MediaViewer(
-              mediaList: attachments.cast<Map<String, dynamic>>(),
+              media: attachments
+                  .whereType<Map<String, dynamic>>()
+                  .map(MediaItem.fromMap)
+                  .toList(),
               initialIndex: 0,
             ),
           ),
@@ -668,23 +657,23 @@ class _PostCardWidgetState extends State<PostCardWidget> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
-
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withOpacity(0.54),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '+${attachments.length - 1}',
-
-                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 12),
-
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontSize: 12),
                 ),
               ),
             ),
         ],
       ),
     );
-
   }
 
   void _showLikesDialog(BuildContext context, List<dynamic> likerIds) {
@@ -937,7 +926,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                     color: Theme.of(context).colorScheme.surfaceVariant,
                     borderRadius: BorderRadius.circular(12.0),
 
-                    border: Border.all(color: Theme.of(context).colorScheme.surfaceVariant!),
+                    border: Border.all(color: Theme.of(context).colorScheme.surfaceVariant),
 
                   ),
                   child: Column(
@@ -948,7 +937,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                         style: TextStyle(
                           fontSize: 13,
 
-                          color: Theme.of(context).colorScheme.outline[700],
+                          color: Theme.of(context).colorScheme.outline,
 
                           fontWeight: FontWeight.bold,
                         ),
@@ -1106,7 +1095,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                               padding: const EdgeInsets.all(8.0),
                               decoration: BoxDecoration(
 
-                                color: Theme.of(context).colorScheme.outline[100],
+                                color: Theme.of(context).colorScheme.outline,
 
                                 borderRadius: BorderRadius.circular(8.0),
                               ),

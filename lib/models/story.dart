@@ -32,6 +32,6 @@ class StoryItem {
   });
 
   /// The duration the item should be displayed.
-  Duration get effectiveDuration =>
+  Duration get displayDuration =>
       overrideDuration ?? media.duration ?? const Duration(seconds: 6);
 }

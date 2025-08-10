@@ -12,12 +12,12 @@ class MediaPrefetcher {
     switch (item.type) {
       case MediaType.image:
         await precacheImage(
-          CachedNetworkImageProvider(item.previewUrl.toString()),
+          CachedNetworkImageProvider(item.previewUrl),
           context,
         );
         break;
       case MediaType.video:
-        final controller = VideoPlayerController.networkUrl(item.previewUrl);
+        final controller = VideoPlayerController.networkUrl(Uri.parse(item.previewUrl));
         try {
           await controller.initialize();
         } finally {

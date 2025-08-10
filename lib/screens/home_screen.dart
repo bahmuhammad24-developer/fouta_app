@@ -43,10 +43,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
   bool _isNavBarVisible = true;
-  late final AnimationController _navBarController;
-  StreamSubscription? _unreadChatsSubscription;
   Stream<int>? _unreadNotificationsStream;
-  int _unreadChatsCount = 0;
   bool _showNewChatFab = true;
 
   final List<GlobalKey<NavigatorState>> _navigatorKeys = [
@@ -61,11 +58,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     _setupListeners();
-    _navBarController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-      value: 1.0,
-    );
   }
 
   void _setupListeners() {
@@ -81,20 +73,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           .snapshots()
           .map((snapshot) => snapshot.docs.length);
 
-      _unreadChatsSubscription = userRef.snapshots().listen((snapshot) {
-        if (mounted) {
-          setState(() {
-            _unreadChatsCount = (snapshot.data()?['unreadMessageCount'] ?? 0) as int;
-          });
-        }
-      });
     }
   }
 
   @override
   void dispose() {
-    _unreadChatsSubscription?.cancel();
-    _navBarController.dispose();
     super.dispose();
   }
 
@@ -116,12 +99,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   void _setNavBarVisibility(bool isVisible) {
     if (_isNavBarVisible == isVisible) return;
-    _isNavBarVisible = isVisible;
-    if (isVisible) {
-      _navBarController.forward();
-    } else {
-      _navBarController.reverse();
-    }
+    setState(() {
+      _isNavBarVisible = isVisible;
+    });
   }
 
   void _setShowNewChatFab(bool show) {
@@ -170,27 +150,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildChatIcon(BuildContext context, {required bool selected}) {
-    return badges.Badge(
-      showBadge: _unreadChatsCount > 0,
-      badgeStyle: badges.BadgeStyle(
-        badgeColor: Theme.of(context).colorScheme.error,
-      ),
-      badgeContent: Text(
-        _unreadChatsCount > 99 ? '99+' : '$_unreadChatsCount',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-        ),
-      ),
-      position: badges.BadgePosition.topEnd(top: 6, end: -12),
-      child: Icon(selected ? Icons.chat_bubble : Icons.chat_bubble_outline),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    super.build(context);
+    
     final currentUser = FirebaseAuth.instance.currentUser;
     final isWide = MediaQuery.of(context).size.width >= 900;
 
@@ -210,110 +172,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ? _buildNewChatFab(context)
               : null,
 
-          bottomNavigationBar: isWide
+          bottomNavigationBar: isWide || !_isNavBarVisible
               ? null
-              : AnimatedBuilder(
-                  animation: _navBarController,
-                  builder: (context, child) {
-                    final bottomPadding = MediaQuery.of(context).padding.bottom;
-                    const double navBarHeight = 80.0;
-                    final totalHeight = navBarHeight + bottomPadding;
-                    return SizedBox(
-                      height: totalHeight * _navBarController.value,
-                      child: Transform.translate(
-                        offset: Offset(0, totalHeight * (1 - _navBarController.value)),
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: NavigationBar(
-                    selectedIndex: _selectedIndex,
-                    onDestinationSelected: _onItemTapped,
-                    destinations: [
-                      const NavigationDestination(
-                        icon: Icon(Icons.home_outlined),
-                        selectedIcon: Icon(Icons.home),
-                        label: 'Feed',
-
-          bottomNavigationBar: AnimatedBuilder(
-            animation: _navBarController,
-            builder: (context, child) {
-              final bottomPadding = MediaQuery.of(context).padding.bottom;
-              final totalHeight = kBottomNavigationBarHeight + bottomPadding;
-              return SizedBox(
-                height: totalHeight * _navBarController.value,
-                child: Transform.translate(
-                  offset: Offset(0, totalHeight * (1 - _navBarController.value)),
-                  child: child,
-                ),
-              );
-            },
-            child: BottomNavigationBar(
-              currentIndex: _selectedIndex,
-              onTap: _onItemTapped,
-              type: BottomNavigationBarType.fixed,
-              selectedItemColor: Theme.of(context).colorScheme.primary,
-              unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
-              items: [
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.home_outlined),
-                  activeIcon: Icon(Icons.home),
-                  label: 'Feed',
-                ),
-                BottomNavigationBarItem(
-                  icon: badges.Badge(
-                    showBadge: _unreadChatsCount > 0,
-                    badgeStyle: badges.BadgeStyle(
-                      badgeColor: Theme.of(context).colorScheme.error,
-                    ),
-                    badgeContent: Text(
-                      _unreadChatsCount > 99
-                          ? '99+'
-                          : '$_unreadChatsCount',
-                      style: const TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        fontSize: 10,
-                      ),
-                    ),
-                    position: badges.BadgePosition.topEnd(top: 6, end: -12),
-                    child: const Icon(Icons.chat_bubble_outline),
-                  ),
-                  activeIcon: badges.Badge(
-                    showBadge: _unreadChatsCount > 0,
-                    badgeStyle: badges.BadgeStyle(
-                      badgeColor: Theme.of(context).colorScheme.error,
-                    ),
-                    badgeContent: Text(
-                      _unreadChatsCount > 99
-                          ? '99+'
-                          : '$_unreadChatsCount',
-                      style: const TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        fontSize: 10,
-
-                      ),
-                      NavigationDestination(
-                        icon: _buildChatIcon(context, selected: false),
-                        selectedIcon: _buildChatIcon(context, selected: true),
-                        label: 'Chats',
-                      ),
-                      const NavigationDestination(
-                        icon: Icon(Icons.event_outlined),
-                        selectedIcon: Icon(Icons.event),
-                        label: 'Events',
-                      ),
-                      const NavigationDestination(
-                        icon: Icon(Icons.people_outline),
-                        selectedIcon: Icon(Icons.people),
-                        label: 'People',
-                      ),
-                      const NavigationDestination(
-                        icon: Icon(Icons.person_outline),
-                        selectedIcon: Icon(Icons.person),
-                        label: 'Profile',
-                      ),
-                    ],
-                  ),
+              : NavigationBar(
+                  selectedIndex: _selectedIndex,
+                  onDestinationSelected: _onItemTapped,
+                  destinations: const [
+                    NavigationDestination(icon: Icon(Icons.dynamic_feed_outlined), selectedIcon: Icon(Icons.dynamic_feed), label: 'Feed'),
+                    NavigationDestination(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront), label: 'Lumo'),
+                    NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups), label: 'Groups'),
+                    NavigationDestination(icon: Icon(Icons.event_outlined), selectedIcon: Icon(Icons.event), label: 'Events'),
+                    NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
+                  ],
                 ),
           body: Consumer<ConnectivityProvider>(
             builder: (context, connectivity, _) {
@@ -395,28 +265,28 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       selectedIndex: _selectedIndex,
                       onDestinationSelected: _onItemTapped,
                       labelType: NavigationRailLabelType.selected,
-                      destinations: [
-                        const NavigationRailDestination(
-                          icon: Icon(Icons.home_outlined),
-                          selectedIcon: Icon(Icons.home),
+                      destinations: const [
+                        NavigationRailDestination(
+                          icon: Icon(Icons.dynamic_feed_outlined),
+                          selectedIcon: Icon(Icons.dynamic_feed),
                           label: Text('Feed'),
                         ),
                         NavigationRailDestination(
-                          icon: _buildChatIcon(context, selected: false),
-                          selectedIcon: _buildChatIcon(context, selected: true),
-                          label: const Text('Chats'),
+                          icon: Icon(Icons.storefront_outlined),
+                          selectedIcon: Icon(Icons.storefront),
+                          label: Text('Lumo'),
                         ),
-                        const NavigationRailDestination(
+                        NavigationRailDestination(
+                          icon: Icon(Icons.groups_outlined),
+                          selectedIcon: Icon(Icons.groups),
+                          label: Text('Groups'),
+                        ),
+                        NavigationRailDestination(
                           icon: Icon(Icons.event_outlined),
                           selectedIcon: Icon(Icons.event),
                           label: Text('Events'),
                         ),
-                        const NavigationRailDestination(
-                          icon: Icon(Icons.people_outline),
-                          selectedIcon: Icon(Icons.people),
-                          label: Text('People'),
-                        ),
-                        const NavigationRailDestination(
+                        NavigationRailDestination(
                           icon: Icon(Icons.person_outline),
                           selectedIcon: Icon(Icons.person),
                           label: Text('Profile'),
@@ -1174,7 +1044,7 @@ class _ChatListItem extends StatelessWidget {
       key: Key(chatDocId),
       direction: DismissDirection.endToStart,
       background: Container(
-        color: Theme.of(context).colorScheme.outline[700],
+        color: Theme.of(context).colorScheme.outline,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
         child: Icon(Icons.archive_outlined, color: Theme.of(context).colorScheme.onPrimary),

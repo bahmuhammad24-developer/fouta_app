@@ -89,9 +89,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     super.dispose();
   }
 
-  @override
-  bool get wantKeepAlive => true;
-
   void _showMessage(String msg) {
     if (!mounted) return;
 
@@ -708,11 +705,12 @@ class _MediaGridTile extends StatelessWidget {
               ),
               errorWidget: (context, url, error) => const Icon(Icons.error),
             ),
-            if(mediaType == 'video')
-              const Positioned(
+            if (mediaType == 'video')
+              Positioned(
                 top: 4,
                 right: 4,
-                child: Icon(Icons.play_circle_filled, color: Theme.of(context).colorScheme.onPrimary, size: 20),
+                child: Icon(Icons.play_circle_filled,
+                    color: Theme.of(context).colorScheme.onPrimary, size: 20),
               ),
           ],
         ),

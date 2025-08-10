@@ -64,14 +64,14 @@ class _MediaViewerState extends State<MediaViewer> {
               },
               itemBuilder: (context, index) {
                 final item = widget.media[index];
-                final tag = item.fullUrl.toString();
+                final tag = item.fullUrl;
                 switch (item.type) {
                   case MediaType.image:
                     return Hero(
                       tag: tag,
                       child: PhotoView(
                         imageProvider:
-                            CachedNetworkImageProvider(item.fullUrl.toString()),
+                            CachedNetworkImageProvider(item.fullUrl),
                         heroAttributes: PhotoViewHeroAttributes(tag: tag),
                       ),
                     );
@@ -80,7 +80,7 @@ class _MediaViewerState extends State<MediaViewer> {
                       child: Hero(
                         tag: tag,
                         child: VideoPlayerView(
-                          url: item.fullUrl,
+                          url: Uri.parse(item.fullUrl),
                           autoplay: index == _index,
                         ),
                       ),
