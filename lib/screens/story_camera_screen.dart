@@ -1,15 +1,7 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:camera/camera.dart';
-import 'package:image_picker/image_picker.dart';
-// Import the story creation screen widget used after capturing media.
-import 'package:fouta_app/screens/story_creation_screen.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:fouta_app/utils/snackbar.dart';
+import 'package:flutter/material.dart';
 
-/// A camera interface for creating a story. Users can tap the shutter button
-/// to take a photo or press and hold to record a video. They can also
-/// choose media from their gallery. After capturing or selecting media,
-/// the user is navigated to [StoryCreationScreen] for editing and posting.
 class StoryCameraScreen extends StatefulWidget {
   const StoryCameraScreen({super.key});
 
@@ -17,264 +9,203 @@ class StoryCameraScreen extends StatefulWidget {
   State<StoryCameraScreen> createState() => _StoryCameraScreenState();
 }
 
-class _StoryCameraScreenState extends State<StoryCameraScreen> {
-  final ImagePicker _picker = ImagePicker();
+class _StoryCameraScreenState extends State<StoryCameraScreen>
+    with WidgetsBindingObserver {
   CameraController? _controller;
-  List<CameraDescription> _cameras = [];
-  int _currentCamera = 0;
+  List<CameraDescription> _cameras = const [];
+  bool _initializing = true;
+  int _index = 0;
+
   bool _isRecording = false;
+  Timer? _timer;
+  DateTime? _recordStart;
+  double _progress = 0.0;
+  static const Duration _maxDuration = Duration(seconds: 15);
 
   @override
   void initState() {
     super.initState();
-    _initCamera();
+    WidgetsBinding.instance.addObserver(this);
+    _init();
   }
 
-  Future<void> _initCamera() async {
-    final statuses = await [Permission.camera, Permission.microphone].request();
-    final cameraGranted =
-        statuses[Permission.camera] == PermissionStatus.granted;
-    final micGranted =
-        statuses[Permission.microphone] == PermissionStatus.granted;
-    if (!cameraGranted || !micGranted) {
-      if (mounted) {
-        AppSnackBar.show(context,
-            'Camera and microphone permissions are required.',
-            isError: true);
-        Navigator.pop(context);
-      }
-      return;
-    }
-
+  Future<void> _init() async {
     try {
       _cameras = await availableCameras();
-      if (_cameras.isEmpty) return;
+      if (_cameras.isEmpty) {
+        setState(() => _initializing = false);
+        return;
+      }
       _controller = CameraController(
-        _cameras[_currentCamera],
-        ResolutionPreset.high,
+        _cameras[_index],
+        ResolutionPreset.medium,
         enableAudio: true,
       );
       await _controller!.initialize();
-      if (mounted) setState(() {});
-    } catch (e) {
-      // If the camera cannot be initialized, remain with a blank preview.
-      debugPrint('Camera init error: $e');
+    } catch (_) {
+      // handled in UI
+    } finally {
+      if (mounted) setState(() => _initializing = false);
     }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _timer?.cancel();
     _controller?.dispose();
     super.dispose();
   }
 
-  Future<void> _takePhoto() async {
-    if (_controller == null || !_controller!.value.isInitialized) return;
-    try {
-      final XFile file = await _controller!.takePicture();
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => StoryCreationScreen(
-            initialMediaPath: file.path,
-            isVideo: false,
-          ),
-        ),
-      );
-    } catch (e) {
-      debugPrint('Take photo error: $e');
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!mounted || _controller == null) return;
+    if (state == AppLifecycleState.inactive) {
+      _controller?.dispose();
+    } else if (state == AppLifecycleState.resumed) {
+      _init();
     }
   }
 
-  Future<void> _startVideoRecording() async {
-    if (_controller == null || !_controller!.value.isInitialized) return;
+  Future<void> _takePhoto() async {
+    if (_controller == null || !_controller!.value.isInitialized || _isRecording) return;
+    try {
+      final file = await _controller!.takePicture();
+      if (!mounted) return;
+      Navigator.pop(context, {'type': 'image', 'path': file.path});
+    } catch (_) {}
+  }
+
+  Future<void> _startRecording() async {
+    if (_controller == null || !_controller!.value.isInitialized || _isRecording) return;
     try {
       await _controller!.startVideoRecording();
-    } catch (e) {
-      debugPrint('Start recording error: $e');
-    }
+      _isRecording = true;
+      _recordStart = DateTime.now();
+      _progress = 0.0;
+      _timer = Timer.periodic(const Duration(milliseconds: 50), (t) async {
+        final elapsed = DateTime.now().difference(_recordStart!);
+        setState(() {
+          _progress = (elapsed.inMilliseconds /
+                  _maxDuration.inMilliseconds)
+              .clamp(0.0, 1.0);
+        });
+        if (elapsed >= _maxDuration) {
+          await _stopRecording();
+        }
+      });
+      setState(() {});
+    } catch (_) {}
   }
 
-  Future<void> _stopVideoRecording() async {
-    if (_controller == null || !_controller!.value.isRecordingVideo) return;
+  Future<void> _stopRecording() async {
+    if (_controller == null || !_controller!.value.isInitialized || !_isRecording) return;
     try {
-      final XFile file = await _controller!.stopVideoRecording();
+      final file = await _controller!.stopVideoRecording();
+      _timer?.cancel();
+      _isRecording = false;
       if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => StoryCreationScreen(
-            initialMediaPath: file.path,
-            isVideo: true,
-          ),
-        ),
-      );
-    } catch (e) {
-      debugPrint('Stop recording error: $e');
+      Navigator.pop(context, {'type': 'video', 'path': file.path});
+    } catch (_) {
+      _timer?.cancel();
+      _isRecording = false;
+      setState(() {});
     }
   }
 
-  Future<void> _pickFromGallery() async {
-    final statuses = await [Permission.photos, Permission.storage].request();
-    final photosGranted =
-        statuses[Permission.photos] == PermissionStatus.granted;
-    final storageGranted =
-        statuses[Permission.storage] == PermissionStatus.granted;
-    if (!photosGranted && !storageGranted) {
-      if (mounted) {
-        AppSnackBar.show(context, 'Photo library permission is required.',
-            isError: true);
-      }
-      return;
-    }
-
-    final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
-    if (file != null && mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => StoryCreationScreen(
-            initialMediaPath: file.path,
-            isVideo: false,
-          ),
-        ),
-      );
-    }
-  }
-
-  void _switchCamera() {
-    if (_cameras.length < 2) return;
-    _currentCamera = (_currentCamera + 1) % _cameras.length;
-    _controller?.dispose();
-    _controller = null;
-    setState(() {});
-    _initCamera();
+  Future<void> _switchCamera() async {
+    if (_cameras.length < 2 || _isRecording) return;
+    setState(() => _initializing = true);
+    _index = (_index + 1) % _cameras.length;
+    await _controller?.dispose();
+    _controller = CameraController(
+      _cameras[_index],
+      ResolutionPreset.medium,
+      enableAudio: true,
+    );
+    await _controller!.initialize();
+    if (mounted) setState(() => _initializing = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.onSurface,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: (_controller != null && _controller!.value.isInitialized)
-                ? CameraPreview(_controller!)
-                : Container(color: Theme.of(context).colorScheme.onSurface),
+    final cs = Theme.of(context).colorScheme;
+    if (_initializing) {
+      return Scaffold(
+        backgroundColor: cs.background,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_controller == null || !_controller!.value.isInitialized) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Camera')),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Camera not available'),
+              const SizedBox(height: 8),
+              FilledButton(onPressed: _init, child: const Text('Try again')),
+            ],
           ),
-          // Top controls: flash, switch camera (placeholders)
+        ),
+      );
+    }
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          CameraPreview(_controller!),
           Positioned(
-            top: MediaQuery.of(context).padding.top + 16,
-            left: 16,
-            right: 16,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.flash_off, color: Theme.of(context).colorScheme.onPrimary),
-                  onPressed: () {},
-                ),
-                IconButton(
-                  icon: Icon(Icons.cameraswitch, color: Theme.of(context).colorScheme.onPrimary),
-                  onPressed: _switchCamera,
-                ),
-              ],
+            top: 48,
+            right: 24,
+            child: IconButton(
+              icon: const Icon(Icons.cameraswitch,
+                  color: Colors.white, size: 28),
+              onPressed: _switchCamera,
             ),
           ),
-          // Bottom controls: gallery and shutter button
           Positioned(
-            bottom: 40 + MediaQuery.of(context).padding.bottom,
+            bottom: 36,
             left: 0,
             right: 0,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      iconSize: 32,
-
-                      icon: Icon(Icons.photo_library, color: Theme.of(context).colorScheme.onPrimary),
-
-                      onPressed: _pickFromGallery,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                GestureDetector(
-                  onTap: _takePhoto,
-                  onLongPressStart: (_) {
-                    setState(() => _isRecording = true);
-                    _startVideoRecording();
-                  },
-                  onLongPressEnd: (_) async {
-                    if (_isRecording) {
-                      setState(() => _isRecording = false);
-                      await _stopVideoRecording();
-                    }
-                  },
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        width: 4,
-                      ),
-                    ),
-                    child: Center(
-                      child: Container(
-                        width: 60,
-                        height: 60,
+            child: GestureDetector(
+              onTap: _takePhoto,
+              onLongPress: _startRecording,
+              onLongPressUp: _stopRecording,
+              child: SizedBox(
+                width: double.infinity,
+                child: Center(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        width: 76,
+                        height: 76,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: _isRecording ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onPrimary,
-
-                Semantics(
-                  label: 'Capture story',
-                  button: true,
-                  child: GestureDetector(
-                    onTap: _takePhoto,
-                    onLongPressStart: (_) {
-                      setState(() => _isRecording = true);
-                      _startVideoRecording();
-                    },
-                    onLongPressEnd: (_) async {
-                      if (_isRecording) {
-                        setState(() => _isRecording = false);
-                        await _stopVideoRecording();
-                      }
-                    },
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.2),
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 4,
+                          border:
+                              Border.all(color: Colors.white, width: 4),
                         ),
                       ),
-                      child: Center(
-                        child: Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _isRecording ? Colors.red : Colors.white,
+                      if (_isRecording)
+                        SizedBox(
+                          width: 90,
+                          height: 90,
+                          child: CircularProgressIndicator(
+                            value: _progress,
+                            strokeWidth: 4,
+                            backgroundColor: Colors.white24,
+                            valueColor:
+                                const AlwaysStoppedAnimation<Color>(
+                                    Colors.redAccent),
                           ),
                         ),
-                      ),
-                    ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -282,3 +213,4 @@ class _StoryCameraScreenState extends State<StoryCameraScreen> {
     );
   }
 }
+

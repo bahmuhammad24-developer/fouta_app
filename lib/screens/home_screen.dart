@@ -21,6 +21,7 @@ import 'package:flutter/widgets.dart' show ScrollDirection, AutomaticKeepAliveCl
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/chat_screen.dart';
 import 'package:fouta_app/screens/create_post_screen.dart';
+import 'package:fouta_app/screens/story_camera_screen.dart';
 import 'package:fouta_app/screens/new_chat_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:fouta_app/services/connectivity_provider.dart';
@@ -725,13 +726,28 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
                       child: StoriesTray(
                         currentUserId:
                             FirebaseAuth.instance.currentUser?.uid ?? '',
-                        onAdd: () {
-                          Navigator.push(
+                        onAdd: () async {
+                          final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const CreatePostScreen(),
-                            ),
+                                builder: (_) => const StoryCameraScreen()),
                           );
+                          if (result is Map &&
+                              result['path'] is String &&
+                              (result['path'] as String).isNotEmpty) {
+                            final path = result['path'] as String;
+                            final isVideo = result['type'] == 'video';
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CreatePostScreen(
+                                  initialImagePath: isVideo ? null : path,
+                                  initialVideoPath: isVideo ? path : null,
+                                  isStory: true,
+                                ),
+                              ),
+                            );
+                          }
                         },
                       ),
                     ),

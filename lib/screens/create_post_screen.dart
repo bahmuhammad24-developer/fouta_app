@@ -21,6 +21,9 @@ class CreatePostScreen extends StatefulWidget {
   final String? initialContent;
   final String? initialMediaUrl;
   final String? initialMediaType;
+  final String? initialImagePath;
+  final String? initialVideoPath;
+  final bool isStory;
 
   const CreatePostScreen({
     super.key,
@@ -28,6 +31,9 @@ class CreatePostScreen extends StatefulWidget {
     this.initialContent,
     this.initialMediaUrl,
     this.initialMediaType,
+    this.initialImagePath,
+    this.initialVideoPath,
+    this.isStory = false,
   });
 
   @override
@@ -74,6 +80,20 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           }
         ];
       }
+    }
+    if (widget.initialImagePath != null) {
+      final file = XFile(widget.initialImagePath!);
+      _selectedMediaFiles.add(file);
+      _mediaTypesList.add('image');
+      _videoAspectRatios.add(null);
+      _selectedMediaBytesList.add(null);
+    }
+    if (widget.initialVideoPath != null) {
+      final file = XFile(widget.initialVideoPath!);
+      _selectedMediaFiles.add(file);
+      _mediaTypesList.add('video');
+      _videoAspectRatios.add(null);
+      _selectedMediaBytesList.add(null);
     }
   }
 

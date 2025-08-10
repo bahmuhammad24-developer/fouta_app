@@ -12,5 +12,8 @@ if ! dart run tool/check_pubspec_dupes.dart | tee build/validation/pubspec_dupes
   exit 1
 fi
 
+echo "== Contrast check =="
+dart run tool/contrast_check.dart
+
 echo "== flutter pub get =="
 flutter pub get
