@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../models/story.dart';
-import '../../services/stories_service.dart';
+import '../../../models/story.dart';
+import '../data/story_repository.dart';
+import 'package:flutter/services.dart';
 
 /// Full-screen viewer for stories with basic gestures.
 class StoryViewerScreen extends StatefulWidget {
@@ -22,7 +23,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     with TickerProviderStateMixin {
   late PageController _storyController;
   late AnimationController _progress;
-  final StoriesService _service = StoriesService();
+  final StoryRepository _repo = StoryRepository();
 
   int _storyIndex = 0;
   int _itemIndex = 0;
@@ -33,6 +34,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     _storyIndex = widget.initialIndex;
     _storyController = PageController(initialPage: _storyIndex);
     _progress = AnimationController(vsync: this);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     _startCurrent();
   }
 
@@ -40,6 +42,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   void dispose() {
     _progress.dispose();
     _storyController.dispose();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
 
@@ -50,7 +53,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       ..duration = item.effectiveDuration
       ..forward(from: 0)
       ..addStatusListener(_handleStatus);
-    _service.markItemSeen(story.id, item);
+    _repo.markViewed(story.authorId, item.media.id);
   }
 
   void _handleStatus(AnimationStatus status) {

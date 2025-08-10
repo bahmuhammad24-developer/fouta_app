@@ -301,7 +301,7 @@ class _EventCard extends StatelessWidget {
                   height: 140,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
+                  progressIndicatorBuilder: (context, url, progress) => Container(
                     height: 140,
                     color: Theme.of(context).colorScheme.surfaceVariant,
                     child: const Center(child: CircularProgressIndicator()),

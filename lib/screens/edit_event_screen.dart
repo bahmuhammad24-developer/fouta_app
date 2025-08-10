@@ -209,7 +209,7 @@ class _EditEventScreenState extends State<EditEventScreen> {
         child: CachedNetworkImage(
           imageUrl: _currentHeaderImageUrl!,
           fit: BoxFit.cover,
-          placeholder: (context, url) => Container(
+          progressIndicatorBuilder: (context, url, progress) => Container(
             color: Theme.of(context).colorScheme.surfaceVariant,
             child: const Center(child: CircularProgressIndicator()),
           ),

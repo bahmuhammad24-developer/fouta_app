@@ -9,11 +9,11 @@ class Post {
   final List<MediaItem> attachments;
 
   factory Post.fromMap(String id, Map<String, dynamic> data) {
-    final attachmentList =
-        (data['attachments'] as List<dynamic>? ?? <dynamic>[])
-            .whereType<Map<String, dynamic>>()
-            .map(MediaItem.fromMap)
-            .toList();
+    final attachmentList = (data['attachments'] as List<dynamic>? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(MediaItem.fromMap)
+        .whereType<MediaItem>()
+        .toList();
     return Post(
       id: id,
       content: data['content'] as String? ?? '',

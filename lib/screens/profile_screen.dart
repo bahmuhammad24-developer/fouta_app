@@ -14,7 +14,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/chat_screen.dart';
-import 'package:fouta_app/widgets/full_screen_image_viewer.dart';
+import 'package:fouta_app/screens/fullscreen_media_viewer.dart';
+import 'package:fouta_app/models/media_item.dart';
 import 'package:fouta_app/widgets/post_card_widget.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
 import 'package:fouta_app/screens/create_post_screen.dart';
@@ -368,7 +369,17 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => FullScreenImageViewer(imageUrl: _currentProfileImageUrl),
+                    builder: (context) => FullScreenMediaViewer(
+                      items: [
+                        MediaItem(
+                          id: 'profile-image',
+                          type: MediaType.image,
+                          url: _currentProfileImageUrl,
+                        ),
+                      ],
+                      initialIndex: 0,
+                    ),
+                    fullscreenDialog: true,
                   ),
                 );
               }
@@ -699,7 +710,7 @@ class _MediaGridTile extends StatelessWidget {
             CachedNetworkImage(
               imageUrl: mediaUrl,
               fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
+              progressIndicatorBuilder: (context, url, progress) => Container(
                 color: Theme.of(context).colorScheme.surfaceVariant,
                 child: const Center(child: CircularProgressIndicator()),
               ),

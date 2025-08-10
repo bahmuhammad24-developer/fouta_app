@@ -2,7 +2,8 @@
 import 'dart:async';
 import 'package:fouta_app/services/video_cache_service.dart';
 import 'package:fouta_app/services/video_player_manager.dart';
-import 'package:fouta_app/widgets/full_screen_video_player.dart';
+import 'package:fouta_app/screens/fullscreen_media_viewer.dart';
+import 'package:fouta_app/models/media_item.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -281,10 +282,18 @@ class _DynamicVideoControls extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => FullScreenVideoPlayer(
-                          videoUrl: videoUrl,
-                          initialPosition: player.state.position,
+                        builder: (context) => FullScreenMediaViewer(
+                          items: [
+                            MediaItem(
+                              id: videoUrl,
+                              type: MediaType.video,
+                              url: videoUrl,
+                              duration: player.state.duration,
+                            ),
+                          ],
+                          initialIndex: 0,
                         ),
+                        fullscreenDialog: true,
                       ),
                     );
                   },

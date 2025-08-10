@@ -10,14 +10,15 @@ class MediaPrefetcher {
 
   Future<void> prefetch(BuildContext context, MediaItem item) async {
     switch (item.type) {
-      case MediaType.image:
-        await precacheImage(
-          CachedNetworkImageProvider(item.previewUrl),
-          context,
-        );
-        break;
-      case MediaType.video:
-        final controller = VideoPlayerController.networkUrl(Uri.parse(item.previewUrl));
+        case MediaType.image:
+          await precacheImage(
+            CachedNetworkImageProvider(item.previewUrl ?? item.url),
+            context,
+          );
+          break;
+        case MediaType.video:
+          final controller =
+              VideoPlayerController.networkUrl(Uri.parse(item.previewUrl ?? item.url));
         try {
           await controller.initialize();
         } finally {

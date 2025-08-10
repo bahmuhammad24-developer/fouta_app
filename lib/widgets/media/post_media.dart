@@ -4,7 +4,7 @@ import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'video_player_view.dart';
 
 import '../../models/media_item.dart';
-import '../../screens/media_viewer.dart';
+import '../../screens/fullscreen_media_viewer.dart';
 
 /// Renders attachments within the feed.
 class PostMedia extends StatelessWidget {
@@ -31,18 +31,14 @@ class PostMedia extends StatelessWidget {
     switch (first.type) {
       case MediaType.image:
         child = CachedNetworkImage(
-          imageUrl: first.previewUrl,
-          placeholder: (context, url) => first.blurHash != null
-              ? BlurHash(
-                  hash: first.blurHash!,
-                  imageFit: BoxFit.cover,
-                )
-              : Container(color: colorScheme.surfaceVariant),
+          imageUrl: first.previewUrl ?? first.url,
+          progressIndicatorBuilder: (context, url, progress) =>
+              Container(color: colorScheme.surfaceVariant),
           fit: BoxFit.cover,
         );
         break;
       case MediaType.video:
-        child = VideoPlayerView(url: Uri.parse(first.previewUrl));
+        child = VideoPlayerView(url: Uri.parse(first.previewUrl ?? first.url));
         break;
     }
     return Semantics(
@@ -50,13 +46,17 @@ class PostMedia extends StatelessWidget {
       child: GestureDetector(
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => MediaViewer(media: media, initialIndex: 0),
+            builder: (_) => FullScreenMediaViewer(
+              items: media,
+              initialIndex: 0,
+            ),
+            fullscreenDialog: true,
           ),
         ),
         child: AspectRatio(
           aspectRatio: aspect,
           child: Hero(
-            tag: first.fullUrl,
+            tag: 'media-${first.id}',
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Stack(

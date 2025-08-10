@@ -1,43 +1,55 @@
-/* Clean, compile-safe media model that uses Strings for URLs */
 enum MediaType { image, video }
 
+/// Canonical media representation used across the app.
 class MediaItem {
+  final String id;
   final MediaType type;
-  final String thumbUrl;   // small thumbnail for lists
-  final String previewUrl; // medium size for viewer prefetch
-  final String fullUrl;    // full size
-  final double width;
-  final double height;
-  final Duration? duration; // for videos (null for images)
-  final String? blurHash;
+  final String url;
+  final String? thumbUrl;
+  final String? previewUrl;
+  final int? width;
+  final int? height;
+  final Duration? duration;
 
   const MediaItem({
+    required this.id,
     required this.type,
-    required this.thumbUrl,
-    required this.previewUrl,
-    required this.fullUrl,
-    required this.width,
-    required this.height,
+    required this.url,
+    this.thumbUrl,
+    this.previewUrl,
+    this.width,
+    this.height,
     this.duration,
-    this.blurHash,
   });
 
-  double get aspectRatio => (height == 0) ? 1 : width / height;
+  /// Aspect ratio helper.
+  double get aspectRatio {
+    if (width == null || height == null || height == 0) return 1;
+    return width! / height!;
+  }
 
-  factory MediaItem.fromMap(Map<String, dynamic> map) {
-    String _s(Object? v, [String fallback = '']) => (v ?? fallback).toString();
-    double _d(Object? v) =>
-        v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '') ?? 0.0;
+  /// Deserialize from Firestore/Map with legacy key fallbacks.
+  static MediaItem? fromMap(Map<String, dynamic>? map) {
+    if (map == null) return null;
+    String _s(Object? v) => (v ?? '').toString();
+    int? _i(Object? v) =>
+        v is num ? v.toInt() : int.tryParse(v?.toString() ?? '');
 
+    final id = _s(map['id']).isNotEmpty ? _s(map['id']) : _s(map['url']);
     final typeStr = _s(map['type']).toLowerCase();
-    final mediaType = typeStr == 'video' ? MediaType.video : MediaType.image;
+    final type = typeStr == 'video' ? MediaType.video : MediaType.image;
 
-    // Accept either fullUrl/url and previewUrl/thumbUrl gracefully
-    final thumb = _s(map['thumbUrl'].toString().isNotEmpty ? map['thumbUrl'] : map['previewUrl']);
-    final preview = _s(map['previewUrl'].toString().isNotEmpty ? map['previewUrl'] : map['thumbUrl']);
-    final full = _s(map['fullUrl'].toString().isNotEmpty ? map['fullUrl'] : map['url']);
+    // Legacy keys: imageUrl/fileUrl/url
+    final url = _s(map['url']).isNotEmpty
+        ? _s(map['url'])
+        : _s(map['imageUrl']).isNotEmpty
+            ? _s(map['imageUrl'])
+            : _s(map['fileUrl']);
+    if (url.isEmpty) return null; // skip broken items
 
-    // duration may be milliseconds, seconds, or already a Duration serialized
+    final thumb = _s(map['thumbUrl']);
+    final preview = _s(map['previewUrl']);
+
     Duration? dur;
     final rawDur = map['duration'];
     if (rawDur is int) {
@@ -50,25 +62,26 @@ class MediaItem {
     }
 
     return MediaItem(
-      type: mediaType,
-      thumbUrl: thumb,
-      previewUrl: preview.isNotEmpty ? preview : thumb,
-      fullUrl: full.isNotEmpty ? full : preview.isNotEmpty ? preview : thumb,
-      width: _d(map['width']),
-      height: _d(map['height']),
+      id: id,
+      type: type,
+      url: url,
+      thumbUrl: thumb.isNotEmpty ? thumb : null,
+      previewUrl: preview.isNotEmpty ? preview : null,
+      width: _i(map['width']),
+      height: _i(map['height']),
       duration: dur,
-      blurHash: map['blurHash'] as String?,
     );
   }
 
   Map<String, dynamic> toMap() => {
+        'id': id,
         'type': type.name,
-        'thumbUrl': thumbUrl,
-        'previewUrl': previewUrl,
-        'fullUrl': fullUrl,
-        'width': width,
-        'height': height,
-        'duration': duration?.inMilliseconds,
-        'blurHash': blurHash,
+        'url': url,
+        if (thumbUrl != null) 'thumbUrl': thumbUrl,
+        if (previewUrl != null) 'previewUrl': previewUrl,
+        if (width != null) 'width': width,
+        if (height != null) 'height': height,
+        if (duration != null) 'duration': duration!.inMilliseconds,
       };
 }
+

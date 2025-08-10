@@ -16,7 +16,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/profile_screen.dart';
 import 'package:fouta_app/widgets/chat_video_player.dart';
-import 'package:fouta_app/widgets/full_screen_image_viewer.dart';
+import 'package:fouta_app/screens/fullscreen_media_viewer.dart';
+import 'package:fouta_app/models/media_item.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:image/image.dart' as img;
 import 'package:provider/provider.dart';
@@ -426,18 +427,35 @@ class _ChatScreenState extends State<ChatScreen> {
     switch (mediaType) {
       case 'image':
         return GestureDetector(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => FullScreenImageViewer(imageUrl: mediaUrl))),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => FullScreenMediaViewer(
+                items: [
+                  MediaItem(
+                    id: mediaUrl,
+                    type: MediaType.image,
+                    url: mediaUrl,
+                  ),
+                ],
+                initialIndex: 0,
+              ),
+              fullscreenDialog: true,
+            ),
+          ),
           child: CachedNetworkImage(
             imageUrl: mediaUrl,
-            placeholder: (context, url) => Container(
-
-              width: 150, height: 150,
+            progressIndicatorBuilder: (context, url, progress) => Container(
+              width: 150,
+              height: 150,
               color: Theme.of(context).colorScheme.surfaceVariant,
-
               child: const Center(child: CircularProgressIndicator()),
             ),
-            errorWidget: (context, url, error) => Icon(Icons.error, color: scheme.error),
-            width: 150, height: 150, fit: BoxFit.cover,
+            errorWidget: (context, url, error) =>
+                Icon(Icons.error, color: scheme.error),
+            width: 150,
+            height: 150,
+            fit: BoxFit.cover,
           ),
         );
       case 'video':
