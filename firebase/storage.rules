@@ -1,0 +1,61 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function authed() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return authed() && request.auth.uid == uid;
+    }
+    // NOTE: this path points at Firestore 'chats' with a hard-coded appId.
+    // If you use multiple appIds, consider adding {appId} in your storage path too.
+    function isChatMember(chatId) {
+      return authed() &&
+        (request.auth.uid in
+          get(/databases/(default)/documents/artifacts/fouta-app/public/data/chats/$(chatId)).data.participants);
+    }
+
+    // Block by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    /* Profile pictures (owner only) */
+    match /profile_images/{userId}/{fileName} {
+      allow read, write: if isOwner(userId);
+    }
+
+    /* Feed images & videos */
+    match /images/{userId}/{fileName} {
+      allow read:  if authed();
+      allow write: if isOwner(userId);
+    }
+    match /videos/{userId}/{fileName} {
+      allow read:  if authed();
+      allow write: if isOwner(userId);
+    }
+
+    /* Stories media (new + legacy paths) */
+    match /stories/{userId}/{fileName} {
+      allow read:  if authed();
+      allow write: if isOwner(userId);
+    }
+    match /stories_media/{userId}/{fileName} {
+      allow read:  if authed();
+      allow write: if isOwner(userId);
+    }
+
+    /* Event headers (kept as-is but centralized here) */
+    match /event_headers/{eventId}/{fileName} {
+      allow read:  if true;
+      allow write: if authed() &&
+        get(/databases/(default)/documents/artifacts/fouta-app/public/data/events/$(eventId)).data.creatorId == request.auth.uid;
+    }
+
+    /* Chat attachments — members only */
+    match /chat_media/{chatId}/{filePath=**} {
+      allow read, write: if isChatMember(chatId);
+    }
+  }
+}
