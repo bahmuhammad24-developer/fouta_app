@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../models/story.dart';
+import '../../../models/media_item.dart';
 import '../data/story_repository.dart';
 import 'package:flutter/services.dart';
 
@@ -50,7 +51,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     final story = widget.stories[_storyIndex];
     final item = story.items[_itemIndex];
     _progress
-      ..duration = item.effectiveDuration
+      ..duration = _slideDuration(item)
       ..forward(from: 0)
       ..addStatusListener(_handleStatus);
     _repo.markViewed(story.authorId, item.media.id);
@@ -60,6 +61,15 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     if (status == AnimationStatus.completed) {
       _nextItem();
     }
+  }
+
+  Duration _slideDuration(StoryItem item) {
+    // Prefer an explicit duration on the slide/media; fallback to 6s for images.
+    final d = item.media.duration;
+    if (d != null) return d;
+    return item.media.type == MediaType.video
+        ? const Duration(seconds: 15) // safety cap if unknown
+        : const Duration(seconds: 6);
   }
 
   void _nextItem() {

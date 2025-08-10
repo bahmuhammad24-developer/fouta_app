@@ -68,6 +68,9 @@ class StoriesTray extends StatelessWidget {
     final hasSeen = story.seen;
     final label =
         '${story.authorId} story, ${hasSeen ? 'seen' : 'unread'}, posted ${_relativeTime(story.postedAt)}';
+    final thumb = story.items.isNotEmpty
+        ? (story.items.first.media.thumbUrl ?? story.items.first.media.url)
+        : null;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Semantics(
@@ -90,9 +93,7 @@ class StoriesTray extends StatelessWidget {
                 ),
                 child: ClipOval(
                   child: Image.network(
-                    story.items.isNotEmpty
-                        ? story.items.first.media.thumbUrl
-                        : '',
+                    thumb ?? '',
                     fit: BoxFit.cover,
                     errorBuilder: (context, _, __) =>
                         Container(color: cs.surfaceVariant),

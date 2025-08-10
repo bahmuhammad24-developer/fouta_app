@@ -21,25 +21,22 @@ class FullScreenMediaViewer extends StatefulWidget {
 class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
   late final PageController _pageController;
   bool _showUi = true;
-  final Map<int, Player> _players = {};
-  final Map<int, VideoController> _controllers = {};
+  late final Player _player = Player();
+  late final VideoController _videoController = VideoController(_player);
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: widget.initialIndex);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    final item = widget.items[widget.initialIndex];
+    _player.open(Media(item.url), play: true);
   }
 
   @override
   void dispose() {
-    for (final controller in _controllers.values) {
-      controller.dispose();
-    }
-    for (final player in _players.values) {
-      player.dispose();
-    }
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    _player.dispose(); // Dispose player
     super.dispose();
   }
 
@@ -51,19 +48,20 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
       backgroundColor: Colors.black,
       body: PageView.builder(
         controller: _pageController,
+        onPageChanged: _openIndex,
         itemCount: widget.items.length,
         itemBuilder: (context, index) {
           final item = widget.items[index];
           return Hero(
             tag: 'media-${item.id}',
-            child: _buildItem(item, index),
+            child: _buildItem(item),
           );
         },
       ),
     );
   }
 
-  Widget _buildItem(MediaItem item, int index) {
+  Widget _buildItem(MediaItem item) {
     switch (item.type) {
       case MediaType.image:
         return GestureDetector(
@@ -74,31 +72,30 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
           ),
         );
       case MediaType.video:
-        final player = _players[index] ?? Player();
-        _players[index] = player;
-        final controller = _controllers[index] ?? VideoController(player);
-        _controllers[index] = controller;
-        if (player.state.media?.uri != item.url) {
-          player.open(Media(item.url));
-        }
         return GestureDetector(
           onTap: _toggleUi,
           onLongPress: () {
-            final rate = player.state.rate == 1.0 ? 2.0 : 1.0;
-            player.setRate(rate);
+            final rate = _player.state.rate == 1.0 ? 2.0 : 1.0;
+            _player.setRate(rate);
           },
           child: Stack(
             alignment: Alignment.center,
             children: [
-              Video(controller: controller, fit: BoxFit.contain),
-              if (_showUi) _buildVideoOverlay(player),
+              Video(controller: _videoController, fit: BoxFit.contain),
+              if (_showUi) _buildVideoOverlay(),
             ],
           ),
         );
     }
   }
 
-  Widget _buildVideoOverlay(Player player) {
+  void _openIndex(int index) {
+    final item = widget.items[index];
+    _player.open(Media(item.url), play: true);
+  }
+
+  Widget _buildVideoOverlay() {
+    final player = _player;
     return SafeArea(
       child: Column(
         children: [

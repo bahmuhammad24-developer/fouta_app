@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../main.dart' show APP_ID;
@@ -21,15 +22,21 @@ class BugReporter {
   /// Capture the current app as a PNG screenshot.
   static Future<Uint8List?> capturePng(BuildContext context) async {
     try {
-      final boundary =
-          repaintBoundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary == null) return null;
-      final image = await boundary.toImage(
-        pixelRatio: MediaQuery.of(context).devicePixelRatio,
-      );
+      await Future.delayed(const Duration(milliseconds: 16));
+      final buildContext = repaintBoundaryKey.currentContext;
+      if (buildContext == null) return null;
+      final renderObject = buildContext.findRenderObject();
+      if (renderObject is! RenderRepaintBoundary) return null;
+      final boundary = renderObject as RenderRepaintBoundary;
+      if (boundary.debugNeedsPaint) {
+        await Future.delayed(const Duration(milliseconds: 20));
+      }
+      final pixelRatio = MediaQuery.of(context).devicePixelRatio;
+      final image = await boundary.toImage(pixelRatio: pixelRatio);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       return byteData?.buffer.asUint8List();
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('BUG_REPORT capture error: $e\n$st');
       return null;
     }
   }
