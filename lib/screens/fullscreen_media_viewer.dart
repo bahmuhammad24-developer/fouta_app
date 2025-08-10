@@ -72,20 +72,30 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
           ),
         );
       case MediaType.video:
-        return GestureDetector(
-          onTap: _toggleUi,
-          onLongPress: () {
-            final rate = _player.state.rate == 1.0 ? 2.0 : 1.0;
-            _player.setRate(rate);
-          },
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Video(controller: _videoController, fit: BoxFit.contain),
-              if (_showUi) _buildVideoOverlay(),
-            ],
-          ),
-        );
+          return GestureDetector(
+            onTap: _toggleUi,
+            onLongPress: () {
+              final rate = _player.state.rate == 1.0 ? 2.0 : 1.0;
+              _player.setRate(rate);
+            },
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Video(controller: _videoController, fit: BoxFit.contain),
+                IgnorePointer(
+                  ignoring: !_showUi,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 180),
+                    opacity: _showUi ? 1.0 : 0.0,
+                    child: Container(
+                      color: Colors.black.withOpacity(0.45),
+                      child: _buildVideoOverlay(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
     }
   }
 

@@ -49,6 +49,8 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
 
     showDialog(
       context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Change Password'),
@@ -104,6 +106,8 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
 
     showDialog(
       context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete Account'),

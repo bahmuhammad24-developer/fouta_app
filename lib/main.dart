@@ -21,6 +21,7 @@ import 'package:flutter/foundation.dart';
 import 'utils/log_buffer.dart';
 import 'utils/bug_reporter.dart';
 import 'widgets/report_bug_button.dart';
+import 'dev/panic_dismiss.dart';
 
 // Define a global constant for the app ID.
 const String APP_ID = 'fouta-app';
@@ -63,33 +64,35 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeController>(
       builder: (context, controller, __) {
-        return MaterialApp(
-          title: 'Fouta',
+          return MaterialApp(
+            title: 'Fouta',
 
-          // Use the Material 3 themed definitions for light and dark modes
-          theme: AppTheme.light(),
-          darkTheme: AppTheme.dark(),
-          themeMode: controller.themeMode,
+            // Use the Material 3 themed definitions for light and dark modes
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            themeMode: controller.themeMode,
 
-          builder: (context, child) => RepaintBoundary(
-            key: BugReporter.repaintBoundaryKey,
-            child: Stack(
-              children: [
-                if (child != null) child,
-                if (!kReleaseMode && kShowBugFabInDebug)
-                  Positioned(
-                    right: 16,
-                    bottom: 16,
-                    child: ReportBugButton(
-                      child: const Text('🐞'),
-                    ),
-                  ),
-              ],
+            builder: (context, child) => PanicDismiss(
+              child: RepaintBoundary(
+                key: BugReporter.repaintBoundaryKey,
+                child: Stack(
+                  children: [
+                    if (child != null) child,
+                    if (!kReleaseMode && kShowBugFabInDebug)
+                      Positioned(
+                        right: 16,
+                        bottom: 16,
+                        child: ReportBugButton(
+                          child: const Text('🐞'),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
-          ),
 
-          home: const SplashScreen(),
-        );
+            home: const SplashScreen(),
+          );
       },
     );
   }

@@ -479,7 +479,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     _isPreviewing = true;
     final proceed = await showDialog<bool>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Preview'),

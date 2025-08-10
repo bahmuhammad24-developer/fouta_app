@@ -627,6 +627,9 @@ class _ChatScreenState extends State<ChatScreen> {
     final String messageId = messageDoc.id;
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
       builder: (context) {
         return SafeArea(
           child: Padding(
