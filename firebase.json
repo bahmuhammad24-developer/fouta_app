@@ -1,43 +1,8 @@
 {
-  "flutter": {
-    "platforms": {
-      "android": {
-        "default": {
-          "projectId": "fouta-app",
-          "appId": "1:530812811944:android:25dbfdf862b9a26fd2a09d",
-          "fileOutput": "android/app/google-services.json"
-        }
-      },
-      "dart": {
-        "lib/firebase_options.dart": {
-          "projectId": "fouta-app",
-          "configurations": {
-            "android": "1:530812811944:android:25dbfdf862b9a26fd2a09d",
-            "ios": "1:530812811944:ios:9580f01b27f859eed2a09d",
-            "web": "1:530812811944:web:052e8350fe57c519d2a09d"
-          }
-        }
-      }
-    }
-  },
   "firestore": {
-    "rules": "firestore.rules"
+    "rules": "firebase/firestore.rules"
   },
-  "functions": [
-    {
-      "source": "functions",
-      "codebase": "default",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log",
-        "*.local"
-      ]
-    }
-  ]
-  ,
-  "firestore": {
-    "rules": "firestore.rules"
+  "storage": {
+    "rules": "firebase/storage.rules"
   }
 }
