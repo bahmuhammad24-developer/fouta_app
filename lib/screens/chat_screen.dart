@@ -463,7 +463,7 @@ class _ChatScreenState extends State<ChatScreen> {
             margin: const EdgeInsets.only(right: 4, top: 4),
             decoration: BoxDecoration(
 
-              color: reactedByMe ? Theme.of(context).colorScheme.secondary[50] : Theme.of(context).colorScheme.surfaceVariant,
+              color: reactedByMe ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.surfaceVariant,
 
               borderRadius: BorderRadius.circular(12),
             ),
@@ -508,7 +508,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
               ? Theme.of(context).colorScheme.primary
               : (Theme.of(context).brightness == Brightness.dark
-                  ? Theme.of(context).colorScheme.outline[700]
+                  ? Theme.of(context).colorScheme.outline
                   : Theme.of(context).colorScheme.surfaceVariant),
 
           borderRadius: BorderRadius.circular(16.0),

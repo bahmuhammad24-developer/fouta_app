@@ -112,16 +112,16 @@ class _SharePostDialogState extends State<SharePostDialog> {
                 Container(
                   padding: const EdgeInsets.all(8.0),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.outline[100],
+                    color: Theme.of(context).colorScheme.outline,
                     borderRadius: BorderRadius.circular(8.0),
-                    border: Border.all(color: Theme.of(context).colorScheme.surfaceVariant!),
+                    border: Border.all(color: Theme.of(context).colorScheme.surfaceVariant),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'by $originalPostAuthorDisplayName',
-                        style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline[700]),
+                        style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline),
                       ),
                       const SizedBox(height: 4),
                       if (originalPostMediaUrl.isNotEmpty)

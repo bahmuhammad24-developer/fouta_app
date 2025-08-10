@@ -31,7 +31,7 @@ class PostMedia extends StatelessWidget {
     switch (first.type) {
       case MediaType.image:
         child = CachedNetworkImage(
-          imageUrl: first.previewUrl.toString(),
+          imageUrl: first.previewUrl,
           placeholder: (context, url) => first.blurHash != null
               ? BlurHash(
                   hash: first.blurHash!,
@@ -42,7 +42,7 @@ class PostMedia extends StatelessWidget {
         );
         break;
       case MediaType.video:
-        child = VideoPlayerView(url: first.previewUrl);
+        child = VideoPlayerView(url: Uri.parse(first.previewUrl));
         break;
     }
     return Semantics(
@@ -56,7 +56,7 @@ class PostMedia extends StatelessWidget {
         child: AspectRatio(
           aspectRatio: aspect,
           child: Hero(
-            tag: first.fullUrl.toString(),
+            tag: first.fullUrl,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Stack(

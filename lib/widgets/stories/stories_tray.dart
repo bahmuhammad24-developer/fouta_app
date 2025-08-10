@@ -4,18 +4,11 @@ import '../../models/story.dart';
 
 /// Horizontal list of user stories with unread/seen indicators.
 class StoriesTray extends StatelessWidget {
+  const StoriesTray({super.key, this.stories = const [], required this.currentUserId, this.onAdd, this.onStoryTap});
   final List<Story> stories;
   final String currentUserId;
   final VoidCallback? onAdd;
   final ValueChanged<Story>? onStoryTap;
-
-  const StoriesTray({
-    super.key,
-    required this.stories,
-    required this.currentUserId,
-    this.onAdd,
-    this.onStoryTap,
-  });
 
   @override
   Widget build(BuildContext context) {

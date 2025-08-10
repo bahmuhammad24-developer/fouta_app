@@ -255,8 +255,8 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
             },
           ),
           ListTile(
-            leading: Icon(Icons.delete_forever_outlined, color: Theme.of(context).colorScheme.error.shade700),
-            title: Text('Delete Account', style: TextStyle(color: Theme.of(context).colorScheme.error.shade700)),
+            leading: Icon(Icons.delete_forever_outlined, color: Theme.of(context).colorScheme.error),
+            title: Text('Delete Account', style: TextStyle(color: Theme.of(context).colorScheme.error)),
             onTap: _deleteAccount,
           ),
         ],

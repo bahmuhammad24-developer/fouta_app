@@ -1,9 +1,16 @@
+/* Clean, compile-safe media model that uses Strings for URLs */
+enum MediaType { image, video }
 
-import 'package:meta/meta.dart';
-
-/// Describes an individual media item attached to a post.
-@immutable
 class MediaItem {
+  final MediaType type;
+  final String thumbUrl;   // small thumbnail for lists
+  final String previewUrl; // medium size for viewer prefetch
+  final String fullUrl;    // full size
+  final double width;
+  final double height;
+  final Duration? duration; // for videos (null for images)
+  final String? blurHash;
+
   const MediaItem({
     required this.type,
     required this.thumbUrl,
@@ -13,116 +20,55 @@ class MediaItem {
     required this.height,
     this.duration,
     this.blurHash,
-    this.captionUrl,
   });
 
-  final MediaType type;
-  final Uri thumbUrl;
-  final Uri previewUrl;
-  final Uri fullUrl;
-  final double width;
-  final double height;
-  final double? duration;
-  final String? blurHash;
-  final Uri? captionUrl;
-
-  double get aspectRatio => width == 0 ? 1 : width / height;
+  double get aspectRatio => (height == 0) ? 1 : width / height;
 
   factory MediaItem.fromMap(Map<String, dynamic> map) {
+    String _s(Object? v, [String fallback = '']) => (v ?? fallback).toString();
+    double _d(Object? v) =>
+        v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '') ?? 0.0;
+
+    final typeStr = _s(map['type']).toLowerCase();
+    final mediaType = typeStr == 'video' ? MediaType.video : MediaType.image;
+
+    // Accept either fullUrl/url and previewUrl/thumbUrl gracefully
+    final thumb = _s(map['thumbUrl'].toString().isNotEmpty ? map['thumbUrl'] : map['previewUrl']);
+    final preview = _s(map['previewUrl'].toString().isNotEmpty ? map['previewUrl'] : map['thumbUrl']);
+    final full = _s(map['fullUrl'].toString().isNotEmpty ? map['fullUrl'] : map['url']);
+
+    // duration may be milliseconds, seconds, or already a Duration serialized
+    Duration? dur;
+    final rawDur = map['duration'];
+    if (rawDur is int) {
+      dur = Duration(milliseconds: rawDur);
+    } else if (rawDur is double) {
+      dur = Duration(milliseconds: rawDur.round());
+    } else if (rawDur is String) {
+      final ms = int.tryParse(rawDur);
+      if (ms != null) dur = Duration(milliseconds: ms);
+    }
+
     return MediaItem(
-      type: MediaType.values.firstWhere(
-        (e) => e.name == (map['type'] ?? 'image'),
-        orElse: () => MediaType.image,
-      ),
-      thumbUrl: Uri.parse((map['thumbUrl'] ?? map['url'] ?? '').toString()),
-      previewUrl: Uri.parse((map['previewUrl'] ?? map['url'] ?? '').toString()),
-      fullUrl: Uri.parse((map['fullUrl'] ?? map['url'] ?? '').toString()),
-      width: _extractWidth(map),
-      height: _extractHeight(map),
-      duration: (map['duration'] as num?)?.toDouble(),
+      type: mediaType,
+      thumbUrl: thumb,
+      previewUrl: preview.isNotEmpty ? preview : thumb,
+      fullUrl: full.isNotEmpty ? full : preview.isNotEmpty ? preview : thumb,
+      width: _d(map['width']),
+      height: _d(map['height']),
+      duration: dur,
       blurHash: map['blurHash'] as String?,
-      captionUrl:
-          map['captionUrl'] != null ? Uri.parse(map['captionUrl']) : null,
     );
   }
 
   Map<String, dynamic> toMap() => {
         'type': type.name,
-        'thumbUrl': thumbUrl.toString(),
-        'previewUrl': previewUrl.toString(),
-        'fullUrl': fullUrl.toString(),
+        'thumbUrl': thumbUrl,
+        'previewUrl': previewUrl,
+        'fullUrl': fullUrl,
         'width': width,
         'height': height,
-        if (duration != null) 'duration': duration,
-        if (blurHash != null) 'blurHash': blurHash,
-        if (captionUrl != null) 'captionUrl': captionUrl.toString(),
+        'duration': duration?.inMilliseconds,
+        'blurHash': blurHash,
       };
-}
-
-enum MediaType { image, video }
-
-double _extractWidth(Map<String, dynamic> map) {
-  final num? width = map['width'] as num?;
-  if (width != null) return width.toDouble();
-  final num? aspect = map['aspectRatio'] as num?;
-  return aspect?.toDouble() ?? 1;
-}
-
-double _extractHeight(Map<String, dynamic> map) {
-  final num? height = map['height'] as num?;
-  return height?.toDouble() ?? 1;
-
-
-/// Represents an image or video used in a story.
-class MediaItem {
-  /// URL for a small thumbnail image.
-  final String thumbUrl;
-
-  /// URL for a medium resolution preview.
-  final String previewUrl;
-
-  /// URL for the full resolution media.
-  final String url;
-
-  /// Optional BlurHash for progressive image loading.
-  final String? blurHash;
-
-  /// Original media width in pixels.
-  final double width;
-
-  /// Original media height in pixels.
-  final double height;
-
-  /// Duration for videos. `null` for images.
-  final Duration? duration;
-
-  const MediaItem({
-    required this.thumbUrl,
-    required this.previewUrl,
-    required this.url,
-    this.blurHash,
-    required this.width,
-    required this.height,
-    this.duration,
-
-// lib/models/media_item.dart
-
-class MediaItem {
-  final String id;
-  final String url;
-  final String type; // e.g. image, video, audio
-  final String? thumbnailUrl;
-  final String? previewUrl;
-  final String? blurHash;
-
-  MediaItem({
-    required this.id,
-    required this.url,
-    required this.type,
-    this.thumbnailUrl,
-    this.previewUrl,
-    this.blurHash,
-
-  });
-
 }
