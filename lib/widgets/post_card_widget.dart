@@ -12,10 +12,10 @@ import 'package:flutter_blurhash/flutter_blurhash.dart';
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/create_post_screen.dart';
 import 'package:fouta_app/screens/profile_screen.dart';
-// Use the unified MediaViewer instead of separate full screen image/video widgets
+// Use the unified FullScreenMediaViewer instead of separate full screen image/video widgets
 import '../models/media_item.dart';
 import 'media/post_media.dart';
-import 'package:fouta_app/screens/media_viewer.dart';
+import 'package:fouta_app/screens/fullscreen_media_viewer.dart';
 import 'package:fouta_app/widgets/share_post_dialog.dart';
 import 'package:fouta_app/widgets/fouta_card.dart';
 
@@ -558,7 +558,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
   //</editor-fold>
 
   /// Builds a thumbnail for a single media attachment.  Tapping the thumbnail
-  /// opens a full‑screen [MediaViewer] with all attachments for this post.
+  /// opens a full‑screen [FullScreenMediaViewer] with all attachments for this post.
   Widget _buildAttachmentThumbnail(List<dynamic> attachments) {
     if (attachments.isEmpty) return const SizedBox.shrink();
 
@@ -576,9 +576,11 @@ class _PostCardWidgetState extends State<PostCardWidget> {
           child: CachedNetworkImage(
             imageUrl: url,
             fit: BoxFit.cover,
-            placeholder: (context, url) => blurhash.isNotEmpty
-                ? BlurHash(hash: blurhash, imageFit: BoxFit.cover)
-                : Container(color: Theme.of(context).colorScheme.surfaceVariant),
+            progressIndicatorBuilder: (context, url, progress) =>
+                blurhash.isNotEmpty
+                    ? BlurHash(hash: blurhash, imageFit: BoxFit.cover)
+                    : Container(
+                        color: Theme.of(context).colorScheme.surfaceVariant),
             errorWidget: (context, url, error) => Container(
               color: Theme.of(context).colorScheme.surfaceVariant,
               child: Center(
@@ -637,13 +639,15 @@ class _PostCardWidgetState extends State<PostCardWidget> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => MediaViewer(
-              media: attachments
+            builder: (_) => FullScreenMediaViewer(
+              items: attachments
                   .whereType<Map<String, dynamic>>()
                   .map(MediaItem.fromMap)
+                  .whereType<MediaItem>()
                   .toList(),
               initialIndex: 0,
             ),
+            fullscreenDialog: true,
           ),
         );
       },

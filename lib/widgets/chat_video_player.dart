@@ -1,6 +1,5 @@
 // lib/widgets/chat_video_player.dart
 import 'package:fouta_app/services/video_cache_service.dart';
-import 'package:fouta_app/widgets/full_screen_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';

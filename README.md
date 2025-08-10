@@ -100,13 +100,13 @@ Fouta App is a cross-platform Flutter application that integrates Firebase servi
 - `profile_screen.dart`
   - Icons: edit, error, grid_on, person, photo_library, play_circle_filled
   - Colors: green, grey, white
-- `story_camera_screen.dart`
+  - `features/stories/camera/story_camera_screen.dart`
   - Icons: cameraswitch, flash_off, photo_library
   - Colors: black, white
-- `story_creation_screen.dart`
+  - `features/stories/composer/create_story_screen.dart`
   - Icons: send
   - Colors: black, white
-- `story_viewer_screen.dart`
+  - `features/stories/viewer/story_viewer_screen.dart`
   - Icons: close, delete, error, person
   - Colors: black, white, white38
 - `unified_settings_screen.dart`
@@ -124,15 +124,9 @@ Fouta App is a cross-platform Flutter application that integrates Firebase servi
 - `fouta_card.dart`
   - Icons: None
   - Colors: black
-- `full_screen_image_viewer.dart`
-  - Icons: None
-  - Colors: black, white
-- `full_screen_video_player.dart`
-  - Icons: close
-  - Colors: black, white
-- `media_viewer.dart`
-  - Icons: broken_image, play_circle_fill
-  - Colors: black, white, white54
+  - `fullscreen_media_viewer.dart`
+    - Icons: pause_circle, play_circle
+    - Colors: black, white
 - `post_card_widget.dart`
   - Icons: broken_image, comment, favorite_border, person, play_circle_fill, repeat, send, share
   - Colors: black, black54, grey, white, white70

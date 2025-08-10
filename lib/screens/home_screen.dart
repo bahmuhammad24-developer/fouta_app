@@ -21,7 +21,9 @@ import 'package:flutter/widgets.dart' show ScrollDirection, AutomaticKeepAliveCl
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/chat_screen.dart';
 import 'package:fouta_app/screens/create_post_screen.dart';
-import 'package:fouta_app/screens/story_camera_screen.dart';
+import 'package:fouta_app/features/stories/camera/story_camera_screen.dart';
+import 'package:fouta_app/features/stories/composer/create_story_screen.dart';
+import 'package:fouta_app/features/stories/viewer/story_viewer_screen.dart';
 import 'package:fouta_app/screens/new_chat_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:fouta_app/services/connectivity_provider.dart';
@@ -32,6 +34,7 @@ import 'package:fouta_app/widgets/fouta_button.dart';
 import 'package:fouta_app/widgets/fouta_card.dart';
 import 'package:fouta_app/widgets/skeletons/feed_skeleton.dart';
 import 'package:fouta_app/utils/snackbar.dart';
+import 'package:fouta_app/models/story.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -740,14 +743,24 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => CreatePostScreen(
+                                builder: (_) => CreateStoryScreen(
                                   initialImagePath: isVideo ? null : path,
                                   initialVideoPath: isVideo ? path : null,
-                                  isStory: true,
                                 ),
                               ),
                             );
                           }
+                        },
+                        onStoryTap: (Story story) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => StoryViewerScreen(
+                                stories: [story],
+                              ),
+                              fullscreenDialog: true,
+                            ),
+                          );
                         },
                       ),
                     ),

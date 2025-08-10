@@ -23,7 +23,7 @@
 - group_member_selection_screen.dart
 - group_setup_screen.dart
 - home_screen.dart (also defines `FeedTab`, `ChatsTab`, `PeopleTab`)
-- media_viewer.dart
+- fullscreen_media_viewer.dart
 - new_chat_screen.dart
 - notification_permission_screen.dart
 - notifications_screen.dart
@@ -31,10 +31,7 @@
 - privacy_settings_screen.dart
 - profile_screen.dart
 - splash_screen.dart
-- story_camera_screen.dart
-- story_creation_screen.dart *(unused)*
-- story_viewer_screen.dart *(export wrapper)*
-- stories/story_viewer_screen.dart *(unused)*
+- features/stories/camera/story_camera_screen.dart
 - unified_settings_screen.dart
 
 ## Widgets
@@ -49,8 +46,6 @@
 - chat_video_player.dart
 - fouta_button.dart
 - fouta_card.dart
-- full_screen_image_viewer.dart
-- full_screen_video_player.dart
 - media/post_media.dart
 - media/video_player_view.dart
 - post_card_widget.dart
@@ -86,17 +81,17 @@
   - 2 → `EventsListScreen`
   - 3 → `PeopleTab`
   - 4 → `ProfileScreen`
-- `StoriesTray` displayed in feed; tapping add opens `StoryCameraScreen` then `CreatePostScreen` with `isStory` flag【F:lib/screens/home_screen.dart†L720-L752】【F:lib/screens/home_screen.dart†L740-L748】
+- `StoriesTray` displayed in feed; tapping add opens `StoryCameraScreen` then `CreateStoryScreen`【F:lib/screens/home_screen.dart†L724-L744】
 
-## Story Feature Files
-- **Camera:** `story_camera_screen.dart`
-- **Composer:** `story_creation_screen.dart` *(unused)*
-- **Viewer:** `stories/story_viewer_screen.dart` *(unused, exported by `story_viewer_screen.dart`)*
+-## Story Feature Files
+- **Camera:** `features/stories/camera/story_camera_screen.dart`
+- **Composer:** `features/stories/composer/create_story_screen.dart`
+- **Viewer:** `features/stories/viewer/story_viewer_screen.dart`
 - **Tray Widget:** `widgets/stories/stories_tray.dart`
-- **Client Service:** `services/stories_service.dart`
+- **Repository:** `features/stories/data/story_repository.dart`
 - **Models:** `models/story.dart`, `models/story_model.dart`
 - **Firestore path:** `utils/firestore_paths.dart` → `stories()`【F:lib/utils/firestore_paths.dart†L17-L18】
-- **Storage path:** `story_creation_screen.dart` writes to `stories/{uid}/{timestamp}` in Firebase Storage【F:lib/screens/story_creation_screen.dart†L106-L122】
+- **Storage path:** `features/stories/composer/create_story_screen.dart` writes to `stories/{uid}/{timestamp}` in Firebase Storage【F:lib/features/stories/composer/create_story_screen.dart†L139-L166】
 - **Security rules:** `firebase/storage.rules` allow read/write for `/stories` and legacy `/stories_media` paths【F:firebase/storage.rules†L39-L47】
 
 ## Theme
@@ -105,7 +100,7 @@
 
 ## TODOs & Dead Code
 - TODOs in chat message bubble, chat composer, and stories service【F:lib/widgets/chat/message_bubble.dart†L40-L45】【F:lib/widgets/chat/chat_composer.dart†L40-L64】【F:lib/services/stories_service.dart†L11-L15】
-- Unused: `story_creation_screen.dart`, `stories/story_viewer_screen.dart`, `compat/theme_compat.dart`
+- Unused: `compat/theme_compat.dart`
 
 ## Build & Firebase Config
 - No Android/iOS product flavors; only `debug` and `release` build types in `android/app/build.gradle.kts`【F:android/app/build.gradle.kts†L69-L79】
@@ -114,7 +109,7 @@
 
 ## Duplicate Classes & Overlapping Rules
 - `Story` class defined in both `models/story.dart` and `models/story_model.dart` with differing shapes【F:lib/models/story.dart†L4-L27】【F:lib/models/story_model.dart†L1-L24】
-- Export wrappers duplicate file names for `story_viewer_screen.dart`, `stories_tray.dart`, `chat_message_bubble.dart`
+- Export wrappers duplicate file names for `stories_tray.dart`, `chat_message_bubble.dart`
 - Storage rules include overlapping story paths `/stories` and legacy `/stories_media`【F:firebase/storage.rules†L39-L47】
 
 

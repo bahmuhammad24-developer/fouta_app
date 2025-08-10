@@ -118,8 +118,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       ? CachedNetworkImage(
                           imageUrl: headerImageUrl,
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                                color: Theme.of(context).colorScheme.surfaceVariant,
+                          progressIndicatorBuilder: (context, url, progress) =>
+                              Container(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceVariant,
                                 child: const Center(
                                     child: CircularProgressIndicator()),
                               ),

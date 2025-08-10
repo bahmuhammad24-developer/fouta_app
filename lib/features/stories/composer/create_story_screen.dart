@@ -10,36 +10,34 @@ import 'package:fouta_app/utils/firestore_paths.dart';
 import 'package:fouta_app/utils/video_controller_extensions.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 
-/// Screen used to create and post a story.
-///
-/// Displays a preview of the media captured from the camera or gallery and
-/// allows the user to submit it.
-class StoryCreationScreen extends StatefulWidget {
-  /// Path to the media chosen or captured by the user.
-  final String initialMediaPath;
+/// Composer for creating and publishing a story slide.
+class CreateStoryScreen extends StatefulWidget {
+  final String? initialImagePath;
+  final String? initialVideoPath;
+  final String? initialCaption;
 
-  /// Whether the media is a video.
-  final bool isVideo;
-
-  StoryCreationScreen({
-    Key? key,
-    required this.initialMediaPath,
-    required this.isVideo,
-  }) : super(key: key ?? ValueKey(initialMediaPath));
+  const CreateStoryScreen({
+    super.key,
+    this.initialImagePath,
+    this.initialVideoPath,
+    this.initialCaption,
+  });
 
   @override
-  State<StoryCreationScreen> createState() => _StoryCreationScreenState();
+  State<CreateStoryScreen> createState() => _CreateStoryScreenState();
 }
 
-class _StoryCreationScreenState extends State<StoryCreationScreen> {
+class _CreateStoryScreenState extends State<CreateStoryScreen> {
   Player? _player;
   VideoController? _controller;
   bool _isUploading = false;
+  late final TextEditingController _captionController;
 
   @override
   void initState() {
     super.initState();
-    if (widget.isVideo) {
+    _captionController = TextEditingController(text: widget.initialCaption ?? '');
+    if (widget.initialVideoPath != null) {
       _initializeVideo();
     }
   }
@@ -49,7 +47,7 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
     try {
       // `media_kit` interprets bare paths as remote URLs, yielding a black
       // preview. Prefix with `file://` so it knows the source is local.
-      final uri = Uri.file(widget.initialMediaPath).toString();
+      final uri = Uri.file(widget.initialVideoPath!).toString();
       await _player!.open(Media(uri));
       await _player!.play();
       if (!mounted) return;
@@ -65,23 +63,25 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
   void dispose() {
     _controller?.dispose();
     _player?.dispose();
+    _captionController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     Widget preview;
-    if (widget.isVideo) {
+    final isVideo = widget.initialVideoPath != null;
+    if (isVideo) {
       preview = (_controller != null)
           ? Video(
-              key: ValueKey(widget.initialMediaPath),
+              key: ValueKey(widget.initialVideoPath),
               controller: _controller!,
               fit: BoxFit.contain,
             )
           : CircularProgressIndicator(color: Theme.of(context).colorScheme.onPrimary);
     } else {
       preview = Image.file(
-        File(widget.initialMediaPath),
+        File(widget.initialImagePath ?? ''),
         fit: BoxFit.contain,
       );
     }
@@ -91,10 +91,24 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
         title: const Text('Create Story'),
       ),
       backgroundColor: Theme.of(context).colorScheme.onSurface,
-      body: Center(
-        child: _isUploading
-            ? CircularProgressIndicator(color: Theme.of(context).colorScheme.onPrimary)
-            : preview,
+      body: Column(
+        children: [
+          Expanded(
+            child: Center(
+              child: _isUploading
+                  ? CircularProgressIndicator(
+                      color: Theme.of(context).colorScheme.onPrimary)
+                  : preview,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _captionController,
+              decoration: const InputDecoration(hintText: 'Say something...'),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _isUploading ? null : _uploadStory,
@@ -115,13 +129,15 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
 
     setState(() => _isUploading = true);
     try {
-      final mediaFile = File(widget.initialMediaPath);
-      final String ext = widget.isVideo ? 'mp4' : 'jpg';
+      final String path = widget.initialVideoPath ?? widget.initialImagePath ?? '';
+      final mediaFile = File(path);
+      final bool isVideo = widget.initialVideoPath != null;
+      final String ext = isVideo ? 'mp4' : 'jpg';
       final String storagePath =
           'stories/${user.uid}/${DateTime.now().millisecondsSinceEpoch}.$ext';
       final ref = FirebaseStorage.instance.ref().child(storagePath);
       final metadata = SettableMetadata(
-        contentType: widget.isVideo ? 'video/mp4' : 'image/jpeg',
+        contentType: isVideo ? 'video/mp4' : 'image/jpeg',
       );
       final uploadTask = ref.putFile(mediaFile, metadata);
       await uploadTask;
@@ -168,7 +184,7 @@ class _StoryCreationScreenState extends State<StoryCreationScreen> {
       await storyDoc.collection('slides').add({
         'authorId': user.uid,
         'mediaUrl': mediaUrl,
-        'mediaType': widget.isVideo ? 'video' : 'image',
+        'mediaType': isVideo ? 'video' : 'image',
         'createdAt': FieldValue.serverTimestamp(),
         'viewers': [],
       });
