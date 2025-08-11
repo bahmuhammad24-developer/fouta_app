@@ -70,7 +70,7 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
     }
     final me =
         widget.stories.firstWhere((o) => o.authorId == widget.currentUserId,
-            orElse: () => const Story(
+            orElse: () => Story(
                 id: '',
                 authorId: '',
                 postedAt: DateTime.fromMillisecondsSinceEpoch(0),

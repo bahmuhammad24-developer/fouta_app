@@ -14,6 +14,7 @@ import 'package:fouta_app/screens/unified_settings_screen.dart';
 import 'package:fouta_app/widgets/stories_tray.dart';
 import 'package:fouta_app/devtools/diagnostics_panel.dart';
 import 'package:fouta_app/utils/date_utils.dart';
+import 'package:fouta_app/models/media_item.dart';
 import 'dart:async';
 import 'package:badges/badges.dart' as badges;
 // Explicitly import ScrollDirection enum for userScrollDirection checks
@@ -52,6 +53,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   bool _isNavBarVisible = true;
   Stream<int>? _unreadNotificationsStream;
   bool _showNewChatFab = true;
+  int _titleTapCount = 0;
 
   final List<GlobalKey<NavigatorState>> _navigatorKeys = [
     GlobalKey<NavigatorState>(),
@@ -116,6 +118,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     setState(() {
       _showNewChatFab = show;
     });
+  }
+
+  void _openDiagnostics() {
+    if (!kDebugMode) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => DiagnosticsPanel()),
+    );
   }
 
   void _onItemTapped(int index) {
@@ -225,6 +234,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   return <Widget>[
                     SliverAppBar(
                       title: GestureDetector(
+                        onLongPress: _openDiagnostics,
                         onTap: () {
                           _titleTapCount++;
                           if (_titleTapCount >= 5) {
@@ -232,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             _openDiagnostics();
                           }
                         },
-                        child: Text(_getAppBarTitle()),
+                        child: const Text('Fouta'),
                       ),
                       // Keep the app bar visible while scrolling
                       pinned: true,
@@ -334,22 +344,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       );
   }
 
-  String _getAppBarTitle() {
-    switch (_selectedIndex) {
-      case 0:
-        return 'Fouta';
-      case 1:
-        return 'Chats';
-      case 2:
-        return 'Events';
-      case 3:
-        return 'People';
-      case 4:
-        return 'Profile';
-      default:
-        return 'Fouta';
-    }
-  }
 }
 
 class _GradientSelectedIcon extends StatelessWidget {
@@ -517,7 +511,6 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
 
   // Stories currently loaded in the feed
   List<Story> _stories = [];
-  int _titleTapCount = 0;
 
 
   bool _isDataSaverOn = true;
@@ -616,15 +609,20 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
         final typeStr = (s['type'] as String?) ?? 'image';
         final type = typeStr == 'video' ? MediaType.video : MediaType.image;
         final url = s['url'] as String? ?? '';
-        final thumb = s['thumbUrl'] as String?;
-        final dur = s['durationMs'] as int?;
+        final thumbUrl = s['thumbUrl'] as String?;
+        final width = s['width'] as int?;
+        final height = s['height'] as int?;
+        final durationMs = s['durationMs'] as int?;
         return StoryItem(
           media: MediaItem(
             id: s.id,
             type: type,
             url: url,
-            thumbUrl: thumb,
-            duration: dur != null ? Duration(milliseconds: dur) : null,
+            thumbUrl: thumbUrl,
+            width: width,
+            height: height,
+            duration:
+                durationMs != null ? Duration(milliseconds: durationMs) : null,
           ),
           createdAt: (s['createdAt'] as Timestamp?)?.toDate(),
           expiresAt: (s['expiresAt'] as Timestamp?)?.toDate(),
@@ -644,12 +642,6 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
       setState(() => _stories = owners);
       StoryDiagnostics.instance.owners = owners;
     }
-  }
-
-  void _openDiagnostics() {
-    if (!kDebugMode) return;
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-    DiagnosticsPanel.show(context, uid, onRefresh: _fetchStories);
   }
 
   Future<void> _onAddStory() async {
