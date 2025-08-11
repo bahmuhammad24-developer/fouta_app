@@ -4,9 +4,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart'
     show FirebaseStorage, SettableMetadata;
 import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:video_player/video_player.dart';
+
+import '../../../devtools/diagnostics_panel.dart';
 
 import '../../../models/story.dart';
 import '../../../models/media_item.dart';
@@ -18,7 +21,7 @@ class StoryRepository {
 
   Future<StoryItem> publishSlide(
     String userId,
-    File file,
+    XFile file,
     MediaType type, {
     String? caption,
   }) async {
@@ -27,18 +30,23 @@ class StoryRepository {
     final storageRef =
         FirebaseStorage.instance.ref().child('stories/$userId/$slideId.$ext');
 
-    await storageRef.putFile(
-      file,
-      SettableMetadata(
-        contentType: type == MediaType.video ? 'video/mp4' : 'image/jpeg',
-      ),
-    );
+    final isContent = file.path.startsWith('content://');
+    final metadata = SettableMetadata(
+        contentType: type == MediaType.video ? 'video/mp4' : 'image/jpeg');
+    if (isContent) {
+      final bytes = await file.readAsBytes();
+      await storageRef.putData(bytes, metadata);
+    } else {
+      await storageRef.putFile(File(file.path), metadata);
+    }
     final downloadUrl = await storageRef.getDownloadURL();
 
     String? thumbUrl;
     int? durationMs;
     if (type == MediaType.video) {
-      final controller = VideoPlayerController.file(file);
+      final controller = isContent
+          ? VideoPlayerController.contentUri(Uri.parse(file.path))
+          : VideoPlayerController.file(File(file.path));
       await controller.initialize();
       durationMs = controller.value.duration.inMilliseconds;
       await controller.dispose();
@@ -60,25 +68,30 @@ class StoryRepository {
       }
     }
 
-    final doc = _firestore.collection(FirestorePaths.stories()).doc(userId);
-    await doc.set({
+    final batch = _firestore.batch();
+    final ownerRef =
+        _firestore.collection(FirestorePaths.stories()).doc(userId);
+    batch.set(ownerRef, {
       'userId': userId,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
-    await doc.collection('slides').doc(slideId).set({
+    final slideRef = ownerRef.collection('slides').doc(slideId);
+    final expiresAt =
+        Timestamp.fromDate(DateTime.now().add(const Duration(hours: 24)));
+    batch.set(slideRef, {
       'type': type.name,
       'url': downloadUrl,
-      if (thumbUrl != null) 'thumbUrl': thumbUrl,
-      if (durationMs != null) 'durationMs': durationMs,
+      'thumbUrl': thumbUrl,
+      'durationMs': durationMs,
       'createdAt': FieldValue.serverTimestamp(),
-      'expiresAt': Timestamp.fromDate(
-          DateTime.now().add(const Duration(hours: 24))),
+      'expiresAt': expiresAt,
       if (caption != null) 'caption': caption,
     });
+    await batch.commit();
 
     debugPrint('[STORY] uploaded: $slideId url=$downloadUrl thumb=$thumbUrl');
 
-    return StoryItem(
+    final item = StoryItem(
       media: MediaItem(
         id: slideId,
         type: type,
@@ -89,7 +102,16 @@ class StoryRepository {
             : null,
       ),
       caption: caption,
+      createdAt: DateTime.now(),
+      expiresAt: DateTime.now().add(const Duration(hours: 24)),
     );
+    StoryDiagnostics.instance.lastPublish = PublishResult(
+      type: type.name,
+      url: downloadUrl,
+      thumbUrl: thumbUrl,
+      durationMs: durationMs,
+    );
+    return item;
   }
 
   Future<List<Story>> fetchStoriesFeed() async {

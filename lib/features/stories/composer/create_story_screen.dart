@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:fouta_app/utils/video_controller_extensions.dart';
@@ -132,12 +133,11 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     try {
       final String path =
           widget.initialVideoPath ?? widget.initialImagePath ?? '';
-      final mediaFile = File(path);
       final bool isVideo = widget.initialVideoPath != null;
       final repo = StoryRepository();
       final item = await repo.publishSlide(
         user.uid,
-        mediaFile,
+        XFile(path),
         isVideo ? MediaType.video : MediaType.image,
         caption: _captionController.text.trim().isEmpty
             ? null
