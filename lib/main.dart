@@ -70,7 +70,7 @@ class MyApp extends StatelessWidget {
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),
             themeMode: controller.themeMode,
-            navigatorObservers: [playbackRouteObserver],
+            navigatorObservers: [PlaybackRouteObserver()],
 
             builder: (context, child) => PanicDismiss(
               child: RepaintBoundary(
