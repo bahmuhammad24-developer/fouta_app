@@ -161,16 +161,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final currentUser = FirebaseAuth.instance.currentUser;
     final isWide = MediaQuery.of(context).size.width >= 900;
 
-    return PopScope(
-      canPop: false,
-      onPopInvoked: (didPop) async {
-        if (didPop) return;
-        final navigator = _navigatorKeys[_selectedIndex].currentState;
-        if (navigator != null && navigator.canPop()) {
-          navigator.pop();
+    return WillPopScope(
+      onWillPop: () async {
+        if (_selectedIndex != 0) {
+          setState(() => _selectedIndex = 0);
+          return false; // handled here; do not pop the route
         }
+        return true; // on first tab → allow system back
       },
-        child: Scaffold(
+      child: Scaffold(
           endDrawer: _AppDrawer(showMessage: _showMessage),
           // Show the New Chat FAB only on the chats list screen
           floatingActionButton: (_selectedIndex == 1 && _showNewChatFab)
@@ -312,7 +311,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               );
             },
           ),
-        );
+        ),
+      );
   }
 
   String _getAppBarTitle() {
