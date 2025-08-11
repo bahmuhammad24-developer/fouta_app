@@ -9,10 +9,7 @@
     <application
         android:label="fouta_app"
         android:name="${applicationName}"
-        android:icon="@mipmap/launcher_icon">
-	android:name="io.flutter.app.FlutterApplication"
-        android:label="fouta_app"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/launcher_icon"
         android:enableOnBackInvokedCallback="true">
         <activity
             android:name=".MainActivity"

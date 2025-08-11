@@ -1,30 +1,58 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../models/story.dart';
 import '../../../models/media_item.dart';
+import '../../../utils/firestore_paths.dart';
 
 /// Minimal Firestore backed repository for story operations.
 class StoryRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<void> publishSlide(
+  Future<StoryItem> publishSlide(
     String userId,
     MediaItem media, {
     String? caption,
   }) async {
-    final doc = _firestore.collection('stories').doc(userId);
+    final slideId = const Uuid().v4();
+    final ext = media.type == MediaType.video ? 'mp4' : 'jpg';
+    final storagePath = 'stories/$userId/$slideId.$ext';
+    final storageRef = FirebaseStorage.instance.ref().child(storagePath);
+
+    // Upload the file pointed to by [media.url].
+    await storageRef.putFile(File(media.url));
+    final downloadUrl = await storageRef.getDownloadURL();
+
+    final doc =
+        _firestore.collection(FirestorePaths.stories()).doc(userId);
     await doc.set({
       'userId': userId,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
-    await doc.collection('slides').add({
+    await doc.collection('slides').doc(slideId).set({
       'type': media.type.name,
-      'url': media.url,
-      'thumbUrl': media.thumbUrl,
-      'durationMs': media.duration?.inMilliseconds,
+      'url': downloadUrl,
+      if (media.thumbUrl != null) 'thumbUrl': media.thumbUrl,
+      if (media.duration != null) 'durationMs': media.duration!.inMilliseconds,
       'createdAt': FieldValue.serverTimestamp(),
-      'caption': caption,
+      'expiresAt': Timestamp.fromDate(
+          DateTime.now().add(const Duration(hours: 24))),
+      if (caption != null) 'caption': caption,
     });
+
+    return StoryItem(
+      media: MediaItem(
+        id: slideId,
+        type: media.type,
+        url: downloadUrl,
+        thumbUrl: media.thumbUrl,
+        duration: media.duration,
+      ),
+      caption: caption,
+    );
   }
 
   Future<List<Story>> fetchStoriesFeed() async {

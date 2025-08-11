@@ -92,12 +92,14 @@ class StoriesTray extends StatelessWidget {
                   ),
                 ),
                 child: ClipOval(
-                  child: Image.network(
-                    thumb ?? '',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, _, __) =>
-                        Container(color: cs.surfaceVariant),
-                  ),
+                  child: thumb != null
+                      ? Image.network(
+                          thumb,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, _, __) =>
+                              Container(color: cs.surfaceVariant),
+                        )
+                      : Container(color: cs.surfaceVariant),
                 ),
               ),
               if (isMe && (!showAddFirst || onAdd == null))

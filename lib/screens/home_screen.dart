@@ -126,17 +126,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
-  Widget _buildOffstageNavigator(int index, Widget child) {
-    return Offstage(
-      offstage: _selectedIndex != index,
-      child: Navigator(
-        key: _navigatorKeys[index],
-        onGenerateRoute: (routeSettings) {
-          return MaterialPageRoute(
-            builder: (context) => child,
-          );
-        },
-      ),
+  Widget _buildTabNavigator(int index, Widget child) {
+    return Navigator(
+      key: _navigatorKeys[index],
+      onGenerateRoute: (routeSettings) {
+        return MaterialPageRoute(
+          builder: (context) => child,
+        );
+      },
     );
   }
   
@@ -163,9 +160,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     return WillPopScope(
       onWillPop: () async {
+        final currentNavigator =
+            _navigatorKeys[_selectedIndex].currentState;
+        if (currentNavigator != null && currentNavigator.canPop()) {
+          currentNavigator.pop();
+          return false;
+        }
         if (_selectedIndex != 0) {
           setState(() => _selectedIndex = 0);
-          return false; // handled here; do not pop the route
+          return false;
         }
         return true; // on first tab → allow system back
       },
@@ -244,16 +247,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 body: IndexedStack(
                   index: _selectedIndex,
                   children: <Widget>[
-                    _buildOffstageNavigator(
+                    _buildTabNavigator(
                         0, FeedTab(setNavBarVisibility: _setNavBarVisibility)),
-                    _buildOffstageNavigator(
+                    _buildTabNavigator(
                         1,
                         ChatsTab(
                             setNavBarVisibility: _setNavBarVisibility,
                             setShowNewChatFab: _setShowNewChatFab)),
-                    _buildOffstageNavigator(2, const EventsListScreen()),
-                    _buildOffstageNavigator(3, const PeopleTab()),
-                    _buildOffstageNavigator(
+                    _buildTabNavigator(2, const EventsListScreen()),
+                    _buildTabNavigator(3, const PeopleTab()),
+                    _buildTabNavigator(
                         4, ProfileScreen(userId: currentUser?.uid ?? '')),
                   ],
                 ),

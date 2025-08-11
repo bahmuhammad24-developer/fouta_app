@@ -428,21 +428,16 @@ class _ChatScreenState extends State<ChatScreen> {
     switch (mediaType) {
       case 'image':
         return GestureDetector(
-          onTap: () => Navigator.push(
+          onTap: () => FullScreenMediaViewer.open(
             context,
-            MaterialPageRoute(
-              builder: (_) => FullScreenMediaViewer(
-                items: [
-                  MediaItem(
-                    id: mediaUrl,
-                    type: MediaType.image,
-                    url: mediaUrl,
-                  ),
-                ],
-                initialIndex: 0,
+            [
+              MediaItem(
+                id: mediaUrl,
+                type: MediaType.image,
+                url: mediaUrl,
               ),
-              fullscreenDialog: true,
-            ),
+            ],
+            initialIndex: 0,
           ),
           child: CachedNetworkImage(
             imageUrl: mediaUrl,

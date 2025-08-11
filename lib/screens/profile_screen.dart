@@ -367,21 +367,16 @@ class _ProfileScreenState extends State<ProfileScreen>
               if (_isEditing) {
                 _pickProfileImage();
               } else if (_currentProfileImageUrl.isNotEmpty) {
-                Navigator.push(
+                FullScreenMediaViewer.open(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => FullScreenMediaViewer(
-                      items: [
-                        MediaItem(
-                          id: 'profile-image',
-                          type: MediaType.image,
-                          url: _currentProfileImageUrl,
-                        ),
-                      ],
-                      initialIndex: 0,
+                  [
+                    MediaItem(
+                      id: 'profile-image',
+                      type: MediaType.image,
+                      url: _currentProfileImageUrl,
                     ),
-                    fullscreenDialog: true,
-                  ),
+                  ],
+                  initialIndex: 0,
                 );
               }
             } : null,

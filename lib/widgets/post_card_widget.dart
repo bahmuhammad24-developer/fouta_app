@@ -637,20 +637,12 @@ class _PostCardWidgetState extends State<PostCardWidget> {
     }
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => FullScreenMediaViewer(
-              items: attachments
-                  .whereType<Map<String, dynamic>>()
-                  .map(MediaItem.fromMap)
-                  .whereType<MediaItem>()
-                  .toList(),
-              initialIndex: 0,
-            ),
-            fullscreenDialog: true,
-          ),
-        );
+        final items = attachments
+            .whereType<Map<String, dynamic>>()
+            .map(MediaItem.fromMap)
+            .whereType<MediaItem>()
+            .toList();
+        FullScreenMediaViewer.open(context, items, initialIndex: 0);
       },
       child: Stack(
         children: [
