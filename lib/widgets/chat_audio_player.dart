@@ -1,5 +1,6 @@
 // lib/widgets/chat_audio_player.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:media_kit/media_kit.dart';
 
 class ChatAudioPlayer extends StatefulWidget {

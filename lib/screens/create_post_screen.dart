@@ -6,7 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:media_kit/media_kit.dart';
 import 'package:image/image.dart' as img;
 import 'package:provider/provider.dart';
@@ -134,16 +134,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
     XFile? pickedFile;
     try {
-      if (isVideo) {
-        final granted = await Permissions.requestMediaAccess();
-        if (!granted) {
-          _showMessage('Permission denied.');
-          return;
-        }
-        pickedFile = await _picker.pickVideo(source: source);
-      } else {
-        pickedFile = await _picker.pickImage(source: source);
+      final granted = await Permissions.requestMediaAccess();
+      if (!granted) {
+        _showMessage('Permission denied.');
+        return;
       }
+      pickedFile = isVideo
+          ? await _picker.pickVideo(source: source)
+          : await _picker.pickImage(source: source);
     } catch (e) {
       _showMessage('Error picking media: $e');
       return;
