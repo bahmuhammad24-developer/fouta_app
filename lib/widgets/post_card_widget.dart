@@ -976,7 +976,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                 ]),
               if (postType == 'original' && attachments.isEmpty && widget.post['mediaUrl'] != null && widget.post['mediaUrl'].isNotEmpty)
                 const SizedBox(height: 12),
-              const Divider(height: 20),
+              const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [

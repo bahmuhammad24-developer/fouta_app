@@ -9,6 +9,8 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:fouta_app/utils/video_controller_extensions.dart';
 import 'package:provider/provider.dart';
+import 'package:visibility_detector/visibility_detector.dart';
+import 'package:fouta_app/services/playback_coordinator.dart';
 
 class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
@@ -73,6 +75,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     setState(() {
       _player = requestedPlayer;
     });
+    PlaybackCoordinator.instance.register(_player!);
     _loadMedia();
   }
 
@@ -93,6 +96,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _player!.setPlaylistMode(PlaylistMode.single);
       _player!.setVolume(0);
       _player!.play();
+      PlaybackCoordinator.instance.setActive(_player!);
 
     } catch (e) {
       debugPrint("Error initializing video: $e");
@@ -101,6 +105,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   
   void _releasePlayer() {
     if (_player != null) {
+      PlaybackCoordinator.instance.unregister(_player!);
       _controller?.dispose();
       _playerManager.releasePlayer(widget.videoId);
       if (mounted) {
@@ -115,12 +120,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
+    Widget child;
     if (_isInitialized && _controller != null && _player != null) {
-      return _buildVideoPlayer();
-    }
-    // If no player could be acquired, show a message instead of a spinner
-    if (_player == null) {
-      return AspectRatio(
+      child = _buildVideoPlayer();
+    } else if (_player == null) {
+      child = AspectRatio(
         aspectRatio: widget.aspectRatio ?? 16 / 9,
         child: Container(
           color: Theme.of(context).colorScheme.onSurface,
@@ -134,11 +138,21 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           ),
         ),
       );
+    } else {
+      child = AspectRatio(
+        aspectRatio: widget.aspectRatio ?? 16 / 9,
+        child: _buildPlaceholder(),
+      );
     }
-    // Otherwise, show loading spinner until initialization
-    return AspectRatio(
-      aspectRatio: widget.aspectRatio ?? 16 / 9,
-      child: _buildPlaceholder(),
+
+    return VisibilityDetector(
+      key: ValueKey('vis-${widget.videoId}'),
+      onVisibilityChanged: (info) {
+        if (info.visibleFraction == 0) {
+          _player?.pause();
+        }
+      },
+      child: child,
     );
   }
 
@@ -157,19 +171,34 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              Video(
-                key: ValueKey(widget.videoId),
-                controller: _controller!,
-                controls: null,
+              GestureDetector(
+                onTap: () {
+                  if (_player == null) return;
+                  PlaybackCoordinator.instance.setActive(_player!);
+                  _player!.playOrPause();
+                },
+                child: Video(
+                  key: ValueKey(widget.videoId),
+                  controller: _controller!,
+                  controls: null,
+                ),
               ),
               StreamBuilder<bool>(
                 stream: _player!.stream.playing,
                 builder: (context, snapshot) {
                   final isPlaying = snapshot.data ?? false;
-                    if (isPlaying || widget.areControlsVisible) return const SizedBox.shrink();
-                    return IgnorePointer(
-                      child: Icon(Icons.play_arrow, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.70), size: 60.0),
-                    );
+                  if (isPlaying || widget.areControlsVisible) return const SizedBox.shrink();
+                  return GestureDetector(
+                    onTap: () {
+                      PlaybackCoordinator.instance.setActive(_player!);
+                      _player!.play();
+                    },
+                    child: Icon(
+                      Icons.play_arrow,
+                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.70),
+                      size: 60.0,
+                    ),
+                  );
                 },
               ),
             ],
