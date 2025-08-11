@@ -500,6 +500,9 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
   final VideoCacheService _videoCacheService = VideoCacheService();
   int _lastPrecachedIndex = 0;
 
+  // Stories currently loaded in the feed
+  List<Story> _stories = [];
+
 
   bool _isDataSaverOn = true;
   bool _isOnMobileData = false;

@@ -333,7 +333,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           );
           if (thumbData != null) {
             final thumbRef = FirebaseStorage.instance.ref().child('videos/${user.uid}/${baseName}_thumb.jpg');
-            await thumbRef.putData(thumbData, const SettableMetadata(contentType: 'image/jpeg'));
+            await thumbRef.putData(
+              thumbData,
+              SettableMetadata(contentType: 'image/jpeg'),
+            );
             thumbUrl = await thumbRef.getDownloadURL();
           }
 

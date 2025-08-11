@@ -1,7 +1,9 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_storage/firebase_storage.dart'
+    show FirebaseStorage, SettableMetadata;
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:uuid/uuid.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:video_player/video_player.dart';
@@ -52,7 +54,7 @@ class StoryRepository {
             .child('stories/$userId/${slideId}_thumb.jpg');
         await thumbRef.putData(
           thumbData,
-          const SettableMetadata(contentType: 'image/jpeg'),
+          SettableMetadata(contentType: 'image/jpeg'),
         );
         thumbUrl = await thumbRef.getDownloadURL();
       }
