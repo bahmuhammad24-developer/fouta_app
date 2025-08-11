@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../../models/story.dart';
 import '../../../models/media_item.dart';
@@ -30,10 +31,16 @@ class StoryRepository {
         contentType: type == MediaType.video ? 'video/mp4' : 'image/jpeg',
       ),
     );
-    final url = await storageRef.getDownloadURL();
+    final downloadUrl = await storageRef.getDownloadURL();
 
     String? thumbUrl;
+    int? durationMs;
     if (type == MediaType.video) {
+      final controller = VideoPlayerController.file(file);
+      await controller.initialize();
+      durationMs = controller.value.duration.inMilliseconds;
+      await controller.dispose();
+
       final thumbData = await VideoThumbnail.thumbnailData(
         video: file.path,
         imageFormat: ImageFormat.JPEG,
@@ -58,20 +65,26 @@ class StoryRepository {
     }, SetOptions(merge: true));
     await doc.collection('slides').doc(slideId).set({
       'type': type.name,
-      'url': url,
+      'url': downloadUrl,
       if (thumbUrl != null) 'thumbUrl': thumbUrl,
+      if (durationMs != null) 'durationMs': durationMs,
       'createdAt': FieldValue.serverTimestamp(),
       'expiresAt': Timestamp.fromDate(
           DateTime.now().add(const Duration(hours: 24))),
       if (caption != null) 'caption': caption,
     });
 
+    debugPrint('[STORY] uploaded: $slideId url=$downloadUrl thumb=$thumbUrl');
+
     return StoryItem(
       media: MediaItem(
         id: slideId,
         type: type,
-        url: url,
+        url: downloadUrl,
         thumbUrl: thumbUrl,
+        duration: durationMs != null
+            ? Duration(milliseconds: durationMs)
+            : null,
       ),
       caption: caption,
     );

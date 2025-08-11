@@ -68,9 +68,8 @@ class StoriesTray extends StatelessWidget {
     final hasSeen = story.seen;
     final label =
         '${story.authorId} story, ${hasSeen ? 'seen' : 'unread'}, posted ${_relativeTime(story.postedAt)}';
-    final thumb = story.items.isNotEmpty
-        ? (story.items.first.media.thumbUrl ?? story.items.first.media.url)
-        : null;
+    final slide = story.items.isNotEmpty ? story.items.first : null;
+    final thumb = slide?.media.thumbUrl ?? slide?.media.url;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Semantics(
