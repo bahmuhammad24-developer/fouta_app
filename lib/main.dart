@@ -17,10 +17,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 // Use the Diaspora Connection theme instead of the original Baobab theme
 import 'package:fouta_app/theme/app_theme.dart';
 import 'firebase_options.dart';
-import 'package:flutter/foundation.dart';
 import 'utils/log_buffer.dart';
 import 'utils/bug_reporter.dart';
-import 'widgets/report_bug_button.dart';
 import 'dev/panic_dismiss.dart';
 
 // Define a global constant for the app ID.
@@ -75,19 +73,7 @@ class MyApp extends StatelessWidget {
             builder: (context, child) => PanicDismiss(
               child: RepaintBoundary(
                 key: BugReporter.repaintBoundaryKey,
-                child: Stack(
-                  children: [
-                    if (child != null) child,
-                    if (!kReleaseMode && kShowBugFabInDebug)
-                      Positioned(
-                        right: 16,
-                        bottom: 16,
-                        child: ReportBugButton(
-                          child: const Text('🐞'),
-                        ),
-                      ),
-                  ],
-                ),
+                child: child!,
               ),
             ),
 

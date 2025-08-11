@@ -6,6 +6,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:photo_view/photo_view.dart';
 
 import '../models/media_item.dart';
+import 'report_bug_screen.dart';
 
 /// Full-screen viewer for a list of [MediaItem]s.
 class FullScreenMediaViewer extends StatefulWidget {
@@ -66,36 +67,32 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
       case MediaType.image:
         return GestureDetector(
           onTap: _toggleChrome,
-          child: PhotoView(
-            imageProvider: CachedNetworkImageProvider(item.url),
-            backgroundDecoration: const BoxDecoration(color: Colors.black),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              PhotoView(
+                imageProvider: CachedNetworkImageProvider(item.url),
+                backgroundDecoration: const BoxDecoration(color: Colors.black),
+              ),
+              _buildOverlay(),
+            ],
           ),
         );
       case MediaType.video:
-          return GestureDetector(
-            onTap: _toggleChrome,
-            onLongPress: () {
-              final rate = _player.state.rate == 1.0 ? 2.0 : 1.0;
-              _player.setRate(rate);
-            },
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Video(controller: _videoController, fit: BoxFit.contain),
-                IgnorePointer(
-                  ignoring: !_showChrome,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 180),
-                    opacity: _showChrome ? 1.0 : 0.0,
-                    child: Container(
-                      color: Colors.black.withOpacity(0.45),
-                      child: _buildVideoOverlay(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
+        return GestureDetector(
+          onTap: _toggleChrome,
+          onLongPress: () {
+            final rate = _player.state.rate == 1.0 ? 2.0 : 1.0;
+            _player.setRate(rate);
+          },
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Video(controller: _videoController, fit: BoxFit.contain),
+              _buildOverlay(),
+            ],
+          ),
+        );
     }
   }
 
@@ -104,43 +101,40 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
     _player.open(Media(item.url), play: true);
   }
 
-  Widget _buildVideoOverlay() {
-    final player = _player;
-    return SafeArea(
-      child: Column(
-        children: [
-          Expanded(
-            child: Center(
-              child: IconButton(
-                iconSize: 64,
-                color: Colors.white,
-                icon: StreamBuilder<bool>(
-                  stream: player.stream.playing,
-                  builder: (context, snapshot) {
-                    final playing = snapshot.data ?? false;
-                    return Icon(playing ? Icons.pause_circle : Icons.play_circle);
+  Widget _buildOverlay() {
+    return IgnorePointer(
+      ignoring: !_showChrome,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 180),
+        opacity: _showChrome ? 1.0 : 0.0,
+        child: Material(
+          type: MaterialType.transparency,
+          child: Container(
+            color: Colors.black.withOpacity(0.45),
+            child: SafeArea(
+              child: Align(
+                alignment: Alignment.topRight,
+                child: PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: Colors.white),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'report',
+                      child: Text('Report a Bug'),
+                    ),
+                  ],
+                  onSelected: (v) {
+                    if (v == 'report') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ReportBugScreen()),
+                      );
+                    }
                   },
                 ),
-                onPressed: player.playOrPause,
               ),
             ),
           ),
-          StreamBuilder<Duration>(
-            stream: player.stream.position,
-            builder: (context, snapshot) {
-              final position = snapshot.data ?? Duration.zero;
-              final duration = player.state.duration;
-              double value = 0.0;
-              if (duration.inMilliseconds > 0) {
-                value = position.inMilliseconds / duration.inMilliseconds;
-              }
-              return Slider(
-                value: value.clamp(0.0, 1.0),
-                onChanged: (v) => player.seek(duration * v),
-              );
-            },
-          ),
-        ],
+        ),
       ),
     );
   }
