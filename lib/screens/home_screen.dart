@@ -7,10 +7,12 @@ import 'package:fouta_app/services/video_player_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:fouta_app/screens/events_list_screen.dart';
 import 'package:fouta_app/screens/notifications_screen.dart';
 import 'package:fouta_app/screens/unified_settings_screen.dart';
 import 'package:fouta_app/widgets/stories_tray.dart';
+import 'package:fouta_app/devtools/diagnostics_panel.dart';
 import 'package:fouta_app/utils/date_utils.dart';
 import 'dart:async';
 import 'package:badges/badges.dart' as badges;
@@ -205,7 +207,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 label: 'People',
               ),
               NavigationDestination(
-                icon: const Icon(Icons.person_outline),
+                icon: kDebugMode
+                    ? GestureDetector(
+                        onLongPress: _openDiagnostics,
+                        child: const Icon(Icons.person_outline),
+                      )
+                    : const Icon(Icons.person_outline),
                 selectedIcon: const _GradientSelectedIcon(Icons.person),
                 label: 'Profile',
               ),
@@ -217,7 +224,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 headerSliverBuilder: (context, innerBoxIsScrolled) {
                   return <Widget>[
                     SliverAppBar(
-                      title: Text(_getAppBarTitle()),
+                      title: GestureDetector(
+                        onTap: () {
+                          _titleTapCount++;
+                          if (_titleTapCount >= 5) {
+                            _titleTapCount = 0;
+                            _openDiagnostics();
+                          }
+                        },
+                        child: Text(_getAppBarTitle()),
+                      ),
                       // Keep the app bar visible while scrolling
                       pinned: true,
                       actions: [
@@ -501,6 +517,7 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
 
   // Stories currently loaded in the feed
   List<Story> _stories = [];
+  int _titleTapCount = 0;
 
 
   bool _isDataSaverOn = true;
@@ -524,6 +541,7 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
     _setupFollowingListener();
     _scrollController.addListener(_scrollListener);
     _fetchFirstPosts();
+    _fetchStories();
     Connectivity().checkConnectivity().then((result) {
       if (mounted) {
         setState(() {
@@ -574,6 +592,103 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
     _connectivitySubscription?.cancel();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchStories() async {
+    final ownersSnap = await FirebaseFirestore.instance
+        .collection(FirestorePaths.stories())
+        .orderBy('updatedAt', descending: true)
+        .limit(50)
+        .get();
+    final now = DateTime.now();
+    final List<Story> owners = [];
+    for (final doc in ownersSnap.docs) {
+      final slidesSnap = await doc.reference
+          .collection('slides')
+          .orderBy('createdAt', descending: true)
+          .get();
+      final slides = slidesSnap.docs.where((s) {
+        final exp = (s['expiresAt'] as Timestamp?)?.toDate();
+        if (exp != null) return exp.isAfter(now);
+        final created = (s['createdAt'] as Timestamp?)?.toDate();
+        return created != null && created.add(const Duration(hours: 24)).isAfter(now);
+      }).map((s) {
+        final typeStr = (s['type'] as String?) ?? 'image';
+        final type = typeStr == 'video' ? MediaType.video : MediaType.image;
+        final url = s['url'] as String? ?? '';
+        final thumb = s['thumbUrl'] as String?;
+        final dur = s['durationMs'] as int?;
+        return StoryItem(
+          media: MediaItem(
+            id: s.id,
+            type: type,
+            url: url,
+            thumbUrl: thumb,
+            duration: dur != null ? Duration(milliseconds: dur) : null,
+          ),
+          createdAt: (s['createdAt'] as Timestamp?)?.toDate(),
+          expiresAt: (s['expiresAt'] as Timestamp?)?.toDate(),
+        );
+      }).toList();
+      if (slides.isNotEmpty) {
+        owners.add(Story(
+          id: doc.id,
+          authorId: doc.id,
+          postedAt: (doc['updatedAt'] as Timestamp?)?.toDate() ?? now,
+          expiresAt: now.add(const Duration(hours: 24)),
+          items: slides,
+        ));
+      }
+    }
+    if (mounted) {
+      setState(() => _stories = owners);
+      StoryDiagnostics.instance.owners = owners;
+    }
+  }
+
+  void _openDiagnostics() {
+    if (!kDebugMode) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    DiagnosticsPanel.show(context, uid, onRefresh: _fetchStories);
+  }
+
+  Future<void> _onAddStory() async {
+    final slide = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const StoryCameraScreen()),
+    );
+    if (slide is StoryItem) {
+      final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+      setState(() {
+        final existingIndex = _stories.indexWhere((s) => s.authorId == uid);
+        if (existingIndex >= 0) {
+          final existing = _stories[existingIndex];
+          final updated = Story(
+            id: existing.id,
+            authorId: existing.authorId,
+            postedAt: DateTime.now(),
+            expiresAt: DateTime.now().add(const Duration(hours: 24)),
+            items: [slide, ...existing.items],
+            seen: false,
+          );
+          _stories.removeAt(existingIndex);
+          _stories.insert(0, updated);
+        } else {
+          _stories.insert(
+            0,
+            Story(
+              id: uid,
+              authorId: uid,
+              postedAt: DateTime.now(),
+              expiresAt: DateTime.now().add(const Duration(hours: 24)),
+              items: [slide],
+              seen: false,
+            ),
+          );
+        }
+        StoryDiagnostics.instance.owners = _stories;
+      });
+    }
   }
 
   void _showMessage(String msg) {
@@ -719,63 +834,33 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
                 child: Row(
                   children: [
                     Expanded(
-                      child: StoriesTray(
-                        stories: _stories,
-                        currentUserId:
-                            FirebaseAuth.instance.currentUser?.uid ?? '',
-                        onAdd: () async {
-                          final slide = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const StoryCameraScreen()),
-                          );
-                          if (slide is StoryItem) {
-                            final uid =
-                                FirebaseAuth.instance.currentUser?.uid ?? '';
-                            setState(() {
-                              final existingIndex =
-                                  _stories.indexWhere((s) => s.authorId == uid);
-                              if (existingIndex >= 0) {
-                                final existing = _stories[existingIndex];
-                                final updated = Story(
-                                  id: existing.id,
-                                  authorId: existing.authorId,
-                                  postedAt: DateTime.now(),
-                                  expiresAt: DateTime.now()
-                                      .add(const Duration(hours: 24)),
-                                  items: [...existing.items, slide],
-                                  seen: false,
-                                );
-                                _stories.removeAt(existingIndex);
-                                _stories.insert(0, updated);
-                              } else {
-                                _stories.insert(
-                                  0,
-                                  Story(
-                                    id: uid,
-                                    authorId: uid,
-                                    postedAt: DateTime.now(),
-                                    expiresAt: DateTime.now()
-                                        .add(const Duration(hours: 24)),
-                                    items: [slide],
-                                    seen: false,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: StoriesTray(
+                              stories: _stories,
+                              currentUserId:
+                                  FirebaseAuth.instance.currentUser?.uid ?? '',
+                              onAdd: _onAddStory,
+                              onStoryTap: (Story story) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => StoryViewerScreen(
+                                      stories: [story],
+                                    ),
+                                    fullscreenDialog: true,
                                   ),
                                 );
-                              }
-                            });
-                          }
-                        },
-                        onStoryTap: (Story story) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => StoryViewerScreen(
-                                stories: [story],
-                              ),
-                              fullscreenDialog: true,
+                              },
                             ),
-                          );
-                        },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.refresh),
+                            tooltip: 'Refresh Stories',
+                            onPressed: _fetchStories,
+                          ),
+                        ],
                       ),
                     ),
                   ],

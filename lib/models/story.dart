@@ -24,11 +24,15 @@ class StoryItem {
   final MediaItem media;
   final Duration? overrideDuration;
   final String? caption;
+  final DateTime? createdAt;
+  final DateTime? expiresAt;
 
   const StoryItem({
     required this.media,
     this.overrideDuration,
     this.caption,
+    this.createdAt,
+    this.expiresAt,
   });
 
   /// The duration the item should be displayed.
