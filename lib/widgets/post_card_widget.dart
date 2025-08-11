@@ -606,6 +606,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
             ),
           );
         } else {
+          final poster = first['thumbUrl'] ?? first['url'];
           thumb = ClipRRect(
             borderRadius: BorderRadius.circular(8.0),
             child: AspectRatio(
@@ -613,6 +614,13 @@ class _PostCardWidgetState extends State<PostCardWidget> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
+                  CachedNetworkImage(
+                    imageUrl: poster,
+                    fit: BoxFit.cover,
+                    errorWidget: (context, _, __) => Container(
+                      color: Theme.of(context).colorScheme.surfaceVariant,
+                    ),
+                  ),
                   Container(
                       color: Theme.of(context)
                           .colorScheme
@@ -976,6 +984,11 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                 ]),
               if (postType == 'original' && attachments.isEmpty && widget.post['mediaUrl'] != null && widget.post['mediaUrl'].isNotEmpty)
                 const SizedBox(height: 12),
+              Divider(
+                height: 1,
+                thickness: 0.6,
+                color: Theme.of(context).dividerColor.withOpacity(0.20),
+              ),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
