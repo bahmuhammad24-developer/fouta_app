@@ -753,7 +753,22 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
                             });
                             StoryRepository().fetchStoriesFeed().then((s) {
                               if (mounted) {
-                                setState(() => _stories = s);
+                                setState(() {
+                                  // Merge fetched stories with local state so that
+                                  // the newly created story isn't lost if the
+                                  // backend query hasn't caught up yet.
+                                  final merged = List<Story>.from(_stories);
+                                  for (final fetched in s) {
+                                    final existingIndex = merged
+                                        .indexWhere((st) => st.authorId == fetched.authorId);
+                                    if (existingIndex >= 0) {
+                                      merged[existingIndex] = fetched;
+                                    } else {
+                                      merged.add(fetched);
+                                    }
+                                  }
+                                  _stories = merged;
+                                });
                               }
                             });
                           }
