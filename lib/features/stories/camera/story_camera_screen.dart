@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
+import '../composer/story_review_screen.dart';
+
 class StoryCameraScreen extends StatefulWidget {
   const StoryCameraScreen({super.key});
 
@@ -72,7 +74,16 @@ class _StoryCameraScreenState extends State<StoryCameraScreen>
     try {
       final file = await _controller!.takePicture();
       if (!mounted) return;
-      Navigator.pop(context, {'type': 'image', 'path': file.path});
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => StoryReviewScreen(imagePath: file.path),
+        ),
+      ).then((result) async {
+        if (mounted) Navigator.pop(context, result);
+        await _controller?.dispose();
+        _controller = null;
+      });
     } catch (_) {}
   }
 
@@ -105,7 +116,16 @@ class _StoryCameraScreenState extends State<StoryCameraScreen>
       _timer?.cancel();
       _isRecording = false;
       if (!mounted) return;
-      Navigator.pop(context, {'type': 'video', 'path': file.path});
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => StoryReviewScreen(videoPath: file.path),
+        ),
+      ).then((result) async {
+        if (mounted) Navigator.pop(context, result);
+        await _controller?.dispose();
+        _controller = null;
+      });
     } catch (_) {
       _timer?.cancel();
       _isRecording = false;

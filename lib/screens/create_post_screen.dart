@@ -15,6 +15,7 @@ import 'package:fouta_app/widgets/fouta_button.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/utils/overlays.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:video_player/video_player.dart';
 import 'package:fouta_app/services/permissions.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
@@ -284,7 +285,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         if (type == 'video') {
           Uint8List? bytes;
           File? fileObj;
-          if (kIsWeb || file.path.startsWith('content://')) {
+          if (file.path.startsWith('content://')) {
             bytes = await file.readAsBytes();
           } else {
             fileObj = File(file.path);
@@ -293,9 +294,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           final baseName = '${DateTime.now().millisecondsSinceEpoch}_${user.uid}_$i';
           final videoRef = FirebaseStorage.instance.ref().child('videos/${user.uid}/$baseName.mp4');
           final metadata = SettableMetadata(contentType: 'video/mp4');
-          final UploadTask uploadTask = bytes != null
-              ? videoRef.putData(bytes, metadata)
-              : videoRef.putFile(fileObj!, metadata);
+          final UploadTask uploadTask =
+              bytes != null ? videoRef.putData(bytes, metadata) : videoRef.putFile(fileObj!, metadata);
 
           uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
             if (mounted) {
@@ -315,6 +315,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
           final videoUrl = await videoRef.getDownloadURL();
 
+          int? durationMs;
+          VideoPlayerController controller;
+          if (file.path.startsWith('content://')) {
+            controller = VideoPlayerController.contentUri(Uri.parse(file.path));
+          } else {
+            controller = VideoPlayerController.file(fileObj!);
+          }
+          await controller.initialize();
+          durationMs = controller.value.duration.inMilliseconds;
+          await controller.dispose();
           String? thumbUrl;
           final thumbData = await VideoThumbnail.thumbnailData(
             video: file.path,
@@ -332,6 +342,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             'url': videoUrl,
             if (thumbUrl != null) 'thumbUrl': thumbUrl,
             if (aspect != null) 'aspectRatio': aspect,
+            if (durationMs != null) 'durationMs': durationMs,
           });
           uploadedCount++;
           continue;

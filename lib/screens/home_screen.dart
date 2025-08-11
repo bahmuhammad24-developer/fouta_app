@@ -722,52 +722,37 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
                         currentUserId:
                             FirebaseAuth.instance.currentUser?.uid ?? '',
                         onAdd: () async {
-                          final result = await Navigator.push(
+                          final slide = await Navigator.push(
                             context,
                             MaterialPageRoute(
                                 builder: (_) => const StoryCameraScreen()),
                           );
-                          if (result is Map &&
-                              result['path'] is String &&
-                              (result['path'] as String).isNotEmpty) {
-                            final path = result['path'] as String;
-                            final isVideo = result['type'] == 'video';
-                            final slide = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => CreateStoryScreen(
-                                  initialImagePath: isVideo ? null : path,
-                                  initialVideoPath: isVideo ? path : null,
-                                ),
-                              ),
+                          if (slide is StoryItem) {
+                            final uid =
+                                FirebaseAuth.instance.currentUser?.uid ?? '';
+                            final story = Story(
+                              id: uid,
+                              authorId: uid,
+                              postedAt: DateTime.now(),
+                              expiresAt:
+                                  DateTime.now().add(const Duration(hours: 24)),
+                              items: [slide],
+                              seen: false,
                             );
-                            if (slide is StoryItem) {
-                              final uid =
-                                  FirebaseAuth.instance.currentUser?.uid ?? '';
-                              final story = Story(
-                                id: uid,
-                                authorId: uid,
-                                postedAt: DateTime.now(),
-                                expiresAt:
-                                    DateTime.now().add(const Duration(hours: 24)),
-                                items: [slide],
-                                seen: false,
-                              );
-                              setState(() {
-                                final idx =
-                                    _stories.indexWhere((s) => s.authorId == uid);
-                                if (idx >= 0) {
-                                  _stories[idx] = story;
-                                } else {
-                                  _stories.insert(0, story);
-                                }
-                              });
-                              StoryRepository().fetchStoriesFeed().then((s) {
-                                if (mounted) {
-                                  setState(() => _stories = s);
-                                }
-                              });
-                            }
+                            setState(() {
+                              final idx =
+                                  _stories.indexWhere((s) => s.authorId == uid);
+                              if (idx >= 0) {
+                                _stories[idx] = story;
+                              } else {
+                                _stories.insert(0, story);
+                              }
+                            });
+                            StoryRepository().fetchStoriesFeed().then((s) {
+                              if (mounted) {
+                                setState(() => _stories = s);
+                              }
+                            });
                           }
                         },
                         onStoryTap: (Story story) {
