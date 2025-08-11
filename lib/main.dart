@@ -16,6 +16,7 @@ import 'package:fouta_app/theme/theme_controller.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 // Use the Diaspora Connection theme instead of the original Baobab theme
 import 'package:fouta_app/theme/app_theme.dart';
+import 'package:fouta_app/services/playback_route_observer.dart';
 import 'firebase_options.dart';
 import 'utils/log_buffer.dart';
 import 'utils/bug_reporter.dart';
@@ -69,6 +70,7 @@ class MyApp extends StatelessWidget {
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),
             themeMode: controller.themeMode,
+            navigatorObservers: [playbackRouteObserver],
 
             builder: (context, child) => PanicDismiss(
               child: RepaintBoundary(

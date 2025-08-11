@@ -26,6 +26,11 @@ class AppTheme {
         backgroundColor: scheme.surface,
         foregroundColor: scheme.onSurface,
         surfaceTintColor: Colors.transparent,
+        titleTextStyle: TextStyle(
+          color: scheme.onSurface,
+          fontWeight: FontWeight.w700,
+          fontSize: 20,
+        ),
       ),
       cardTheme: const CardThemeData(surfaceTintColor: Colors.transparent),
       dialogTheme: const DialogThemeData(surfaceTintColor: Colors.transparent),
@@ -63,6 +68,11 @@ class AppTheme {
         backgroundColor: scheme.surface,
         foregroundColor: scheme.onSurface,
         surfaceTintColor: Colors.transparent,
+        titleTextStyle: TextStyle(
+          color: scheme.onSurface,
+          fontWeight: FontWeight.w700,
+          fontSize: 20,
+        ),
       ),
       cardTheme: const CardThemeData(surfaceTintColor: Colors.transparent),
       dialogTheme: const DialogThemeData(surfaceTintColor: Colors.transparent),
