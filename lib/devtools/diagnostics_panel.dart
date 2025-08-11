@@ -29,24 +29,26 @@ class PublishResult {
 
 /// Simple in-app panel showing diagnostics for stories/video.
 class DiagnosticsPanel extends StatefulWidget {
-  final List<Story> stories;
-  final String currentUserId;
+  final List<dynamic> stories;
+  final String? currentUserId;
   final Future<void> Function()? onRefresh;
   const DiagnosticsPanel({
     super.key,
-    required this.stories,
-    required this.currentUserId,
+    this.stories = const [],
+    this.currentUserId,
     this.onRefresh,
   });
 
-  static Future<void> show(BuildContext context, String uid,
-      {Future<void> Function()? onRefresh}) async {
+  static Future<void> show(BuildContext context,
+      {String? uid,
+      List<dynamic> stories = const [],
+      Future<void> Function()? onRefresh}) async {
     if (!kDebugMode) return;
     await showDialog(
       context: context,
       builder: (_) => Dialog(
         child: DiagnosticsPanel(
-          stories: StoryDiagnostics.instance.owners,
+          stories: stories,
           currentUserId: uid,
           onRefresh: onRefresh,
         ),
@@ -61,25 +63,32 @@ class DiagnosticsPanel extends StatefulWidget {
 class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
   String _buildDiagnostics() {
     final buffer = StringBuffer();
+    final providedStoriesCount = widget.stories.length;
+    buffer.writeln('Provided stories: $providedStoriesCount');
     buffer.writeln('appId: $APP_ID');
-    buffer.writeln('currentUser: ${widget.currentUserId}');
+    if (widget.currentUserId != null) {
+      buffer.writeln('currentUser: ${widget.currentUserId}');
+    }
     buffer.writeln('ownersPath: ${FirestorePaths.stories()}');
-    buffer.writeln('ownersLoaded: ${widget.stories.length}');
-    for (final o in widget.stories.take(3)) {
+    final owners = StoryDiagnostics.instance.owners;
+    buffer.writeln('ownersLoaded: ${owners.length}');
+    for (final o in owners.take(3)) {
       buffer.writeln('  owner: ${o.authorId} updatedAt: ${o.postedAt}');
     }
-    final me =
-        widget.stories.firstWhere((o) => o.authorId == widget.currentUserId,
-            orElse: () => Story(
-                id: '',
-                authorId: '',
-                postedAt: DateTime.fromMillisecondsSinceEpoch(0),
-                expiresAt: DateTime.fromMillisecondsSinceEpoch(0)));
-    buffer.writeln(
-        'mySlides: ${me.items.length}${me.items.isNotEmpty ? '' : ''}');
-    for (final s in me.items.take(3)) {
+    if (widget.currentUserId != null) {
+      final me = owners.firstWhere(
+          (o) => o.authorId == widget.currentUserId,
+          orElse: () => Story(
+              id: '',
+              authorId: '',
+              postedAt: DateTime.fromMillisecondsSinceEpoch(0),
+              expiresAt: DateTime.fromMillisecondsSinceEpoch(0)));
       buffer.writeln(
-          '  slide: ${s.media.type.name} createdAt:${s.createdAt} expiresAt:${s.expiresAt} thumb:${s.media.thumbUrl != null}');
+          'mySlides: ${me.items.length}${me.items.isNotEmpty ? '' : ''}');
+      for (final s in me.items.take(3)) {
+        buffer.writeln(
+            '  slide: ${s.media.type.name} createdAt:${s.createdAt} expiresAt:${s.expiresAt} thumb:${s.media.thumbUrl != null}');
+      }
     }
     final publish = StoryDiagnostics.instance.lastPublish;
     if (publish != null) {
