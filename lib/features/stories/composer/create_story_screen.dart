@@ -1,14 +1,14 @@
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:fouta_app/utils/firestore_paths.dart';
 import 'package:fouta_app/utils/video_controller_extensions.dart';
 import 'package:fouta_app/utils/snackbar.dart';
+import '../data/story_repository.dart';
+import '../../../models/story.dart';
+import '../../../models/media_item.dart';
 
 /// Composer for creating and publishing a story slide.
 class CreateStoryScreen extends StatefulWidget {
@@ -129,67 +129,21 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
     setState(() => _isUploading = true);
     try {
-      final String path = widget.initialVideoPath ?? widget.initialImagePath ?? '';
+      final String path =
+          widget.initialVideoPath ?? widget.initialImagePath ?? '';
       final mediaFile = File(path);
       final bool isVideo = widget.initialVideoPath != null;
-      final String ext = isVideo ? 'mp4' : 'jpg';
-      final String storagePath =
-          'stories/${user.uid}/${DateTime.now().millisecondsSinceEpoch}.$ext';
-      final ref = FirebaseStorage.instance.ref().child(storagePath);
-      final metadata = SettableMetadata(
-        contentType: isVideo ? 'video/mp4' : 'image/jpeg',
+      final repo = StoryRepository();
+      final item = await repo.publishSlide(
+        user.uid,
+        mediaFile,
+        isVideo ? MediaType.video : MediaType.image,
+        caption: _captionController.text.trim().isEmpty
+            ? null
+            : _captionController.text.trim(),
       );
-      final uploadTask = ref.putFile(mediaFile, metadata);
-      await uploadTask;
-      final mediaUrl = await ref.getDownloadURL();
 
-      // Fetch author details for display in story tray.
-      // Some authentication methods (e.g., phone sign-in) don't provide an
-      // email address.  The previous implementation attempted to split the
-      // email to derive a username which resulted in a crash when `email` was
-      // null.  Derive the display name defensively instead.
-      String displayName;
-      if (user.email != null) {
-        displayName = user.email!.split('@').first;
-      } else {
-        displayName = user.displayName ?? user.phoneNumber ?? 'User';
-      }
-      String imageUrl = '';
-      try {
-        final userDoc = await FirebaseFirestore.instance
-            .collection(FirestorePaths.users())
-            .doc(user.uid)
-            .get();
-        if (userDoc.exists) {
-          final data = userDoc.data()!;
-          displayName = data['displayName'] ?? displayName;
-          imageUrl = data['profileImageUrl'] ?? '';
-        }
-      } catch (_) {}
-
-      final storiesRef =
-          FirebaseFirestore.instance.collection(FirestorePaths.stories());
-      final storyDoc = storiesRef.doc(user.uid);
-
-      await storyDoc.set({
-        'authorId': user.uid,
-        'authorName': displayName,
-        'authorImageUrl': imageUrl,
-        'lastUpdated': FieldValue.serverTimestamp(),
-        'expiresAt': Timestamp.fromDate(
-            DateTime.now().add(const Duration(hours: 24))),
-        'viewedBy': [],
-      }, SetOptions(merge: true));
-
-      await storyDoc.collection('slides').add({
-        'authorId': user.uid,
-        'mediaUrl': mediaUrl,
-        'mediaType': isVideo ? 'video' : 'image',
-        'createdAt': FieldValue.serverTimestamp(),
-        'viewers': [],
-      });
-
-      if (mounted) Navigator.pop(context);
+      if (mounted) Navigator.pop(context, item);
     } catch (e) {
       debugPrint('Error uploading story: $e');
       if (mounted) {

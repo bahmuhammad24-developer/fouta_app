@@ -36,6 +36,7 @@ import 'package:fouta_app/widgets/skeletons/feed_skeleton.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/models/story.dart';
 import 'package:fouta_app/widgets/system/offline_banner.dart';
+import 'package:fouta_app/features/stories/data/story_repository.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -717,6 +718,7 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
                   children: [
                     Expanded(
                       child: StoriesTray(
+                        stories: _stories,
                         currentUserId:
                             FirebaseAuth.instance.currentUser?.uid ?? '',
                         onAdd: () async {
@@ -730,7 +732,7 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
                               (result['path'] as String).isNotEmpty) {
                             final path = result['path'] as String;
                             final isVideo = result['type'] == 'video';
-                            Navigator.push(
+                            final slide = await Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => CreateStoryScreen(
@@ -739,6 +741,33 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
                                 ),
                               ),
                             );
+                            if (slide is StoryItem) {
+                              final uid =
+                                  FirebaseAuth.instance.currentUser?.uid ?? '';
+                              final story = Story(
+                                id: uid,
+                                authorId: uid,
+                                postedAt: DateTime.now(),
+                                expiresAt:
+                                    DateTime.now().add(const Duration(hours: 24)),
+                                items: [slide],
+                                seen: false,
+                              );
+                              setState(() {
+                                final idx =
+                                    _stories.indexWhere((s) => s.authorId == uid);
+                                if (idx >= 0) {
+                                  _stories[idx] = story;
+                                } else {
+                                  _stories.insert(0, story);
+                                }
+                              });
+                              StoryRepository().fetchStoriesFeed().then((s) {
+                                if (mounted) {
+                                  setState(() => _stories = s);
+                                }
+                              });
+                            }
                           }
                         },
                         onStoryTap: (Story story) {

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 import '../../../models/story.dart';
 import '../../../models/media_item.dart';
@@ -14,29 +15,51 @@ class StoryRepository {
 
   Future<StoryItem> publishSlide(
     String userId,
-    MediaItem media, {
+    File file,
+    MediaType type, {
     String? caption,
   }) async {
     final slideId = const Uuid().v4();
-    final ext = media.type == MediaType.video ? 'mp4' : 'jpg';
-    final storagePath = 'stories/$userId/$slideId.$ext';
-    final storageRef = FirebaseStorage.instance.ref().child(storagePath);
+    final ext = type == MediaType.video ? 'mp4' : 'jpg';
+    final storageRef =
+        FirebaseStorage.instance.ref().child('stories/$userId/$slideId.$ext');
 
-    // Upload the file pointed to by [media.url].
-    await storageRef.putFile(File(media.url));
-    final downloadUrl = await storageRef.getDownloadURL();
+    await storageRef.putFile(
+      file,
+      SettableMetadata(
+        contentType: type == MediaType.video ? 'video/mp4' : 'image/jpeg',
+      ),
+    );
+    final url = await storageRef.getDownloadURL();
 
-    final doc =
-        _firestore.collection(FirestorePaths.stories()).doc(userId);
+    String? thumbUrl;
+    if (type == MediaType.video) {
+      final thumbData = await VideoThumbnail.thumbnailData(
+        video: file.path,
+        imageFormat: ImageFormat.JPEG,
+        quality: 75,
+      );
+      if (thumbData != null) {
+        final thumbRef = FirebaseStorage.instance
+            .ref()
+            .child('stories/$userId/${slideId}_thumb.jpg');
+        await thumbRef.putData(
+          thumbData,
+          const SettableMetadata(contentType: 'image/jpeg'),
+        );
+        thumbUrl = await thumbRef.getDownloadURL();
+      }
+    }
+
+    final doc = _firestore.collection(FirestorePaths.stories()).doc(userId);
     await doc.set({
       'userId': userId,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
     await doc.collection('slides').doc(slideId).set({
-      'type': media.type.name,
-      'url': downloadUrl,
-      if (media.thumbUrl != null) 'thumbUrl': media.thumbUrl,
-      if (media.duration != null) 'durationMs': media.duration!.inMilliseconds,
+      'type': type.name,
+      'url': url,
+      if (thumbUrl != null) 'thumbUrl': thumbUrl,
       'createdAt': FieldValue.serverTimestamp(),
       'expiresAt': Timestamp.fromDate(
           DateTime.now().add(const Duration(hours: 24))),
@@ -46,10 +69,9 @@ class StoryRepository {
     return StoryItem(
       media: MediaItem(
         id: slideId,
-        type: media.type,
-        url: downloadUrl,
-        thumbUrl: media.thumbUrl,
-        duration: media.duration,
+        type: type,
+        url: url,
+        thumbUrl: thumbUrl,
       ),
       caption: caption,
     );

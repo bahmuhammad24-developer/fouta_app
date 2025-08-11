@@ -14,6 +14,8 @@ import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/utils/overlays.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:fouta_app/services/permissions.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 
@@ -131,9 +133,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
     XFile? pickedFile;
     try {
-      pickedFile = isVideo
-          ? await _picker.pickVideo(source: source)
-          : await _picker.pickImage(source: source);
+      if (isVideo) {
+        final granted = await Permissions.requestMediaAccess();
+        if (!granted) {
+          _showMessage('Permission denied.');
+          return;
+        }
+        pickedFile = await _picker.pickVideo(source: source);
+      } else {
+        pickedFile = await _picker.pickImage(source: source);
+      }
     } catch (e) {
       _showMessage('Error picking media: $e');
       return;
@@ -271,22 +280,75 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         final XFile file = _selectedMediaFiles[i];
         final String type = _mediaTypesList[i];
         final double? aspect = _videoAspectRatios[i];
+
+        if (type == 'video') {
+          Uint8List? bytes;
+          File? fileObj;
+          if (kIsWeb || file.path.startsWith('content://')) {
+            bytes = await file.readAsBytes();
+          } else {
+            fileObj = File(file.path);
+          }
+
+          final baseName = '${DateTime.now().millisecondsSinceEpoch}_${user.uid}_$i';
+          final videoRef = FirebaseStorage.instance.ref().child('videos/${user.uid}/$baseName.mp4');
+          final metadata = SettableMetadata(contentType: 'video/mp4');
+          final UploadTask uploadTask = bytes != null
+              ? videoRef.putData(bytes, metadata)
+              : videoRef.putFile(fileObj!, metadata);
+
+          uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+            if (mounted) {
+              setState(() {
+                _uploadProgress = ((uploadedCount + snapshot.bytesTransferred / snapshot.totalBytes) / _selectedMediaFiles.length);
+              });
+            }
+          });
+
+          try {
+            await uploadTask;
+          } on FirebaseException catch (e) {
+            _showMessage('Media upload failed: ${e.message}');
+            setState(() { _isUploading = false; });
+            return;
+          }
+
+          final videoUrl = await videoRef.getDownloadURL();
+
+          String? thumbUrl;
+          final thumbData = await VideoThumbnail.thumbnailData(
+            video: file.path,
+            imageFormat: ImageFormat.JPEG,
+            quality: 75,
+          );
+          if (thumbData != null) {
+            final thumbRef = FirebaseStorage.instance.ref().child('videos/${user.uid}/${baseName}_thumb.jpg');
+            await thumbRef.putData(thumbData, const SettableMetadata(contentType: 'image/jpeg'));
+            thumbUrl = await thumbRef.getDownloadURL();
+          }
+
+          attachments.add({
+            'type': 'video',
+            'url': videoUrl,
+            if (thumbUrl != null) 'thumbUrl': thumbUrl,
+            if (aspect != null) 'aspectRatio': aspect,
+          });
+          uploadedCount++;
+          continue;
+        }
+
+        // IMAGE HANDLING
         String fileName = file.name;
         Uint8List? bytesToUpload;
         File? fileToUpload;
-
         if (kIsWeb) {
           bytesToUpload = await file.readAsBytes();
         } else {
-          if (type == 'image') {
-            final originalBytes = await file.readAsBytes();
-            final img.Image? decoded = img.decodeImage(originalBytes);
-            if (decoded != null) {
-              final compressed = img.encodeJpg(decoded, quality: 80);
-              bytesToUpload = Uint8List.fromList(compressed);
-            } else {
-              fileToUpload = File(file.path);
-            }
+          final originalBytes = await file.readAsBytes();
+          final img.Image? decoded = img.decodeImage(originalBytes);
+          if (decoded != null) {
+            final compressed = img.encodeJpg(decoded, quality: 80);
+            bytesToUpload = Uint8List.fromList(compressed);
           } else {
             fileToUpload = File(file.path);
           }
@@ -296,7 +358,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         final String storagePath = '${type}s/${user.uid}/${DateTime.now().millisecondsSinceEpoch}_${user.uid}_$i.$fileExtension';
         final storageRef = FirebaseStorage.instance.ref().child(storagePath);
 
-        // Create Firestore document to receive processing metadata
         final mediaDoc = FirebaseFirestore.instance
             .collection('artifacts/$APP_ID/public/data/media')
             .doc();
@@ -306,12 +367,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           'storagePath': storagePath,
         });
 
-        // Ensure a correct content type so that Firebase Storage serves the
-        // file with the proper headers.  Without this, uploaded videos can be
-        // stored as `application/octet-stream`, preventing some clients from
-        // recognizing them as playable media.
         final SettableMetadata metadata = SettableMetadata(
-          contentType: type == 'video' ? 'video/mp4' : 'image/jpeg',
+          contentType: 'image/jpeg',
           customMetadata: {
             'docId': mediaDoc.id,
             'ownerId': user.uid,
@@ -329,11 +386,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           return;
         }
 
-        // Update overall progress based on each file
         uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
           if (mounted) {
             setState(() {
-              // Average progress across all uploads
               _uploadProgress = ((uploadedCount + snapshot.bytesTransferred / snapshot.totalBytes) / _selectedMediaFiles.length);
             });
           }
@@ -349,7 +404,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           return;
         }
 
-        // Wait for Cloud Function to populate metadata
         Map<String, dynamic>? processed;
         try {
           final snap = await mediaDoc.snapshots().firstWhere(
@@ -361,31 +415,15 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         }
 
         if (processed != null) {
-          if (type == 'image') {
-            attachments.add({
-              'type': type,
-              'url': processed['fullUrl'],
-              'thumbUrl': processed['thumbUrl'],
-              'previewUrl': processed['previewUrl'],
-              'blurhash': processed['blurhash'],
-              'width': processed['width'],
-              'height': processed['height'],
-            });
-          } else {
-            final double? ratio = processed['width'] != null && processed['height'] != null
-                ? (processed['width'] as num).toDouble() / (processed['height'] as num).toDouble()
-                : aspect;
-            attachments.add({
-              'type': type,
-              'url': url,
-              'thumbUrl': processed['thumbUrl'],
-              'previewUrl': processed['previewUrl'],
-              'blurhash': processed['blurhash'],
-              'width': processed['width'],
-              'height': processed['height'],
-              if (ratio != null) 'aspectRatio': ratio,
-            });
-          }
+          attachments.add({
+            'type': type,
+            'url': processed['fullUrl'],
+            'thumbUrl': processed['thumbUrl'],
+            'previewUrl': processed['previewUrl'],
+            'blurhash': processed['blurhash'],
+            'width': processed['width'],
+            'height': processed['height'],
+          });
         }
         uploadedCount++;
       }
