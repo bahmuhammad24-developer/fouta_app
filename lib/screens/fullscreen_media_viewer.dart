@@ -6,6 +6,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:photo_view/photo_view.dart';
 
 import '../models/media_item.dart';
+import '../services/playback_coordinator.dart';
 import 'report_bug_screen.dart';
 
 /// Full-screen viewer for a list of [MediaItem]s.
@@ -14,6 +15,19 @@ class FullScreenMediaViewer extends StatefulWidget {
 
   final List<MediaItem> items;
   final int initialIndex;
+
+  /// Convenience helper to open the viewer using the root navigator so it
+  /// fully covers any nested navigation bars.
+  static Future<void> open(BuildContext context, List<MediaItem> items,
+      {int initialIndex = 0}) {
+    PlaybackCoordinator.instance.pauseAll();
+    return Navigator.of(context, rootNavigator: true).push(PageRouteBuilder(
+      opaque: true,
+      barrierColor: Colors.black,
+      pageBuilder: (_, __, ___) =>
+          FullScreenMediaViewer(items: items, initialIndex: initialIndex),
+    ));
+  }
 
   @override
   State<FullScreenMediaViewer> createState() => _FullScreenMediaViewerState();
@@ -24,6 +38,7 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
   bool _showChrome = true;
   late final Player _player = Player();
   late final VideoController _videoController = VideoController(_player);
+  bool _dragFromEdge = false;
 
   @override
   void initState() {
@@ -31,12 +46,15 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
     _pageController = PageController(initialPage: widget.initialIndex);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     final item = widget.items[widget.initialIndex];
+    PlaybackCoordinator.instance.register(_player);
+    PlaybackCoordinator.instance.setActive(_player);
     _player.open(Media(item.url), play: true);
   }
 
   @override
   void dispose() {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    PlaybackCoordinator.instance.unregister(_player);
     _player.dispose(); // Dispose player
     super.dispose();
   }
@@ -45,9 +63,7 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: PageView.builder(
+    final pageView = PageView.builder(
         controller: _pageController,
         onPageChanged: _openIndex,
         itemCount: widget.items.length,
@@ -58,6 +74,22 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
             child: _buildItem(item),
           );
         },
+      );
+
+    return GestureDetector(
+      onHorizontalDragStart: (details) {
+        _dragFromEdge = details.globalPosition.dx < 24;
+      },
+      onHorizontalDragUpdate: (details) {
+        if (_dragFromEdge && details.primaryDelta != null && details.primaryDelta! > 16) {
+          Navigator.maybePop(context);
+          _dragFromEdge = false;
+        }
+      },
+      onHorizontalDragEnd: (_) => _dragFromEdge = false,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: pageView,
       ),
     );
   }
@@ -98,6 +130,7 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
 
   void _openIndex(int index) {
     final item = widget.items[index];
+    PlaybackCoordinator.instance.setActive(_player);
     _player.open(Media(item.url), play: true);
   }
 
@@ -112,25 +145,32 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
           child: Container(
             color: Colors.black.withOpacity(0.45),
             child: SafeArea(
-              child: Align(
-                alignment: Alignment.topRight,
-                child: PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: Colors.white),
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'report',
-                      child: Text('Report a Bug'),
-                    ),
-                  ],
-                  onSelected: (v) {
-                    if (v == 'report') {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ReportBugScreen()),
-                      );
-                    }
-                  },
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () => Navigator.maybePop(context),
+                  ),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: Colors.white),
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(
+                        value: 'report',
+                        child: Text('Report a Bug'),
+                      ),
+                    ],
+                    onSelected: (v) {
+                      if (v == 'report') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const ReportBugScreen()),
+                        );
+                      }
+                    },
+                  ),
+                ],
               ),
             ),
           ),

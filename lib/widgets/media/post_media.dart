@@ -44,15 +44,8 @@ class PostMedia extends StatelessWidget {
     return Semantics(
       label: first.type == MediaType.image ? 'Image preview' : 'Video preview',
       child: GestureDetector(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => FullScreenMediaViewer(
-              items: media,
-              initialIndex: 0,
-            ),
-            fullscreenDialog: true,
-          ),
-        ),
+        onTap: () =>
+            FullScreenMediaViewer.open(context, media, initialIndex: 0),
         child: AspectRatio(
           aspectRatio: aspect,
           child: Hero(

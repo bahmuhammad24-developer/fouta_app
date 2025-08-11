@@ -14,12 +14,24 @@ class ReportBugScreen extends StatefulWidget {
 class _ReportBugScreenState extends State<ReportBugScreen> {
   Uint8List? _screenshot;
   final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
   bool _sending = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _capture());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final bytes = await BugReporter.capturePng(context);
+      if (!mounted) return;
+      setState(() => _screenshot = bytes);
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
   }
 
   Future<void> _capture() async {
@@ -59,6 +71,7 @@ class _ReportBugScreenState extends State<ReportBugScreen> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(title: const Text('Report a Bug')),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -76,6 +89,7 @@ class _ReportBugScreenState extends State<ReportBugScreen> {
             ),
           TextField(
             controller: _controller,
+            focusNode: _focusNode,
             maxLines: 5,
             decoration: const InputDecoration(
               labelText: 'Description',

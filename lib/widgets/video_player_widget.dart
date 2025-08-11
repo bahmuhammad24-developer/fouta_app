@@ -279,22 +279,17 @@ class _DynamicVideoControls extends StatelessWidget {
                   icon: Icon(Icons.fullscreen, color: Theme.of(context).colorScheme.onPrimary),
                   onPressed: () {
                     player.pause();
-                    Navigator.push(
+                    FullScreenMediaViewer.open(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => FullScreenMediaViewer(
-                          items: [
-                            MediaItem(
-                              id: videoUrl,
-                              type: MediaType.video,
-                              url: videoUrl,
-                              duration: player.state.duration,
-                            ),
-                          ],
-                          initialIndex: 0,
+                      [
+                        MediaItem(
+                          id: videoUrl,
+                          type: MediaType.video,
+                          url: videoUrl,
+                          duration: player.state.duration,
                         ),
-                        fullscreenDialog: true,
-                      ),
+                      ],
+                      initialIndex: 0,
                     );
                   },
                 ),
