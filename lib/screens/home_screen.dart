@@ -36,7 +36,6 @@ import 'package:fouta_app/widgets/skeletons/feed_skeleton.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/models/story.dart';
 import 'package:fouta_app/widgets/system/offline_banner.dart';
-import 'package:fouta_app/features/stories/data/story_repository.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -733,42 +732,35 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
                           if (slide is StoryItem) {
                             final uid =
                                 FirebaseAuth.instance.currentUser?.uid ?? '';
-                            final story = Story(
-                              id: uid,
-                              authorId: uid,
-                              postedAt: DateTime.now(),
-                              expiresAt:
-                                  DateTime.now().add(const Duration(hours: 24)),
-                              items: [slide],
-                              seen: false,
-                            );
                             setState(() {
-                              final idx =
+                              final existingIndex =
                                   _stories.indexWhere((s) => s.authorId == uid);
-                              if (idx >= 0) {
-                                _stories[idx] = story;
+                              if (existingIndex >= 0) {
+                                final existing = _stories[existingIndex];
+                                final updated = Story(
+                                  id: existing.id,
+                                  authorId: existing.authorId,
+                                  postedAt: DateTime.now(),
+                                  expiresAt: DateTime.now()
+                                      .add(const Duration(hours: 24)),
+                                  items: [...existing.items, slide],
+                                  seen: false,
+                                );
+                                _stories.removeAt(existingIndex);
+                                _stories.insert(0, updated);
                               } else {
-                                _stories.insert(0, story);
-                              }
-                            });
-                            StoryRepository().fetchStoriesFeed().then((s) {
-                              if (mounted) {
-                                setState(() {
-                                  // Merge fetched stories with local state so that
-                                  // the newly created story isn't lost if the
-                                  // backend query hasn't caught up yet.
-                                  final merged = List<Story>.from(_stories);
-                                  for (final fetched in s) {
-                                    final existingIndex = merged
-                                        .indexWhere((st) => st.authorId == fetched.authorId);
-                                    if (existingIndex >= 0) {
-                                      merged[existingIndex] = fetched;
-                                    } else {
-                                      merged.add(fetched);
-                                    }
-                                  }
-                                  _stories = merged;
-                                });
+                                _stories.insert(
+                                  0,
+                                  Story(
+                                    id: uid,
+                                    authorId: uid,
+                                    postedAt: DateTime.now(),
+                                    expiresAt: DateTime.now()
+                                        .add(const Duration(hours: 24)),
+                                    items: [slide],
+                                    seen: false,
+                                  ),
+                                );
                               }
                             });
                           }

@@ -5,6 +5,7 @@ import 'package:fouta_app/services/video_player_manager.dart';
 import 'package:fouta_app/screens/fullscreen_media_viewer.dart';
 import 'package:fouta_app/models/media_item.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:fouta_app/utils/video_controller_extensions.dart';
