@@ -219,7 +219,7 @@ For help getting started with Flutter development, view the [online documentatio
 
 
 ## Media Pipeline
-Uploads are processed server-side to improve delivery speed and quality. Videos larger than 500 MB are rejected before upload to keep processing manageable. A Cloud Function listens for new files in Firebase Storage and:
+Uploads are processed server-side to improve delivery speed and quality. Videos exceeding `kMaxVideoBytes` (~500 MB) are rejected before upload to keep processing manageable. A Cloud Function listens for new files in Firebase Storage and:
 
 - Resizes images to thumb (128w), preview (480w), and full (~1080w) using **sharp**.
 - Captures a poster frame for videos and generates the same sizes.
@@ -271,6 +271,7 @@ flutter test
 - 2025-08-07 21:54 UTC – Handled camera and microphone permissions in the story camera screen to prevent a crash when creating stories.
 - 2025-08-09 00:43 UTC – Adopted Material 3 design system with tokenized theme and removed hard-coded colors.
 - 2025-08-12 15:07 UTC – Clarified 500 MB video upload limit with snackbar message and documentation.
+- 2025-08-12 16:31 UTC – Centralized video upload limit in `kMaxVideoBytes` and referenced it in docs.
 
 ## Contributing
 - Follow the logging and documentation guidelines outlined above.

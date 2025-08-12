@@ -19,6 +19,7 @@ import 'package:video_player/video_player.dart';
 import 'package:fouta_app/services/permissions.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
+import 'package:fouta_app/constants/media_limits.dart'; // Provides kMaxVideoBytes
 
 class CreatePostScreen extends StatefulWidget {
   final String? postId;
@@ -62,11 +63,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   // Flag to control preview dialog when new media is selected
   bool _isPreviewing = false;
 
-  // Media upload limitations
-  // Increased limits to accommodate larger video files.
-  // Most modern devices record videos well above 15 MB, which previously
-  // prevented uploads. Allow up to ~500 MB.
-  static const int _maxVideoFileSize = 500 * 1024 * 1024; // 500 MB
+  // Media upload limitations.
+  // Increased limits to accommodate larger video files. Most modern devices
+  // record videos well above 15 MB, which previously prevented uploads.
+  // Allow up to ~500 MB via kMaxVideoBytes.
 
   @override
   void initState() {
@@ -154,18 +154,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     // Validate video size for videos on non-web platforms and compute aspect ratio
     double? aspectRatio;
     if (isVideo && !kIsWeb) {
-      int fileSize;
-      if (pickedFile.path.startsWith('content://')) {
-        try {
-          fileSize = await pickedFile.length();
-        } catch (e) {
-          _showMessage('Failed to read video size: $e');
-          return;
-        }
-      } else {
-        fileSize = File(pickedFile.path).lengthSync();
-      }
-      if (fileSize > _maxVideoFileSize) {
+
+      final fileSize = File(pickedFile.path).lengthSync();
+      if (fileSize > kMaxVideoBytes) { // Enforce kMaxVideoBytes limit
+
         _showMessage('Video is too large. Users are currently limited to 500 MB.');
         return;
       }
