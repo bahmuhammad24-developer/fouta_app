@@ -14,6 +14,21 @@ class MonetizationService {
     return true;
   }
 
+  Future<bool> purchaseProduct(String productId) async {
+    // TODO: integrate real payment gateway pending security review.
+    return purchase(productId);
+  }
+
+  Future<bool> subscribeToCreator(String creatorId) async {
+    // TODO: handle recurring subscription payments securely.
+    return purchase('sub-$creatorId');
+  }
+
+  Future<bool> tipCreator(String creatorId, int amountCents) async {
+    // TODO: implement tipping once payment integration is approved.
+    return purchase('tip-$creatorId-$amountCents');
+  }
+
   /// Whether the given [productId] has been purchased in this session.
   bool hasPurchased(String productId) => _purchases.contains(productId);
 }
