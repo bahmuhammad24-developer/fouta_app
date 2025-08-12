@@ -2,6 +2,8 @@
 
 ## Table of Contents
 - [Overview](#overview)
+- [Vision](#vision)
+- [Architecture & Competitive Alignment](#architecture--competitive-alignment)
 - [App Structure](#app-structure)
   - [Directory Structure](#directory-structure)
   - [Screens](#screens)
@@ -18,7 +20,15 @@
 - [Contributing](#contributing)
 
 ## Overview
-Fouta App is a cross-platform Flutter application that integrates Firebase services and supports story creation with camera and microphone features.
+Fouta App is a cross-platform Flutter application that integrates Firebase services and supports story creation with camera and microphone features. It is tailored for the global majority and commits to open dialogue on issues affecting vulnerable communities.
+
+## Vision
+Fouta centers the global majority. The platform avoids suppressing discussions on topics that impact vulnerable communities while equipping users with tools to report abuse and curate their experience. This balance aims to foster open, respectful conversations.
+
+See [docs/vision.md](docs/vision.md) for the broader roadmap.
+
+## Architecture & Competitive Alignment
+Dedicated feature modules keep the project competitive with larger platforms. The roadmap for discovery, moderation, growth, analytics, and monetization lives in [docs/architecture.md](docs/architecture.md).
 
 ## Chat Pro Features
 - Composer supports text and attachments
@@ -37,6 +47,12 @@ Fouta App is a cross-platform Flutter application that integrates Firebase servi
   - `services/` – Backend services
   - `theme/` – App theming
   - `utils/` – Utilities
+  - `features/`
+    - `discovery/`
+    - `moderation/`
+    - `growth/`
+    - `analytics/`
+    - `monetization/`
 
 ### Screens
 
@@ -272,7 +288,8 @@ flutter test
 - 2025-08-13 00:00 UTC – Removed video size constraints by aligning video uploads with image handling.
 - 2025-08-12 15:07 UTC – Clarified 500 MB video upload limit with snackbar message and documentation.
 - 2025-08-12 16:31 UTC – Centralized video upload limit in `kMaxVideoBytes` and referenced it in docs.
-
+- 2025-08-14 00:00 UTC – Documented global majority vision and roadmap.
+- 2025-08-12 19:46 UTC – Scaffolded discovery, moderation, growth, analytics, and monetization modules and documented competitive architecture.
 
 ## Contributing
 - Follow the logging and documentation guidelines outlined above.
