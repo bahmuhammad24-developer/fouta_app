@@ -41,6 +41,9 @@ import 'package:fouta_app/models/story.dart';
 import 'package:fouta_app/widgets/system/offline_banner.dart';
 import 'package:fouta_app/widgets/post_composer.dart';
 import 'package:fouta_app/screens/bookmarks_screen.dart';
+import 'package:fouta_app/screens/shorts_screen.dart';
+import 'package:fouta_app/screens/marketplace_screen.dart';
+import 'package:fouta_app/screens/ar_camera_screen.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -466,6 +469,39 @@ class _AppDrawer extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const BookmarksScreen()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.play_arrow_outlined),
+            title: const Text('Shorts'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ShortsScreen()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.storefront_outlined),
+            title: const Text('Marketplace'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const MarketplaceScreen()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.auto_awesome_outlined),
+            title: const Text('AR Camera'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ArCameraScreen()),
               );
             },
           ),
