@@ -40,6 +40,7 @@ import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/models/story.dart';
 import 'package:fouta_app/widgets/system/offline_banner.dart';
 import 'package:fouta_app/widgets/post_composer.dart';
+import 'package:fouta_app/screens/bookmarks_screen.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -455,6 +456,17 @@ class _AppDrawer extends StatelessWidget {
             onTap: () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (context) => const UnifiedSettingsScreen()));
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.bookmark_outline),
+            title: const Text('Bookmarks'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BookmarksScreen()),
+              );
             },
           ),
           const Divider(),
