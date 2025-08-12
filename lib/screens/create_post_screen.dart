@@ -426,6 +426,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userName = FirebaseAuth.instance.currentUser?.displayName ?? 'Fouta';
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.postId == null ? 'Create New Post' : 'Edit Post'),
@@ -453,7 +454,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               controller: _postContentController,
               maxLines: 6,
               decoration: InputDecoration(
-                hintText: 'What\'s on your mind, Fouta?',
+                hintText: "What's on your mind, $userName?",
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12.0),
                 ),

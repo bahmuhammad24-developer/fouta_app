@@ -39,6 +39,7 @@ import 'package:fouta_app/widgets/skeletons/feed_skeleton.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/models/story.dart';
 import 'package:fouta_app/widgets/system/offline_banner.dart';
+import 'package:fouta_app/widgets/post_composer.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -861,6 +862,16 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
                 ),
               ),
             ),
+          PostComposer(
+            onCompose: () async {
+              widget.setNavBarVisibility(false);
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CreatePostScreen()),
+              );
+              widget.setNavBarVisibility(true);
+            },
+          ),
           FoutaCard(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Row(
