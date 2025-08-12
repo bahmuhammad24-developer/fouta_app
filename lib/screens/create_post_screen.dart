@@ -7,7 +7,6 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
-import 'package:media_kit/media_kit.dart';
 import 'package:image/image.dart' as img;
 import 'package:provider/provider.dart';
 import 'package:fouta_app/services/connectivity_provider.dart';
@@ -61,12 +60,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   // Flag to control preview dialog when new media is selected
   bool _isPreviewing = false;
-
-  // Media upload limitations
-  // Increased limits to accommodate larger video files.
-  // Most modern devices record videos well above 15 MB, which previously
-  // prevented uploads. Allow up to ~500 MB.
-  static const int _maxVideoFileSize = 500 * 1024 * 1024; // 500 MB
 
   @override
   void initState() {
@@ -151,47 +144,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       return;
     }
 
-    // Validate video size for videos on non-web platforms and compute aspect ratio
-    double? aspectRatio;
-    if (isVideo && !kIsWeb) {
-      int fileSize;
-      try {
-        fileSize = pickedFile.path.startsWith('content://')
-            ? await pickedFile.length()
-            : File(pickedFile.path).lengthSync();
-      } catch (e) {
-        _showMessage('Could not access selected video.');
-        return;
-      }
-      if (fileSize > _maxVideoFileSize) {
-        _showMessage('Video is too large. Users are currently limited to 500 MB.');
-        return;
-      }
-      final player = Player();
-      try {
-        final uri = pickedFile.path.startsWith('content://')
-            ? pickedFile.path
-            : Uri.file(pickedFile.path).toString();
-        await player.open(Media(uri), play: false);
-        await player.stream.width.firstWhere((width) => width != null);
-        final width = player.state.width;
-        final height = player.state.height;
-        if (width != null && height != null && height > 0) {
-          aspectRatio = width / height;
-        }
-      } catch (e) {
-        _showMessage('Failed to read video metadata.');
-        await player.dispose();
-        return;
-      }
-      await player.dispose();
-    }
-
     // Add to lists temporarily for preview; if cancelled, remove later
     setState(() {
       _selectedMediaFiles.add(pickedFile!);
       _mediaTypesList.add(isVideo ? 'video' : 'image');
-      _videoAspectRatios.add(aspectRatio);
+      _videoAspectRatios.add(null);
       _selectedMediaBytesList.add(null);
     });
 

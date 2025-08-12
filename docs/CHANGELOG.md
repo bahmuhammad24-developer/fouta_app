@@ -6,4 +6,4 @@
 - rules: added bug_reports paths (create-only for authed users)
 
 ## v1.3
-- docs: clarify 500 MB video upload limit in README
+- fix: allow video uploads without size constraints by aligning validation with images

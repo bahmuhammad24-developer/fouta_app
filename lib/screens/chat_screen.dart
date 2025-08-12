@@ -67,9 +67,6 @@ class _ChatScreenState extends State<ChatScreen> {
   // Reaction emoji options to present to the user on long‑press
   static const List<String> _reactionOptions = ['❤️', '😂', '👍', '😮', '😢', '🙏'];
 
-  // Media upload limitations
-  // Increase limits so typical smartphone videos can be shared.
-  static const int _maxVideoFileSize = 500 * 1024 * 1024; // 500 MB
 
   @override
   void initState() {
@@ -217,27 +214,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     if (pickedFile != null) {
-      // Validate video size for non-web platforms
-      if (isVideo && !kIsWeb) {
-        int fileSize;
-        try {
-          fileSize = pickedFile.path.startsWith('content://')
-              ? await pickedFile.length()
-              : File(pickedFile.path).lengthSync();
-        } catch (e) {
-          AppSnackBar.show(context, 'Could not access selected video.', isError: true);
-          return;
-        }
-        if (fileSize > _maxVideoFileSize) {
-          AppSnackBar.show(
-            context,
-            'Video is too large. Users are currently limited to 500 MB.',
-            isError: true,
-          );
-          return;
-        }
-      }
-
       setState(() {
         _selectedMediaFile = pickedFile;
         _mediaType = isVideo ? 'video' : 'image';

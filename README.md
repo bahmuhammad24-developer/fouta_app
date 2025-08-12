@@ -219,7 +219,7 @@ For help getting started with Flutter development, view the [online documentatio
 
 
 ## Media Pipeline
-Uploads are processed server-side to improve delivery speed and quality. Videos larger than 500 MB are rejected before upload to keep processing manageable. A Cloud Function listens for new files in Firebase Storage and:
+Uploads are processed server-side to improve delivery speed and quality. A Cloud Function listens for new files in Firebase Storage and:
 
 - Resizes images to thumb (128w), preview (480w), and full (~1080w) using **sharp**.
 - Captures a poster frame for videos and generates the same sizes.
@@ -262,7 +262,6 @@ flutter test
 - 2025-08-08 23:10 UTC – Aligned story timestamps with the app-wide relative format for consistency.
 - 2025-08-08 11:50 UTC – Adjusted bottom navigation bar height to account for device padding and prevent overflow errors.
 - 2025-08-08 06:18 UTC – Marked Firebase Messaging background handler as an entry point and logged notification open events to enable push notifications when the app is closed.
-- 2025-08-08 03:09 UTC – Increased video upload limit to 500 MB for posts and chats and expanded video cache capacity.
 - 2025-08-08 02:36 UTC – Registered device tokens and added Cloud Function to send push notifications for new chat messages.
 - 2025-08-08 02:21 UTC – Added AI collaboration guidelines requiring agents to document their work.
 - 2025-08-08 02:15 UTC – Expanded README with a hierarchical app structure including all icons and color choices.
@@ -270,7 +269,7 @@ flutter test
 - 2025-08-07 22:02 UTC – Updated platform configuration and dependencies to support camera and microphone permissions.
 - 2025-08-07 21:54 UTC – Handled camera and microphone permissions in the story camera screen to prevent a crash when creating stories.
 - 2025-08-09 00:43 UTC – Adopted Material 3 design system with tokenized theme and removed hard-coded colors.
-- 2025-08-12 15:07 UTC – Clarified 500 MB video upload limit with snackbar message and documentation.
+- 2025-08-13 00:00 UTC – Removed video size constraints by aligning video uploads with image handling.
 
 ## Contributing
 - Follow the logging and documentation guidelines outlined above.
