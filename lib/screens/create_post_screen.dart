@@ -154,25 +154,34 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     // Validate video size for videos on non-web platforms and compute aspect ratio
     double? aspectRatio;
     if (isVideo && !kIsWeb) {
+
       final fileSize = File(pickedFile.path).lengthSync();
       if (fileSize > kMaxVideoBytes) { // Enforce kMaxVideoBytes limit
+
         _showMessage('Video is too large. Users are currently limited to 500 MB.');
         return;
       }
       final player = Player();
-      // Open the video without autoplay to avoid background audio during
-      // metadata extraction.  `play: false` prevents the player from
-      // immediately starting playback which previously caused the selected
-      // video's audio to play even though the user had not yet posted it.
-      // The `file://` scheme ensures `media_kit` reads the local temp file
-      // rather than treating it as a remote URI.
-      final uri = Uri.file(pickedFile.path).toString();
-      await player.open(Media(uri), play: false);
-      await player.stream.width.firstWhere((width) => width != null);
-      final width = player.state.width;
-      final height = player.state.height;
-      if (width != null && height != null && height > 0) {
-        aspectRatio = width / height;
+      try {
+        // Open the video without autoplay to avoid background audio during
+        // metadata extraction.  `play: false` prevents the player from
+        // immediately starting playback which previously caused the selected
+        // video's audio to play even though the user had not yet posted it.
+        // Using `Uri.parse` allows `media_kit` to open `content://` URIs as well
+        // as file paths.
+        final uri = Uri.parse(pickedFile.path).toString();
+        await player.open(Media(uri), play: false);
+        await player.stream.width.firstWhere((width) => width != null);
+        final width = player.state.width;
+        final height = player.state.height;
+        if (width != null && height != null && height > 0) {
+          aspectRatio = width / height;
+        }
+      } catch (e) {
+        _showMessage('Failed to read video metadata: $e');
+        return;
+      } finally {
+        await player.dispose();
       }
     }
 

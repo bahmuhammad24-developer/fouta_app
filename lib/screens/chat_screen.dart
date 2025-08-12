@@ -219,11 +219,13 @@ class _ChatScreenState extends State<ChatScreen> {
     if (pickedFile != null) {
       // Validate video size for non-web platforms
       if (isVideo && !kIsWeb) {
+
         final fileSize = File(pickedFile.path).lengthSync();
         if (fileSize > kMaxVideoBytes) { // Enforce kMaxVideoBytes limit
+
           AppSnackBar.show(
             context,
-            'Video is too large. Users are currently limited to 500 MB.',
+            'Could not access selected file.',
             isError: true,
           );
           return;
