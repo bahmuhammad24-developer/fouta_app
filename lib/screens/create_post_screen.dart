@@ -130,13 +130,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       return;
     }
 
-
     // Add to lists temporarily for preview; if cancelled, remove later
     setState(() {
-      _selectedMediaFiles.add(pickedFile!);
-      _mediaTypesList.add(isVideo ? 'video' : 'image');
-      _videoAspectRatios.add(null);
-      _selectedMediaBytesList.add(null);
+      _selectedMediaFiles.add(attachment.file);
+      _mediaTypesList.add(attachment.type);
+      _videoAspectRatios.add(isVideo ? attachment.aspectRatio : null);
+      _selectedMediaBytesList.add(attachment.bytes);
 
     });
 
