@@ -14,6 +14,7 @@ import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/utils/overlays.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
+import 'package:fouta_app/constants/media_limits.dart'; // Provides kMaxVideoBytes
 
 class CreatePostScreen extends StatefulWidget {
   final String? postId;
@@ -56,6 +57,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   // Flag to control preview dialog when new media is selected
   bool _isPreviewing = false;
+
 
 
   @override
@@ -127,6 +129,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       _showMessage('No media selected.');
       return;
     }
+
 
 
     setState(() {
