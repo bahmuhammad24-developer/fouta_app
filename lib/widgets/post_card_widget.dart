@@ -52,13 +52,18 @@ class _PostCardWidgetState extends State<PostCardWidget> {
 
   late bool _isLiked;
   late int _likeCount;
+  late bool _isBookmarked;
+  late int _bookmarkCount;
 
   @override
   void initState() {
     super.initState();
-    
+
     _isLiked = widget.post['likes']?.contains(widget.currentUser?.uid) ?? false;
     _likeCount = widget.post['likes']?.length ?? 0;
+    _isBookmarked =
+        widget.post['bookmarks']?.contains(widget.currentUser?.uid) ?? false;
+    _bookmarkCount = widget.post['bookmarks']?.length ?? 0;
   }
 
   @override
@@ -205,6 +210,45 @@ class _PostCardWidgetState extends State<PostCardWidget> {
         _likeCount = _isLiked ? newLikeCount + 1 : newLikeCount - 1;
       });
       widget.onMessage('Failed to update like status: ${e.message}');
+    }
+  }
+
+  Future<void> _toggleBookmark() async {
+    final user = widget.currentUser;
+    if (user == null || user.isAnonymous) {
+      widget.onMessage('Please log in to bookmark posts.');
+      return;
+    }
+
+    final bool newIsBookmarked = !_isBookmarked;
+    final int newBookmarkCount =
+        newIsBookmarked ? _bookmarkCount + 1 : _bookmarkCount - 1;
+
+    setState(() {
+      _isBookmarked = newIsBookmarked;
+      _bookmarkCount = newBookmarkCount;
+    });
+
+    final postRef = FirebaseFirestore.instance
+        .collection('artifacts/${widget.appId}/public/data/posts')
+        .doc(widget.postId);
+
+    try {
+      if (newIsBookmarked) {
+        await postRef
+            .update({'bookmarks': FieldValue.arrayUnion([user.uid])});
+      } else {
+        await postRef
+            .update({'bookmarks': FieldValue.arrayRemove([user.uid])});
+      }
+    } on FirebaseException catch (e) {
+      setState(() {
+        _isBookmarked = !newIsBookmarked;
+        _bookmarkCount = _isBookmarked
+            ? newBookmarkCount + 1
+            : newBookmarkCount - 1;
+      });
+      widget.onMessage('Failed to update bookmark: ${e.message}');
     }
   }
 
@@ -1060,6 +1104,31 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                           const SizedBox(width: 4),
                           Text(
                             '$sharesCount',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: _toggleBookmark,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _isBookmarked
+                                ? Icons.bookmark
+                                : Icons.bookmark_border,
+                            color: _isBookmarked
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).iconTheme.color,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$_bookmarkCount',
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.onSurface,
                             ),

@@ -65,6 +65,9 @@ Dedicated feature modules keep the project competitive with larger platforms. Th
 - `auth_screen.dart`
   - Icons: email_outlined, location_city_outlined, lock_outlined, person_outline, phone_outlined
   - Colors: green, grey
+- `bookmarks_screen.dart`
+  - Icons: bookmark
+  - Colors: None
 - `chat_details_screen.dart`
   - Icons: add, block, person_add
   - Colors: black, red, white
@@ -290,6 +293,7 @@ flutter test
 - 2025-08-12 16:31 UTC – Centralized video upload limit in `kMaxVideoBytes` and referenced it in docs.
 - 2025-08-14 00:00 UTC – Documented global majority vision and roadmap.
 - 2025-08-12 19:46 UTC – Scaffolded discovery, moderation, growth, analytics, and monetization modules and documented competitive architecture.
+- 2025-08-12 20:09 UTC – Added post bookmarking with a dedicated screen for viewing saved posts.
 
 ## Contributing
 - Follow the logging and documentation guidelines outlined above.

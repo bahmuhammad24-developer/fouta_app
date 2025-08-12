@@ -291,6 +291,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           'authorProfileImageUrl': authorProfileImageUrl,
           'timestamp': FieldValue.serverTimestamp(),
           'likes': [],
+          'bookmarks': [],
           'shares': 0,
           'calculatedEngagement': _calculateEngagement(0, 0, 0),
           'type': 'original',
