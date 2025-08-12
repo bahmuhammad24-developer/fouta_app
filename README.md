@@ -320,3 +320,6 @@ flutter test
 - AI agents must document their work with timestamps and append to documentation instead of overwriting.
 
 
+
+## Troubleshooting
+- Firestore may store ID collections as lists rather than counters. Ensure fields like `likes` or `bookmarks` are read as lists before counting to avoid type cast errors.

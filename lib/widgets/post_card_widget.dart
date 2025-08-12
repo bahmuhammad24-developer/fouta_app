@@ -21,6 +21,7 @@ import 'package:fouta_app/widgets/share_post_dialog.dart';
 import 'package:fouta_app/widgets/fouta_card.dart';
 import 'package:fouta_app/utils/overlays.dart';
 import 'package:fouta_app/features/moderation/moderation_service.dart';
+import 'package:fouta_app/utils/json_safety.dart';
 
 class PostCardWidget extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -59,12 +60,12 @@ class _PostCardWidgetState extends State<PostCardWidget> {
   @override
   void initState() {
     super.initState();
-
-    _isLiked = widget.post['likes']?.contains(widget.currentUser?.uid) ?? false;
-    _likeCount = widget.post['likes']?.length ?? 0;
-    _isBookmarked =
-        widget.post['bookmarks']?.contains(widget.currentUser?.uid) ?? false;
-    _bookmarkCount = widget.post['bookmarks']?.length ?? 0;
+    final likes = asStringList(widget.post['likes']);
+    _isLiked = likes.contains(widget.currentUser?.uid);
+    _likeCount = likes.length;
+    final bookmarks = asStringList(widget.post['bookmarks']);
+    _isBookmarked = bookmarks.contains(widget.currentUser?.uid);
+    _bookmarkCount = bookmarks.length;
   }
 
   @override
@@ -148,10 +149,10 @@ class _PostCardWidgetState extends State<PostCardWidget> {
       final postDoc = await postRef.get();
       if (postDoc.exists) {
         final data = postDoc.data()!;
-        final int likes = (data['likes'] as List?)?.length ?? 0;
+        final int likes = asStringList(data['likes']).length;
         final commentsSnapshot = await postRef.collection('comments').get();
         final int comments = commentsSnapshot.docs.length;
-        final int shares = data['shares'] ?? 0;
+        final int shares = asInt(data['shares']);
 
         final int newEngagement = _calculateEngagement(likes, comments, shares);
         await postRef.update({'calculatedEngagement': newEngagement});
@@ -779,7 +780,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
     );
   }
 
-  void _showLikesDialog(BuildContext context, List<dynamic> likerIds) {
+  void _showLikesDialog(BuildContext context, List<String> likerIds) {
     if (likerIds.isEmpty) {
       widget.onMessage('No likes yet!');
       return;
@@ -854,7 +855,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
   @override
   Widget build(BuildContext context) {
     final bool isMyPost = widget.currentUser?.uid == widget.post['authorId'];
-    final int sharesCount = widget.post['shares'] ?? 0;
+    final int sharesCount = asInt(widget.post['shares']);
 
     final String authorDisplayName = widget.post['authorDisplayName'] ?? widget.post['authorEmail']?.split('@')[0] ?? 'Anonymous';
     final String authorProfileImageUrl = widget.post['authorProfileImageUrl'] ?? '';
@@ -1118,7 +1119,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                         ),
                         const SizedBox(width: 4),
                         GestureDetector(
-                          onTap: () => _showLikesDialog(context, widget.post['likes'] ?? []),
+                          onTap: () => _showLikesDialog(context, asStringList(widget.post['likes'])),
                           child: Text(
                             '$_likeCount',
                             style: TextStyle(

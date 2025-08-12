@@ -1,109 +1,49 @@
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
-import '../features/shorts/shorts_service.dart';
-import '../features/discovery/discovery_ranking_service.dart';
+import 'package:fouta_app/features/shorts/shorts_service.dart';
+import 'package:fouta_app/utils/json_safety.dart';
 
-class ShortsScreen extends StatefulWidget {
-  const ShortsScreen({super.key, ShortsService? service, DiscoveryRankingService? ranking})
-      : _service = service,
-        _ranking = ranking;
-
-  final ShortsService? _service;
-  final DiscoveryRankingService? _ranking;
-
-  @override
-  State<ShortsScreen> createState() => _ShortsScreenState();
-}
-
-class _ShortsScreenState extends State<ShortsScreen> {
-  late final ShortsService _service = widget._service ?? ShortsService();
-  late final DiscoveryRankingService _ranking =
-      widget._ranking ?? DiscoveryRankingService();
-  final PageController _controller = PageController();
+class ShortsScreen extends StatelessWidget {
+  const ShortsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final service = ShortsService();
     return Scaffold(
+      appBar: AppBar(title: const Text('Shorts')),
       body: StreamBuilder<List<Map<String, dynamic>>>(
-        stream: _service.fetchShorts(),
-        builder: (context, snap) {
-          if (!snap.hasData) {
+        stream: service.fetchShorts(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final docs = _ranking.rank(snap.data!);
-          return PageView.builder(
-            controller: _controller,
-            scrollDirection: Axis.vertical,
-            itemCount: docs.length,
+          final shorts = snapshot.data ?? [];
+          if (shorts.isEmpty) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.play_circle_outline, size: 48),
+                  SizedBox(height: 16),
+                  Text('No shorts yet'),
+                ],
+              ),
+            );
+          }
+          return ListView.builder(
+            itemCount: shorts.length,
             itemBuilder: (context, index) {
-              final data = docs[index];
-              final url = data['url'] as String?;
-              return _ShortVideo(url: url);
+              final data = shorts[index];
+              final url = data['url']?.toString() ?? '';
+              final likes = asStringList(data['likes']).length;
+              return ListTile(
+                leading: const Icon(Icons.play_arrow),
+                title: Text(url),
+                subtitle: Text('$likes likes'),
+              );
             },
           );
         },
       ),
-    );
-  }
-}
-
-class _ShortVideo extends StatefulWidget {
-  const _ShortVideo({required this.url});
-  final String? url;
-
-  @override
-  State<_ShortVideo> createState() => _ShortVideoState();
-}
-
-class _ShortVideoState extends State<_ShortVideo> {
-  VideoPlayerController? _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.url != null) {
-      _controller = VideoPlayerController.network(widget.url!)..initialize().then((_) {
-          setState(() {});
-          _controller?.play();
-        });
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_controller == null || !_controller!.value.isInitialized) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        FittedBox(
-          fit: BoxFit.cover,
-          child: SizedBox(
-            width: _controller!.value.size.width,
-            height: _controller!.value.size.height,
-            child: VideoPlayer(_controller!),
-          ),
-        ),
-        Positioned(
-          right: 16,
-          bottom: 32,
-          child: Column(
-            children: [
-              IconButton(icon: const Icon(Icons.favorite_border), onPressed: () {}),
-              IconButton(icon: const Icon(Icons.comment), onPressed: () {}),
-              IconButton(icon: const Icon(Icons.share), onPressed: () {}),
-              IconButton(icon: const Icon(Icons.person_add), onPressed: () {}),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
