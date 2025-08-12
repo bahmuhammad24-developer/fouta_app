@@ -10,3 +10,5 @@ Fouta is built for the global majority, prioritizing open dialogue on issues tha
 - **Creation tools** – AR filters, captioning, and lightweight video editing to empower storytellers.
 - **Analytics and scalability** – usage metrics, error logging, and load testing to ensure reliability at scale.
 - **Monetization and partnerships** – explore ads, subscriptions, and community collaborations to sustain the platform.
+
+See [architecture.md](architecture.md) for how these goals map to feature modules.

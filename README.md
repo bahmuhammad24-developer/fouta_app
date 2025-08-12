@@ -3,6 +3,7 @@
 ## Table of Contents
 - [Overview](#overview)
 - [Vision](#vision)
+- [Architecture & Competitive Alignment](#architecture--competitive-alignment)
 - [App Structure](#app-structure)
   - [Directory Structure](#directory-structure)
   - [Screens](#screens)
@@ -26,6 +27,9 @@ Fouta centers the global majority. The platform avoids suppressing discussions o
 
 See [docs/vision.md](docs/vision.md) for the broader roadmap.
 
+## Architecture & Competitive Alignment
+Dedicated feature modules keep the project competitive with larger platforms. The roadmap for discovery, moderation, growth, analytics, and monetization lives in [docs/architecture.md](docs/architecture.md).
+
 ## Chat Pro Features
 - Composer supports text and attachments
 - Message bubbles expose basic status, replies, reactions placeholders
@@ -43,6 +47,12 @@ See [docs/vision.md](docs/vision.md) for the broader roadmap.
   - `services/` – Backend services
   - `theme/` – App theming
   - `utils/` – Utilities
+  - `features/`
+    - `discovery/`
+    - `moderation/`
+    - `growth/`
+    - `analytics/`
+    - `monetization/`
 
 ### Screens
 
@@ -279,6 +289,7 @@ flutter test
 - 2025-08-12 15:07 UTC – Clarified 500 MB video upload limit with snackbar message and documentation.
 - 2025-08-12 16:31 UTC – Centralized video upload limit in `kMaxVideoBytes` and referenced it in docs.
 - 2025-08-14 00:00 UTC – Documented global majority vision and roadmap.
+- 2025-08-12 19:46 UTC – Scaffolded discovery, moderation, growth, analytics, and monetization modules and documented competitive architecture.
 
 ## Contributing
 - Follow the logging and documentation guidelines outlined above.
