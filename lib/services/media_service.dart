@@ -174,12 +174,25 @@ class MediaService {
         height: attachment.height,
       );
     } else if (attachment.type == 'video') {
+      // Preserve the original file extension & MIME type to avoid upload
+      // mismatches (e.g. iOS .mov files stored as .mp4).
+      final name = attachment.file.name;
+      final ext = name.contains('.') ? name.split('.').last.toLowerCase() : 'mp4';
+      final contentType = switch (ext) {
+        'mov' => 'video/quicktime',
+        'webm' => 'video/webm',
+        'mkv' => 'video/x-matroska',
+        'avi' => 'video/x-msvideo',
+        _ => 'video/mp4',
+      };
+      final path = '$basePath$timestamp.$ext';
+
       String videoUrl;
       if (kIsWeb) {
         final data = await attachment.file.readAsBytes();
-        videoUrl = await _uploadBytes(data, '$basePath$timestamp.mp4', 'video/mp4');
+        videoUrl = await _uploadBytes(data, path, contentType);
       } else {
-        videoUrl = await _uploadFile(File(attachment.file.path), '$basePath$timestamp.mp4', 'video/mp4');
+        videoUrl = await _uploadFile(File(attachment.file.path), path, contentType);
       }
       String? thumbUrl;
       final thumbData = await _generateThumb(attachment.file.path);
