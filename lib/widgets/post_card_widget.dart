@@ -213,6 +213,12 @@ class _PostCardWidgetState extends State<PostCardWidget> {
     }
   }
 
+  void _likeOnDoubleTap() {
+    if (!_isLiked) {
+      _toggleLike();
+    }
+  }
+
   Future<void> _toggleBookmark() async {
     final user = widget.currentUser;
     if (user == null || user.isAnonymous) {
@@ -697,6 +703,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
             .toList();
         FullScreenMediaViewer.open(context, items, initialIndex: 0);
       },
+      onDoubleTap: _likeOnDoubleTap,
       child: Stack(
         children: [
           thumb,
