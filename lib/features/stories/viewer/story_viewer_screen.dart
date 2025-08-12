@@ -4,6 +4,7 @@ import '../../../models/story.dart';
 import '../../../models/media_item.dart';
 import '../data/story_repository.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// Full-screen viewer for stories with basic gestures.
 class StoryViewerScreen extends StatefulWidget {
@@ -25,6 +26,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   late PageController _storyController;
   late AnimationController _progress;
   final StoryRepository _repo = StoryRepository();
+  final Set<String> _marked = {};
 
   int _storyIndex = 0;
   int _itemIndex = 0;
@@ -50,11 +52,17 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   void _startCurrent() {
     final story = widget.stories[_storyIndex];
     final item = story.items[_itemIndex];
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null &&
+        !_marked.contains(item.media.id) &&
+        !item.viewers.contains(uid)) {
+      _marked.add(item.media.id);
+      _repo.markViewed(ownerId: story.authorId, slideId: item.media.id, uid: uid);
+    }
     _progress
       ..duration = _slideDuration(item)
       ..forward(from: 0)
       ..addStatusListener(_handleStatus);
-    _repo.markViewed(story.authorId, item.media.id);
   }
 
   void _handleStatus(AnimationStatus status) {
