@@ -128,6 +128,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       return;
     }
 
+
     setState(() {
       _selectedMediaFiles.add(attachment.file);
       _mediaTypesList.add(attachment.type);

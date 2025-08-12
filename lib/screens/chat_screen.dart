@@ -212,11 +212,13 @@ class _ChatScreenState extends State<ChatScreen> {
         : await _mediaService.pickImage(source: source);
     if (attachment == null) return;
 
+
     setState(() {
       _selectedMediaFile = attachment.file;
       _selectedMediaBytes = attachment.bytes;
       _mediaType = attachment.type;
     });
+
   }
 
     Future<void> _startRecording() async {
