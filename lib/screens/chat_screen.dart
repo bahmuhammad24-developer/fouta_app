@@ -212,23 +212,12 @@ class _ChatScreenState extends State<ChatScreen> {
         : await _mediaService.pickImage(source: source);
     if (attachment == null) return;
 
-
-    if (pickedFile != null) {
-      setState(() {
-        _selectedMediaFile = pickedFile;
-        _mediaType = isVideo ? 'video' : 'image';
-        if (kIsWeb && !isVideo) {
-          // Only read bytes for image previews on web. Video previews show a placeholder.
-          pickedFile!.readAsBytes().then((bytes) {
-            setState(() {
-              _selectedMediaBytes = bytes;
-            });
-          });
-        } else {
-          _selectedMediaBytes = null;
-        }
-      });
-    }
+    setState(() {
+      _selectedMediaFile = attachment.file;
+      _mediaType = attachment.type;
+      // For web image previews, bytes will be non-null. Videos use a placeholder.
+      _selectedMediaBytes = attachment.bytes;
+    });
 
   }
 
