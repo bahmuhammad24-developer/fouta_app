@@ -83,7 +83,7 @@ Fouta App is a cross-platform Flutter application that integrates Firebase servi
   - Icons: group_add
   - Colors: None
 - `home_screen.dart`
-  - Icons: add_circle_outline, archive_outlined, chat_bubble_outline, event_outlined, home_outlined, info_outline, logout, menu, message, notifications_outlined, people_outlined, person, person_outlined, search, settings_outlined, volume_mute_outlined, wifi_off
+  - Icons: archive_outlined, chat_bubble_outline, event_outlined, home_outlined, info_outline, logout, menu, message, notifications_outlined, people_outlined, person, person_outlined, search, settings_outlined, volume_mute_outlined, wifi_off
   - Colors: blue, green, grey, white
 - `new_chat_screen.dart`
   - Icons: group_add, person
