@@ -131,11 +131,19 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       return;
     }
 
-    var file = attachment.file;
+    // Always work with XFile objects for media attachments.
+    // Convert to a dart:io File for VideoEditor operations.
+    XFile file = attachment.file;
     if (isVideo) {
       final editor = VideoEditor();
       final duration = Duration(milliseconds: attachment.durationMs ?? 0);
-      file = await editor.trim(file, const Duration(seconds: 0), duration);
+      final File videoFile = File(file.path); // VideoEditor expects File
+      final File trimmedFile = await editor.trim(
+        videoFile,
+        const Duration(seconds: 0),
+        duration,
+      );
+      file = XFile(trimmedFile.path); // Convert back to XFile
     }
 
     setState(() {
