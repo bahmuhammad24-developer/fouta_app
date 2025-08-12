@@ -131,6 +131,15 @@ Dedicated feature modules keep the project competitive with larger platforms. Th
 - `unified_settings_screen.dart`
   - Icons: dark_mode_outlined, data_saver_on_outlined, delete_forever_outlined, info_outline, lock_outline, person_outline, privacy_tip_outlined
   - Colors: green, red, white
+- `ar_camera_screen.dart`
+  - Icons: auto_awesome_outlined
+  - Colors: None
+- `marketplace_screen.dart`
+  - Icons: storefront_outlined
+  - Colors: None
+- `shorts_screen.dart`
+  - Icons: play_arrow_outlined
+  - Colors: None
 
 ### Widgets
 
@@ -296,6 +305,7 @@ flutter test
 - 2025-08-12 20:09 UTC – Added post bookmarking with a dedicated screen for viewing saved posts.
 - 2025-08-12 20:21 UTC – Added double-tap to like posts for quicker engagement.
 - 2025-08-12 20:39 UTC – Enabled users to report posts for moderation review.
+- 2025-08-12 20:52 UTC – Added Shorts, Marketplace, and AR Camera stub screens accessible from the navigation drawer.
 
 ## Contributing
 - Follow the logging and documentation guidelines outlined above.
