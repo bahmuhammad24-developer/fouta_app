@@ -276,6 +276,11 @@ To attach captions to a video, upload a WebVTT file to Storage and set its downl
 - Items are marked seen after being visible for at least one second and cached locally for instant tray updates.
 
 
+## Firestore Collections
+
+- `products` – documents contain `name`, `price`, `description`, and `imageUrl` for marketplace listings.
+- `purchases` – records `userId`, `productId`, and `timestamp` for digital goods transactions.
+
 ## Testing
 Run the test suite with:
 ```bash
@@ -306,6 +311,7 @@ flutter test
 - 2025-08-12 20:21 UTC – Added double-tap to like posts for quicker engagement.
 - 2025-08-12 20:39 UTC – Enabled users to report posts for moderation review.
 - 2025-08-12 20:52 UTC – Added Shorts, Marketplace, and AR Camera stub screens accessible from the navigation drawer.
+- 2025-08-15 00:00 UTC – Introduced ranking service, onboarding flow, AR effects, shorts feed, marketplace, growth and moderation tools, and Firebase Analytics integration.
 
 ## Contributing
 - Follow the logging and documentation guidelines outlined above.

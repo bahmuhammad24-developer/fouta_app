@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:fouta_app/services/media_service.dart';
+import 'package:fouta_app/features/creation/editor/video_editor.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
@@ -130,13 +131,18 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       return;
     }
 
-    // Add to lists temporarily for preview; if cancelled, remove later
+    var file = attachment.file;
+    if (isVideo) {
+      final editor = VideoEditor();
+      final duration = Duration(milliseconds: attachment.durationMs ?? 0);
+      file = await editor.trim(file, const Duration(seconds: 0), duration);
+    }
+
     setState(() {
-      _selectedMediaFiles.add(attachment.file);
+      _selectedMediaFiles.add(file);
       _mediaTypesList.add(attachment.type);
       _videoAspectRatios.add(isVideo ? attachment.aspectRatio : null);
       _selectedMediaBytesList.add(attachment.bytes);
-
     });
 
     final proceed = await _showPreviewDialog();

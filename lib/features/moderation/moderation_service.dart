@@ -26,4 +26,29 @@ class ModerationService {
       'timestamp': FieldValue.serverTimestamp(),
     });
   }
+
+  Future<void> reportComment({
+    required String commentId,
+    required String reporterId,
+    required String authorId,
+    required String reason,
+  }) async {
+    await _firestore.collection('artifacts/$appId/public/data/comment_reports').add({
+      'commentId': commentId,
+      'reporterId': reporterId,
+      'authorId': authorId,
+      'reason': reason,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> blockUser(String userId, String targetId) async {
+    await _firestore.collection('users').doc(userId).collection('blocks').doc(targetId).set({
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> unblockUser(String userId, String targetId) async {
+    await _firestore.collection('users').doc(userId).collection('blocks').doc(targetId).delete();
+  }
 }

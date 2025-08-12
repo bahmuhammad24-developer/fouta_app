@@ -8,7 +8,8 @@ Fouta is built for the global majority, prioritizing open dialogue on issues tha
 - **Moderation and safety** – robust reporting and community moderation queues that preserve critical discussions.
 - **Growth and onboarding** – social graph imports, referrals, and guided flows to help new users connect.
 - **Creation tools** – AR filters, captioning, and lightweight video editing to empower storytellers.
-- **Analytics and scalability** – usage metrics, error logging, and load testing to ensure reliability at scale.
-- **Monetization and partnerships** – explore ads, subscriptions, and community collaborations to sustain the platform.
+- **Short-form video** – vertical clips with engagement controls, ranked by interaction signals.
+- **Marketplace and monetization** – Firestore-backed products, purchases and creator support tools.
+- **Analytics and scalability** – Firebase Analytics with opt-out and load testing to ensure reliability at scale.
 
 See [architecture.md](architecture.md) for how these goals map to feature modules.

@@ -1,42 +1,30 @@
-/// Collects usage metrics and performance traces to guide product decisions.
-import 'dart:async';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:flutter/foundation.dart';
-
-/// Represents a single analytics event.
-class AnalyticsEvent {
-  final String name;
-  final Map<String, Object?> parameters;
-
-  const AnalyticsEvent(this.name, [this.parameters = const {}]);
-
-  @override
-  String toString() => 'AnalyticsEvent(name: $name, parameters: $parameters)';
-}
-
-/// Minimal analytics service that records events in memory and exposes a stream
-/// for interested listeners. In a production environment these events would be
-/// forwarded to an analytics backend and surfaced in dashboards.
+/// Wrapper around [FirebaseAnalytics] with simple opt-out capability.
 class AnalyticsService {
-  final _events = <AnalyticsEvent>[];
-  final _controller = StreamController<AnalyticsEvent>.broadcast();
+  AnalyticsService({FirebaseAnalytics? analytics})
+      : _analytics = analytics ?? FirebaseAnalytics.instance;
 
-  /// Immutable view of recorded events.
-  List<AnalyticsEvent> get events => List.unmodifiable(_events);
+  final FirebaseAnalytics _analytics;
+  bool _enabled = true;
 
-  /// Stream of events as they are logged.
-  Stream<AnalyticsEvent> get eventsStream => _controller.stream;
-
-  /// Record an event and notify listeners. Parameters are optional.
-  void logEvent(String name, {Map<String, Object?>? parameters}) {
-    final event = AnalyticsEvent(name, parameters ?? {});
-    _events.add(event);
-    _controller.add(event);
-    debugPrint('Analytics: $event');
+  Future<void> init() async {
+    final prefs = await SharedPreferences.getInstance();
+    _enabled = prefs.getBool('analytics_enabled') ?? true;
   }
 
-  /// Dispose of resources.
-  void dispose() {
-    _controller.close();
+  Future<void> setEnabled(bool enabled) async {
+    _enabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('analytics_enabled', enabled);
+  }
+
+  Future<void> logEvent(String name, {Map<String, Object?>? parameters}) async {
+    if (!_enabled) return;
+    await _analytics.logEvent(name: name, parameters: parameters);
+    final now = DateTime.now().toIso8601String();
+    // ignore: avoid_print
+    print('[$now][AnalyticsService] logged $name');
   }
 }

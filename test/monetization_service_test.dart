@@ -8,4 +8,14 @@ void main() {
     expect(result, true);
     expect(service.hasPurchased('pro'), true);
   });
+
+  test('additional monetization methods record purchases', () async {
+    final service = MonetizationService();
+    await service.purchaseProduct('item1');
+    await service.subscribeToCreator('creator');
+    await service.tipCreator('creator', 100);
+    expect(service.hasPurchased('item1'), true);
+    expect(service.hasPurchased('sub-creator'), true);
+    expect(service.hasPurchased('tip-creator-100'), true);
+  });
 }

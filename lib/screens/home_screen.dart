@@ -44,6 +44,8 @@ import 'package:fouta_app/screens/bookmarks_screen.dart';
 import 'package:fouta_app/screens/shorts_screen.dart';
 import 'package:fouta_app/screens/marketplace_screen.dart';
 import 'package:fouta_app/screens/ar_camera_screen.dart';
+import 'package:fouta_app/features/discovery/discovery_ranking_service.dart';
+import 'package:fouta_app/features/discovery/discovery_service.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -541,8 +543,10 @@ class FeedTab extends StatefulWidget {
 }
 
 // Extend TickerProviderStateMixin to use TabController for the feed toggle
+enum FeedType { forYou, following, friends }
+
 class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
-  bool _showFollowingFeed = false;
+  FeedType _feedType = FeedType.forYou;
   List<String> _currentUserFollowingIds = [];
   StreamSubscription? _followingSubscription;
   final VideoCacheService _videoCacheService = VideoCacheService();
@@ -830,17 +834,40 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
       if (postAuthorId.isEmpty) return false;
 
       final postVisibility = postData['postVisibility'] ?? 'everyone';
-
-      if (_showFollowingFeed) {
-        return currentUser != null && _currentUserFollowingIds.contains(postAuthorId);
-      } else {
-        if (postVisibility == 'everyone') return true;
-        if (postVisibility == 'followers') {
-          return currentUser != null && (currentUser.uid == postAuthorId || _currentUserFollowingIds.contains(postAuthorId));
-        }
+      switch (_feedType) {
+        case FeedType.following:
+          return currentUser != null && _currentUserFollowingIds.contains(postAuthorId);
+        case FeedType.friends:
+          // Treat friends as mutual follows. Placeholder implementation.
+          return currentUser != null &&
+              _currentUserFollowingIds.contains(postAuthorId) &&
+              postData['followers']?.contains(currentUser.uid) == true;
+        case FeedType.forYou:
+        default:
+          if (postVisibility == 'everyone') return true;
+          if (postVisibility == 'followers') {
+            return currentUser != null &&
+                (currentUser.uid == postAuthorId ||
+                    _currentUserFollowingIds.contains(postAuthorId));
+          }
+          return false;
       }
-      return false;
     }).toList();
+    final rankingService = DiscoveryRankingService();
+    final ranked = rankingService.rank(filteredPosts, scoreBuilder: (doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return rankingService.computeScore(
+        signals: {
+          'likes': (data['likes'] as int?) ?? 0,
+          'comments': (data['comments'] as int?) ?? 0,
+        },
+        metadata: {
+          'age': DateTime.now()
+              .difference((data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now())
+              .inMinutes,
+        },
+      );
+    });
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -916,23 +943,21 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ChoiceChip(
-                  label: const Text('Explore'),
-                  selected: !_showFollowingFeed,
-                  onSelected: (selected) {
-                    setState(() {
-                      _showFollowingFeed = false;
-                    });
-                  },
+                  label: const Text('For You'),
+                  selected: _feedType == FeedType.forYou,
+                  onSelected: (_) => setState(() => _feedType = FeedType.forYou),
                 ),
                 const SizedBox(width: 8),
                 ChoiceChip(
                   label: const Text('Following'),
-                  selected: _showFollowingFeed,
-                  onSelected: (selected) {
-                    setState(() {
-                      _showFollowingFeed = true;
-                    });
-                  },
+                  selected: _feedType == FeedType.following,
+                  onSelected: (_) => setState(() => _feedType = FeedType.following),
+                ),
+                const SizedBox(width: 8),
+                ChoiceChip(
+                  label: const Text('Friends'),
+                  selected: _feedType == FeedType.friends,
+                  onSelected: (_) => setState(() => _feedType = FeedType.friends),
                 ),
               ],
             ),
@@ -940,7 +965,7 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
           Expanded(
             child: (_posts.isEmpty && _isLoading)
                 ? const FeedSkeleton()
-                : (filteredPosts.isEmpty)
+                : (ranked.isEmpty)
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -966,17 +991,16 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
                       )
                     : ListView.builder(
                         controller: _scrollController,
-                        // FIX: Removed horizontal padding to make cards wider
                         padding: const EdgeInsets.fromLTRB(0, 8, 0, 80),
-                        itemCount: filteredPosts.length + (_hasMore ? 1 : 0),
+                        itemCount: ranked.length + (_hasMore ? 1 : 0),
                         itemBuilder: (context, index) {
-                          if (index == filteredPosts.length) {
+                          if (index == ranked.length) {
                             return _isLoading
                                 ? const Padding(padding: EdgeInsets.all(16.0), child: Center(child: CircularProgressIndicator()))
                                 : const SizedBox.shrink();
                           }
 
-                          final postDoc = filteredPosts[index];
+                          final postDoc = ranked[index];
                           final post = postDoc.data() as Map<String, dynamic>;
                           final postId = postDoc.id;
 

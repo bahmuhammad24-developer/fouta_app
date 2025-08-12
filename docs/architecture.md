@@ -10,8 +10,10 @@ Fouta's architecture is expanding to match capabilities of major social platform
 | Moderation | Reporting, blocking, and community review | Instagram safety tools |
 | Growth | Onboarding, referrals, and social graph import | Facebook friend finder, TikTok invites |
 | Creation tools | AR filters, captioning, lightweight editing | Snapchat lenses, TikTok editor |
-| Analytics | Usage metrics and performance tracing | Platform analytics dashboards |
+| Analytics | Firebase Analytics events with user opt-out | Platform analytics dashboards |
 | Monetization | Ads, subscriptions, and marketplace support | Instagram shopping, TikTok coins |
+| Shorts | Vertical short-form video feed | TikTok, Reels |
+| Marketplace | Firestore-backed product listings | Social commerce |
 
 Each module lives under `lib/features` as a scaffolded service with room for future implementation.
 
@@ -23,3 +25,4 @@ Each module lives under `lib/features` as a scaffolded service with room for fut
 4. Design referral flows and contact syncing to boost early growth.
 5. Instrument analytics events across screens and widgets.
 6. Validate monetization strategies with small pilots before scaling.
+7. Launch marketplace and short-form video pilots to gather early feedback.
