@@ -1,4 +1,5 @@
 import 'media_item.dart';
+import '../utils/json_safety.dart';
 
 /// Basic post model exposing media attachments.
 class Post {
@@ -15,17 +16,15 @@ class Post {
   final List<String> bookmarks;
 
   factory Post.fromMap(String id, Map<String, dynamic> data) {
-    final attachmentList = (data['attachments'] as List<dynamic>? ?? [])
-        .whereType<Map<String, dynamic>>()
+    final attachmentList = asListOf<Map<String, dynamic>>(data['attachments'])
         .map(MediaItem.fromMap)
         .whereType<MediaItem>()
         .toList();
     return Post(
       id: id,
-      content: data['content'] as String? ?? '',
+      content: data['content']?.toString() ?? '',
       attachments: attachmentList,
-      bookmarks:
-          List<String>.from(data['bookmarks'] as List<dynamic>? ?? const []),
+      bookmarks: asStringList(data['bookmarks']),
     );
   }
 }

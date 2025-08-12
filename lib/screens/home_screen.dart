@@ -7,7 +7,7 @@ import 'package:fouta_app/services/video_player_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:fouta_app/screens/events_list_screen.dart';
 import 'package:fouta_app/screens/notifications_screen.dart';
 import 'package:fouta_app/screens/unified_settings_screen.dart';
@@ -46,6 +46,7 @@ import 'package:fouta_app/screens/marketplace_screen.dart';
 import 'package:fouta_app/screens/ar_camera_screen.dart';
 import 'package:fouta_app/features/discovery/discovery_ranking_service.dart';
 import 'package:fouta_app/features/discovery/discovery_service.dart';
+import 'package:fouta_app/utils/json_safety.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -856,10 +857,17 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
     final rankingService = DiscoveryRankingService();
     final ranked = rankingService.rank(filteredPosts, scoreBuilder: (doc) {
       final data = doc.data() as Map<String, dynamic>;
+      final likes = asStringList(data['likes']).length;
+      final comments = asInt(
+        data['commentsCount'],
+        fallback: (data['comments'] is List)
+            ? (data['comments'] as List).length
+            : 0,
+      );
       return rankingService.computeScore(
         signals: {
-          'likes': (data['likes'] as int?) ?? 0,
-          'comments': (data['comments'] as int?) ?? 0,
+          'likes': likes,
+          'comments': comments,
         },
         metadata: {
           'age': DateTime.now()
@@ -999,21 +1007,26 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
                                 ? const Padding(padding: EdgeInsets.all(16.0), child: Center(child: CircularProgressIndicator()))
                                 : const SizedBox.shrink();
                           }
+                          try {
+                            final postDoc = ranked[index];
+                            final post = postDoc.data() as Map<String, dynamic>;
+                            final postId = postDoc.id;
 
-                          final postDoc = ranked[index];
-                          final post = postDoc.data() as Map<String, dynamic>;
-                          final postId = postDoc.id;
-
-                          return PostCardWidget(
-                            key: ValueKey(postId),
-                            post: post,
-                            postId: postId,
-                            currentUser: currentUser,
-                            appId: APP_ID,
-                            onMessage: _showMessage,
-                            isDataSaverOn: _isDataSaverOn,
-                            isOnMobileData: _isOnMobileData,
-                          );
+                            return PostCardWidget(
+                              key: ValueKey(postId),
+                              post: post,
+                              postId: postId,
+                              currentUser: currentUser,
+                              appId: APP_ID,
+                              onMessage: _showMessage,
+                              isDataSaverOn: _isDataSaverOn,
+                              isOnMobileData: _isOnMobileData,
+                            );
+                          } catch (e, st) {
+                            debugPrint('Failed to render post: $e');
+                            debugPrint(st.toString());
+                            return const ListTile(title: Text('Failed to render post'));
+                          }
                         },
                       ),
           ),
@@ -1185,7 +1198,7 @@ class _ChatListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isGroupChat = chat['isGroupChat'] ?? false;
     final unreadCounts = chat['unreadCounts'] as Map<String, dynamic>? ?? {};
-    final int unreadCount = (unreadCounts[currentUserId] as int?) ?? 0;
+    final int unreadCount = asInt(unreadCounts[currentUserId]);
     
     final Map<String, dynamic> typingStatus = chat['typingStatus'] ?? {};
     final otherTypingUsers = typingStatus.entries
