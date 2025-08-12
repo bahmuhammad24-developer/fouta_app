@@ -2,21 +2,16 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:fouta_app/services/media_service.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
-import 'package:media_kit/media_kit.dart';
-import 'package:image/image.dart' as img;
 import 'package:provider/provider.dart';
 import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/utils/overlays.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
-import 'package:video_player/video_player.dart';
-import 'package:fouta_app/services/permissions.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/constants/media_limits.dart'; // Provides kMaxVideoBytes
@@ -58,15 +53,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   // Existing media for editing posts (list of maps with url and type)
   List<Map<String, dynamic>>? _existingMedia;
 
-  final ImagePicker _picker = ImagePicker();
+  final MediaService _mediaService = MediaService();
 
   // Flag to control preview dialog when new media is selected
   bool _isPreviewing = false;
 
-  // Media upload limitations.
-  // Increased limits to accommodate larger video files. Most modern devices
-  // record videos well above 15 MB, which previously prevented uploads.
-  // Allow up to ~500 MB via kMaxVideoBytes.
+
 
   @override
   void initState() {
@@ -130,73 +122,25 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       _showMessage('Upload in progress. Please wait.');
       return;
     }
-
-    XFile? pickedFile;
-    try {
-      final granted = await Permissions.requestMediaAccess();
-      if (!granted) {
-        _showMessage('Permission denied.');
-        return;
-      }
-      pickedFile = isVideo
-          ? await _picker.pickVideo(source: source)
-          : await _picker.pickImage(source: source);
-    } catch (e) {
-      _showMessage('Error picking media: $e');
-      return;
-    }
-
-    if (pickedFile == null) {
+    final attachment = isVideo
+        ? await _mediaService.pickVideo(source: source)
+        : await _mediaService.pickImage(source: source);
+    if (attachment == null) {
       _showMessage('No media selected.');
       return;
     }
 
-    // Validate video size for videos on non-web platforms and compute aspect ratio
-    double? aspectRatio;
-    if (isVideo && !kIsWeb) {
 
-      final fileSize = File(pickedFile.path).lengthSync();
-      if (fileSize > kMaxVideoBytes) { // Enforce kMaxVideoBytes limit
 
-        _showMessage('Video is too large. Users are currently limited to 500 MB.');
-        return;
-      }
-      final player = Player();
-      try {
-        // Open the video without autoplay to avoid background audio during
-        // metadata extraction.  `play: false` prevents the player from
-        // immediately starting playback which previously caused the selected
-        // video's audio to play even though the user had not yet posted it.
-        // Using `Uri.parse` allows `media_kit` to open `content://` URIs as well
-        // as file paths.
-        final uri = Uri.parse(pickedFile.path).toString();
-        await player.open(Media(uri), play: false);
-        await player.stream.width.firstWhere((width) => width != null);
-        final width = player.state.width;
-        final height = player.state.height;
-        if (width != null && height != null && height > 0) {
-          aspectRatio = width / height;
-        }
-      } catch (e) {
-        _showMessage('Failed to read video metadata: $e');
-        return;
-      } finally {
-        await player.dispose();
-      }
-    }
-
-    // Add to lists temporarily for preview; if cancelled, remove later
     setState(() {
-      _selectedMediaFiles.add(pickedFile!);
-      _mediaTypesList.add(isVideo ? 'video' : 'image');
-      _videoAspectRatios.add(aspectRatio);
-      _selectedMediaBytesList.add(null);
+      _selectedMediaFiles.add(attachment.file);
+      _mediaTypesList.add(attachment.type);
+      _videoAspectRatios.add(attachment.aspectRatio);
+      _selectedMediaBytesList.add(attachment.bytes);
     });
 
-    // Show preview for the latest media and ask for confirmation
     final proceed = await _showPreviewDialog();
     if (!proceed) {
-      // Remove the last added media if user cancels
       setState(() {
         _selectedMediaFiles.removeLast();
         _mediaTypesList.removeLast();
@@ -274,165 +218,36 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         final XFile file = _selectedMediaFiles[i];
         final String type = _mediaTypesList[i];
         final double? aspect = _videoAspectRatios[i];
-
-        if (type == 'video') {
-          Uint8List? bytes;
-          File? fileObj;
-          if (file.path.startsWith('content://')) {
-            bytes = await file.readAsBytes();
-          } else {
-            fileObj = File(file.path);
-          }
-
-          final baseName = '${DateTime.now().millisecondsSinceEpoch}_${user.uid}_$i';
-          final videoRef = FirebaseStorage.instance.ref().child('videos/${user.uid}/$baseName.mp4');
-          final metadata = SettableMetadata(contentType: 'video/mp4');
-          final UploadTask uploadTask =
-              bytes != null ? videoRef.putData(bytes, metadata) : videoRef.putFile(fileObj!, metadata);
-
-          uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-            if (mounted) {
-              setState(() {
-                _uploadProgress = ((uploadedCount + snapshot.bytesTransferred / snapshot.totalBytes) / _selectedMediaFiles.length);
-              });
-            }
-          });
-
-          try {
-            await uploadTask;
-          } on FirebaseException catch (e) {
-            _showMessage('Media upload failed: ${e.message}');
-            setState(() { _isUploading = false; });
-            return;
-          }
-
-          final videoUrl = await videoRef.getDownloadURL();
-
-          int? durationMs;
-          VideoPlayerController controller;
-          if (file.path.startsWith('content://')) {
-            controller = VideoPlayerController.contentUri(Uri.parse(file.path));
-          } else {
-            controller = VideoPlayerController.file(fileObj!);
-          }
-          await controller.initialize();
-          durationMs = controller.value.duration.inMilliseconds;
-          await controller.dispose();
-          String? thumbUrl;
-          final thumbData = await VideoThumbnail.thumbnailData(
-            video: file.path,
-            imageFormat: ImageFormat.JPEG,
-            quality: 75,
-          );
-          if (thumbData != null) {
-            final thumbRef = FirebaseStorage.instance.ref().child('videos/${user.uid}/${baseName}_thumb.jpg');
-            await thumbRef.putData(
-              thumbData,
-              SettableMetadata(contentType: 'image/jpeg'),
-            );
-            thumbUrl = await thumbRef.getDownloadURL();
-          }
-
-          attachments.add({
-            'type': 'video',
-            'url': videoUrl,
-            if (thumbUrl != null) 'thumbUrl': thumbUrl,
-            if (aspect != null) 'aspectRatio': aspect,
-            if (durationMs != null) 'durationMs': durationMs,
-          });
-          uploadedCount++;
-          continue;
-        }
-
-        // IMAGE HANDLING
-        String fileName = file.name;
-        Uint8List? bytesToUpload;
-        File? fileToUpload;
-        if (kIsWeb) {
-          bytesToUpload = await file.readAsBytes();
-        } else {
-          final originalBytes = await file.readAsBytes();
-          final img.Image? decoded = img.decodeImage(originalBytes);
-          if (decoded != null) {
-            final compressed = img.encodeJpg(decoded, quality: 80);
-            bytesToUpload = Uint8List.fromList(compressed);
-          } else {
-            fileToUpload = File(file.path);
-          }
-        }
-
-        final String fileExtension = fileName.split('.').last;
-        final String storagePath = '${type}s/${user.uid}/${DateTime.now().millisecondsSinceEpoch}_${user.uid}_$i.$fileExtension';
-        final storageRef = FirebaseStorage.instance.ref().child(storagePath);
-
-        final mediaDoc = FirebaseFirestore.instance
-            .collection('artifacts/$APP_ID/public/data/media')
-            .doc();
-        await mediaDoc.set({
-          'ownerId': user.uid,
-          'type': type,
-          'storagePath': storagePath,
-        });
-
-        final SettableMetadata metadata = SettableMetadata(
-          contentType: 'image/jpeg',
-          customMetadata: {
-            'docId': mediaDoc.id,
-            'ownerId': user.uid,
-          },
+        final attachment = MediaAttachment(
+          file: file,
+          type: type,
+          aspectRatio: aspect,
+          bytes: _selectedMediaBytesList[i],
         );
-
-        UploadTask uploadTask;
-        if (bytesToUpload != null) {
-          uploadTask = storageRef.putData(bytesToUpload, metadata);
-        } else if (fileToUpload != null) {
-          uploadTask = storageRef.putFile(fileToUpload, metadata);
-        } else {
-          _showMessage('Invalid media data for upload.');
-          setState(() { _isUploading = false; });
-          return;
-        }
-
-        uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-          if (mounted) {
-            setState(() {
-              _uploadProgress = ((uploadedCount + snapshot.bytesTransferred / snapshot.totalBytes) / _selectedMediaFiles.length);
-            });
-          }
-        });
-
-        String? url;
         try {
-          await uploadTask;
-          url = await storageRef.getDownloadURL();
+          final uploaded = await _mediaService.upload(attachment);
+          attachments.add({
+            'type': uploaded.type,
+            'url': uploaded.url,
+            if (uploaded.thumbUrl != null) 'thumbUrl': uploaded.thumbUrl,
+            if (uploaded.aspectRatio != null) 'aspectRatio': uploaded.aspectRatio,
+            if (uploaded.durationMs != null) 'durationMs': uploaded.durationMs,
+            if (uploaded.width != null) 'width': uploaded.width,
+            if (uploaded.height != null) 'height': uploaded.height,
+          });
         } on FirebaseException catch (e) {
           _showMessage('Media upload failed: ${e.message}');
-          setState(() { _isUploading = false; });
+          setState(() {
+            _isUploading = false;
+          });
           return;
         }
-
-        Map<String, dynamic>? processed;
-        try {
-          final snap = await mediaDoc.snapshots().firstWhere(
-            (doc) => doc.data() != null && doc.data()!.containsKey('fullUrl'),
-          );
-          processed = snap.data();
-        } catch (e) {
-          debugPrint('Timed out waiting for media processing: $e');
-        }
-
-        if (processed != null) {
-          attachments.add({
-            'type': type,
-            'url': processed['fullUrl'],
-            'thumbUrl': processed['thumbUrl'],
-            'previewUrl': processed['previewUrl'],
-            'blurhash': processed['blurhash'],
-            'width': processed['width'],
-            'height': processed['height'],
+        uploadedCount++;
+        if (mounted) {
+          setState(() {
+            _uploadProgress = uploadedCount / _selectedMediaFiles.length;
           });
         }
-        uploadedCount++;
       }
       // Reset uploading state after all uploads
       setState(() {

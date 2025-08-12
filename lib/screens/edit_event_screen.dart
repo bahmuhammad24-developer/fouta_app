@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fouta_app/main.dart';
 import 'package:intl/intl.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:fouta_app/services/media_service.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -48,11 +48,13 @@ class _EditEventScreenState extends State<EditEventScreen> {
     _selectedTime = TimeOfDay.fromDateTime(initialDateTime);
   }
 
+  final MediaService _mediaService = MediaService();
+
   Future<void> _pickImage() async {
-    final pickedImage = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 70);
-    if(pickedImage != null) {
+    final attachment = await _mediaService.pickImage();
+    if (attachment != null) {
       setState(() {
-        _headerImageFile = File(pickedImage.path);
+        _headerImageFile = File(attachment.file.path);
       });
     }
   }
