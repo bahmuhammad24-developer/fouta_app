@@ -19,6 +19,7 @@ import 'package:fouta_app/screens/profile_screen.dart';
 import 'package:fouta_app/widgets/chat_video_player.dart';
 import 'package:fouta_app/screens/fullscreen_media_viewer.dart';
 import 'package:fouta_app/models/media_item.dart';
+import 'package:image/image.dart' as img;
 import 'package:provider/provider.dart';
 import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/widgets/chat_audio_player.dart';
@@ -68,8 +69,7 @@ class _ChatScreenState extends State<ChatScreen> {
   // Reaction emoji options to present to the user on long‑press
   static const List<String> _reactionOptions = ['❤️', '😂', '👍', '😮', '😢', '🙏'];
 
-  // Media upload limitations.
-  // Increase limits so typical smartphone videos can be shared; see kMaxVideoBytes.
+
 
   @override
   void initState() {
@@ -213,12 +213,22 @@ class _ChatScreenState extends State<ChatScreen> {
     if (attachment == null) return;
 
 
-
-    setState(() {
-      _selectedMediaFile = attachment.file;
-      _selectedMediaBytes = attachment.bytes;
-      _mediaType = attachment.type;
-    });
+    if (pickedFile != null) {
+      setState(() {
+        _selectedMediaFile = pickedFile;
+        _mediaType = isVideo ? 'video' : 'image';
+        if (kIsWeb && !isVideo) {
+          // Only read bytes for image previews on web. Video previews show a placeholder.
+          pickedFile!.readAsBytes().then((bytes) {
+            setState(() {
+              _selectedMediaBytes = bytes;
+            });
+          });
+        } else {
+          _selectedMediaBytes = null;
+        }
+      });
+    }
 
   }
 

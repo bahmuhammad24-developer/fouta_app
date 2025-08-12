@@ -7,6 +7,7 @@ import 'package:fouta_app/services/media_service.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:image/image.dart' as img;
 import 'package:provider/provider.dart';
 import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
@@ -57,7 +58,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   // Flag to control preview dialog when new media is selected
   bool _isPreviewing = false;
-
 
 
   @override
@@ -131,12 +131,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     }
 
 
-
+    // Add to lists temporarily for preview; if cancelled, remove later
     setState(() {
-      _selectedMediaFiles.add(attachment.file);
-      _mediaTypesList.add(attachment.type);
-      _videoAspectRatios.add(attachment.aspectRatio);
-      _selectedMediaBytesList.add(attachment.bytes);
+      _selectedMediaFiles.add(pickedFile!);
+      _mediaTypesList.add(isVideo ? 'video' : 'image');
+      _videoAspectRatios.add(null);
+      _selectedMediaBytesList.add(null);
+
     });
 
     final proceed = await _showPreviewDialog();
