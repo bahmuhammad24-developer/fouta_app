@@ -18,7 +18,6 @@ import 'package:fouta_app/screens/profile_screen.dart';
 import 'package:fouta_app/widgets/chat_video_player.dart';
 import 'package:fouta_app/screens/fullscreen_media_viewer.dart';
 import 'package:fouta_app/models/media_item.dart';
-import 'package:media_kit/media_kit.dart';
 import 'package:image/image.dart' as img;
 import 'package:provider/provider.dart';
 import 'package:fouta_app/services/connectivity_provider.dart';
@@ -71,7 +70,6 @@ class _ChatScreenState extends State<ChatScreen> {
   // Media upload limitations
   // Increase limits so typical smartphone videos can be shared.
   static const int _maxVideoFileSize = 500 * 1024 * 1024; // 500 MB
-  static const int _maxVideoDurationSeconds = 300; // 5 minutes max
 
   @override
   void initState() {
@@ -219,34 +217,17 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     if (pickedFile != null) {
-      // Validate video constraints for non-web platforms
+      // Validate video size for non-web platforms
       if (isVideo && !kIsWeb) {
         final fileSize = File(pickedFile.path).lengthSync();
         if (fileSize > _maxVideoFileSize) {
           AppSnackBar.show(
             context,
-            'Video is too large. Please select a video under 500 MB.',
+            'Video is too large. Users are currently limited to 500 MB.',
             isError: true,
           );
           return;
         }
-        final player = Player();
-        // Open without autoplay so the selected video's audio doesn't play in the background.
-        // The `file://` prefix lets `media_kit` treat the path as local,
-        // otherwise it is interpreted as a remote URL and metadata fails.
-        final uri = Uri.file(pickedFile.path).toString();
-        await player.open(Media(uri), play: false);
-        final duration = player.state.duration;
-        if (duration.inSeconds > _maxVideoDurationSeconds) {
-          await player.dispose();
-          AppSnackBar.show(
-            context,
-            'Video is too long. Please select a video under 5 minutes.',
-            isError: true,
-          );
-          return;
-        }
-        await player.dispose();
       }
 
       setState(() {

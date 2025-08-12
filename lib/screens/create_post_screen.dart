@@ -65,9 +65,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   // Media upload limitations
   // Increased limits to accommodate larger video files.
   // Most modern devices record videos well above 15 MB, which previously
-  // prevented uploads. Allow up to ~500 MB and five minutes duration.
+  // prevented uploads. Allow up to ~500 MB.
   static const int _maxVideoFileSize = 500 * 1024 * 1024; // 500 MB
-  static const int _maxVideoDurationSeconds = 300; // 5 minutes max
 
   @override
   void initState() {
@@ -152,12 +151,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       return;
     }
 
-    // Validate video size and duration for videos on non-web platforms
+    // Validate video size for videos on non-web platforms and compute aspect ratio
     double? aspectRatio;
     if (isVideo && !kIsWeb) {
       final fileSize = File(pickedFile.path).lengthSync();
       if (fileSize > _maxVideoFileSize) {
-        _showMessage('Video is too large. Please select a video under 500 MB.');
+        _showMessage('Video is too large. Users are currently limited to 500 MB.');
         return;
       }
       final player = Player();
@@ -169,25 +168,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       // rather than treating it as a remote URI.
       final uri = Uri.file(pickedFile.path).toString();
       await player.open(Media(uri), play: false);
-      final duration = player.state.duration;
       await player.stream.width.firstWhere((width) => width != null);
       final width = player.state.width;
       final height = player.state.height;
       if (width != null && height != null && height > 0) {
         aspectRatio = width / height;
       }
-      if (duration.inSeconds > _maxVideoDurationSeconds) {
-        await player.dispose();
-        _showMessage('Video is too long. Please select a video under 5 minutes.');
-        return;
-      }
-      await player.dispose();
-    }
-
-    // Read bytes if on web for preview
-    Uint8List? bytesForPreview;
-    if (kIsWeb) {
-      bytesForPreview = await pickedFile.readAsBytes();
     }
 
     // Add to lists temporarily for preview; if cancelled, remove later
@@ -195,7 +181,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       _selectedMediaFiles.add(pickedFile!);
       _mediaTypesList.add(isVideo ? 'video' : 'image');
       _videoAspectRatios.add(aspectRatio);
-      _selectedMediaBytesList.add(bytesForPreview);
+      _selectedMediaBytesList.add(null);
     });
 
     // Show preview for the latest media and ask for confirmation
