@@ -3,11 +3,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:fouta_app/screens/post_detail_screen.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:fouta_app/services/media_service.dart';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -41,12 +39,11 @@ class _ProfileScreenState extends State<ProfileScreen>
   final _bioController = TextEditingController();
   late bool _isEditing;
   String _currentProfileImageUrl = '';
-  XFile? _newProfileImageFile;
-  Uint8List? _newProfileImageBytes;
+  MediaAttachment? _newProfileImage;
   double _uploadProgress = 0.0;
   bool _isUploading = false;
 
-  final ImagePicker _picker = ImagePicker();
+  final MediaService _mediaService = MediaService();
 
   bool _isDataSaverOn = true;
   bool _isOnMobileData = false;
@@ -128,30 +125,16 @@ class _ProfileScreenState extends State<ProfileScreen>
       return;
     }
 
-    XFile? pickedFile;
-    try {
-      pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    } catch (e) {
-      _showMessage('Error picking image: $e');
+    final attachment = await _mediaService.pickImage();
+    if (attachment == null) {
+      _showMessage('No image selected.');
       return;
     }
 
-    if (pickedFile != null) {
-      _showMessage('Image selected. Tap the checkmark to save changes.');
-      setState(() {
-        if (kIsWeb) {
-          pickedFile!.readAsBytes().then((bytes) {
-            setState(() {
-              _newProfileImageBytes = bytes;
-            });
-          });
-        } else {
-          _newProfileImageFile = pickedFile;
-        }
-      });
-    } else {
-      _showMessage('No image selected.');
-    }
+    _showMessage('Image selected. Tap the checkmark to save changes.');
+    setState(() {
+      _newProfileImage = attachment;
+    });
   }
 
   Future<void> _updateProfile(String currentProfileImageUrl) async {
@@ -162,45 +145,24 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
 
     String? newImageUrl = currentProfileImageUrl;
-    if (_newProfileImageFile != null || _newProfileImageBytes != null) {
+    if (_newProfileImage != null) {
       setState(() {
         _isUploading = true;
         _uploadProgress = 0.0;
       });
       try {
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('profile_images/${user.uid}/${DateTime.now().millisecondsSinceEpoch}_profile_pic.jpg');
-
-        UploadTask uploadTask;
-        if (kIsWeb && _newProfileImageBytes != null) {
-          uploadTask = storageRef.putData(_newProfileImageBytes!);
-        } else if (_newProfileImageFile != null) {
-          uploadTask = storageRef.putFile(File(_newProfileImageFile!.path));
-        } else {
-          _showMessage('Invalid media data for upload.');
-          if (mounted) setState(() { _isUploading = false; });
-          return;
-        }
-
-        uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-          if(mounted) {
-            setState(() {
-              _uploadProgress = snapshot.bytesTransferred / snapshot.totalBytes;
-            });
-          }
-        });
-
-        await uploadTask.whenComplete(() async {
-          newImageUrl = await storageRef.getDownloadURL();
-          _showMessage('Profile image uploaded successfully!');
-        });
+        final uploaded = await _mediaService.upload(
+          _newProfileImage!,
+          pathPrefix: 'profile_images/${user.uid}',
+        );
+        newImageUrl = uploaded.url;
+        _showMessage('Profile image uploaded successfully!');
       } on FirebaseException catch (e) {
         _showMessage('Profile image upload failed: ${e.message}');
-        if(mounted) setState(() => _isUploading = false);
+        if (mounted) setState(() => _isUploading = false);
         return;
       } finally {
-        if(mounted) setState(() => _isUploading = false);
+        if (mounted) setState(() => _isUploading = false);
       }
     }
 
@@ -225,8 +187,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       if(mounted) {
         setState(() {
           _isEditing = false;
-          _newProfileImageFile = null;
-          _newProfileImageBytes = null;
+          _newProfileImage = null;
           _uploadProgress = 0.0;
         });
       }
@@ -385,12 +346,12 @@ class _ProfileScreenState extends State<ProfileScreen>
               children: [
                 CircleAvatar(
                   radius: 60,
-                  backgroundImage: (_newProfileImageBytes != null && kIsWeb)
-                      ? MemoryImage(_newProfileImageBytes!)
-                      : (_newProfileImageFile != null && !kIsWeb)
-                          ? FileImage(File(_newProfileImageFile!.path)) as ImageProvider
+                  backgroundImage: (_newProfileImage != null && kIsWeb && _newProfileImage!.bytes != null)
+                      ? MemoryImage(_newProfileImage!.bytes!)
+                      : (_newProfileImage != null && !kIsWeb)
+                          ? FileImage(File(_newProfileImage!.file.path)) as ImageProvider
                           : (_currentProfileImageUrl.isNotEmpty ? CachedNetworkImageProvider(_currentProfileImageUrl) : null),
-                  child: (_currentProfileImageUrl.isEmpty && _newProfileImageFile == null && _newProfileImageBytes == null)
+                  child: (_currentProfileImageUrl.isEmpty && _newProfileImage == null)
                       ? Icon(Icons.person, size: 60, color: Theme.of(context).colorScheme.onPrimary)
                       : null,
                   backgroundColor: Theme.of(context).colorScheme.surfaceVariant,

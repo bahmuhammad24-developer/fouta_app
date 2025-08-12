@@ -7,3 +7,5 @@
 
 ## v1.3
 - fix: allow video uploads without size constraints by aligning validation with images
+- docs: clarify 500 MB video upload limit in README
+

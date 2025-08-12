@@ -7,6 +7,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/screens/chat_details_screen.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:fouta_app/services/media_service.dart';
 import 'dart:io';
 import 'dart:async';
 import 'dart:typed_data';
@@ -26,6 +27,7 @@ import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/utils/overlays.dart';
+import 'package:fouta_app/constants/media_limits.dart'; // Provides kMaxVideoBytes
 
 class ChatScreen extends StatefulWidget {
   final String? chatId;
@@ -59,13 +61,14 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Timer? _typingTimer;
 
-  final ImagePicker _picker = ImagePicker();
+  final MediaService _mediaService = MediaService();
 
   // Reaction & reply state
   DocumentSnapshot? _replyingToMessage;
 
   // Reaction emoji options to present to the user on long‑press
   static const List<String> _reactionOptions = ['❤️', '😂', '👍', '😮', '😢', '🙏'];
+
 
 
   @override
@@ -204,14 +207,11 @@ class _ChatScreenState extends State<ChatScreen> {
       return;
     }
 
-    XFile? pickedFile;
-    try {
-      pickedFile = isVideo 
-        ? await _picker.pickVideo(source: source)
-        : await _picker.pickImage(source: source);
-    } catch (e) {
-      AppSnackBar.show(context, 'Error picking media: $e', isError: true);
-    }
+    final attachment = isVideo
+        ? await _mediaService.pickVideo(source: source)
+        : await _mediaService.pickImage(source: source);
+    if (attachment == null) return;
+
 
     if (pickedFile != null) {
       setState(() {
@@ -229,6 +229,7 @@ class _ChatScreenState extends State<ChatScreen> {
         }
       });
     }
+
   }
 
     Future<void> _startRecording() async {
@@ -267,7 +268,6 @@ class _ChatScreenState extends State<ChatScreen> {
     
     String? mediaUrl;
     if (_selectedMediaFile != null) {
-      // Prevent media uploads while offline. Text messages will still be queued via Firestore offline persistence.
       final connectivity = context.read<ConnectivityProvider>();
       if (!connectivity.isOnline) {
         AppSnackBar.show(
@@ -278,57 +278,33 @@ class _ChatScreenState extends State<ChatScreen> {
         return;
       }
       setState(() => _isUploading = true);
-      final ext = _selectedMediaFile!.name.split('.').last;
-      final ref = FirebaseStorage.instance.ref().child(
-          'chat_media/$_currentChatId/${DateTime.now().millisecondsSinceEpoch}.$ext');
-
-      Uint8List? bytesToUpload;
-      File? fileToUpload;
-      if (kIsWeb) {
-        bytesToUpload = await _selectedMediaFile!.readAsBytes();
-      } else {
-        if (_mediaType == 'image') {
-          final originalBytes = await _selectedMediaFile!.readAsBytes();
-          final img.Image? decoded = img.decodeImage(originalBytes);
-          if (decoded != null) {
-            final compressed = img.encodeJpg(decoded, quality: 80);
-            bytesToUpload = Uint8List.fromList(compressed);
-          } else {
-            fileToUpload = File(_selectedMediaFile!.path);
+      if (_mediaType == 'audio') {
+        final ref = FirebaseStorage.instance.ref().child(
+            'chat_media/$_currentChatId/${DateTime.now().millisecondsSinceEpoch}.m4a');
+        final uploadTask = ref.putFile(
+          File(_selectedMediaFile!.path),
+          SettableMetadata(contentType: 'audio/mpeg'),
+        );
+        uploadTask.snapshotEvents.listen((snapshot) {
+          if (mounted) {
+            setState(() {
+              _uploadProgress = snapshot.bytesTransferred / snapshot.totalBytes;
+            });
           }
-        } else {
-          fileToUpload = File(_selectedMediaFile!.path);
-        }
-      }
-
-      final metadata = SettableMetadata(
-        contentType: _mediaType == 'video'
-            ? 'video/mp4'
-            : _mediaType == 'audio'
-                ? 'audio/mpeg'
-                : 'image/jpeg',
-      );
-
-      UploadTask uploadTask;
-      if (bytesToUpload != null) {
-        uploadTask = ref.putData(bytesToUpload, metadata);
-      } else if (fileToUpload != null) {
-        uploadTask = ref.putFile(fileToUpload, metadata);
+        });
+        mediaUrl = await (await uploadTask).ref.getDownloadURL();
       } else {
-        AppSnackBar.show(context, 'Invalid media data for upload.', isError: true);
-        setState(() => _isUploading = false);
-        return;
+        final attachment = MediaAttachment(
+          file: _selectedMediaFile!,
+          type: _mediaType,
+          bytes: _selectedMediaBytes,
+        );
+        final uploaded = await _mediaService.upload(
+          attachment,
+          pathPrefix: 'chat_media/$_currentChatId',
+        );
+        mediaUrl = uploaded.url;
       }
-
-      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-        if (mounted) {
-          setState(() {
-            _uploadProgress = snapshot.bytesTransferred / snapshot.totalBytes;
-          });
-        }
-      });
-
-      mediaUrl = await (await uploadTask).ref.getDownloadURL();
       if (mounted) setState(() => _isUploading = false);
     }
 
