@@ -20,6 +20,7 @@ import 'package:fouta_app/screens/fullscreen_media_viewer.dart';
 import 'package:fouta_app/widgets/share_post_dialog.dart';
 import 'package:fouta_app/widgets/fouta_card.dart';
 import 'package:fouta_app/utils/overlays.dart';
+import 'package:fouta_app/features/moderation/moderation_service.dart';
 
 class PostCardWidget extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -411,6 +412,51 @@ class _PostCardWidgetState extends State<PostCardWidget> {
       widget.onMessage('Failed to share post: ${e.message}');
     } catch (e) {
       widget.onMessage('An unexpected error occurred: $e');
+    }
+  }
+
+  Future<void> _reportPost(String postId, String authorId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      widget.onMessage('Please log in to report posts.');
+      return;
+    }
+    final TextEditingController reasonController = TextEditingController();
+    final String? reason = await showFoutaDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Report Post'),
+          content: TextField(
+            controller: reasonController,
+            decoration: const InputDecoration(labelText: 'Reason'),
+            maxLines: 3,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(context, reasonController.text.trim()),
+              child: const Text('Submit'),
+            ),
+          ],
+        );
+      },
+    );
+    if (reason == null || reason.isEmpty) return;
+    try {
+      await ModerationService(appId: widget.appId).reportPost(
+        postId: postId,
+        reporterId: user.uid,
+        authorId: authorId,
+        reason: reason,
+      );
+      widget.onMessage('Report submitted');
+    } catch (e) {
+      widget.onMessage('Failed to submit report: $e');
     }
   }
 
@@ -921,7 +967,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                             _deleteSharedPost(widget.postId, widget.post['originalPostId']);
                           }
                         } else {
-                           if (value == 'edit_original') {
+                          if (value == 'edit_original') {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -962,6 +1008,23 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                             ),
                           ];
                         }
+                      },
+                    )
+                  else
+                    PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'report') {
+                          _reportPost(
+                              widget.postId, widget.post['authorId'] ?? '');
+                        }
+                      },
+                      itemBuilder: (BuildContext context) {
+                        return const <PopupMenuEntry<String>>[
+                          PopupMenuItem<String>(
+                            value: 'report',
+                            child: Text('Report Post'),
+                          ),
+                        ];
                       },
                     ),
                 ],

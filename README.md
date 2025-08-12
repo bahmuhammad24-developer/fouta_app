@@ -295,6 +295,7 @@ flutter test
 - 2025-08-12 19:46 UTC – Scaffolded discovery, moderation, growth, analytics, and monetization modules and documented competitive architecture.
 - 2025-08-12 20:09 UTC – Added post bookmarking with a dedicated screen for viewing saved posts.
 - 2025-08-12 20:21 UTC – Added double-tap to like posts for quicker engagement.
+- 2025-08-12 20:39 UTC – Enabled users to report posts for moderation review.
 
 ## Contributing
 - Follow the logging and documentation guidelines outlined above.
