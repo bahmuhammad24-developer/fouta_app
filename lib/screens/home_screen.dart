@@ -248,16 +248,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       // Keep the app bar visible while scrolling
                       pinned: true,
                       actions: [
-                        IconButton(
-                          icon: const Icon(Icons.add_circle_outline),
-                          tooltip: 'Create Post',
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const CreatePostScreen(),
-                            ),
-                          ),
-                        ),
                         _NotificationsButton(
                             unreadStream: _unreadNotificationsStream),
                         Builder(
