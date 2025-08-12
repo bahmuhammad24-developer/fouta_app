@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../models/story.dart';
 
-/// Horizontal list of user stories with optional "add" affordance.
+const double kStoryOuterSize = 68;
+const double kStoryRingWidth = 3;
+const double kStoryAvatarSize = kStoryOuterSize - (kStoryRingWidth * 2);
+const double kBadgeSize = 18;
+
 class StoriesTray extends StatelessWidget {
   const StoriesTray({
     super.key,
@@ -10,129 +14,147 @@ class StoriesTray extends StatelessWidget {
     required this.currentUserId,
     this.onAdd,
     this.onStoryTap,
-    this.showAddFirst = true,
   });
 
   final List<Story> stories;
   final String currentUserId;
   final VoidCallback? onAdd;
   final void Function(Story story)? onStoryTap;
-  final bool showAddFirst;
 
   @override
   Widget build(BuildContext context) {
-    final items = <Widget>[];
-    if (showAddFirst && onAdd != null) {
-      items.add(_buildAddTile(context));
-    }
-    for (final story in stories) {
-      items.add(_buildStoryTile(context, story));
-    }
+    final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+          color: Theme.of(context).colorScheme.onSurface,
+        );
+
+    final current = stories.firstWhere(
+      (s) => s.authorId == currentUserId,
+      orElse: () => Story(
+        id: currentUserId,
+        authorId: currentUserId,
+        postedAt: DateTime.now(),
+        expiresAt: DateTime.now(),
+      ),
+    );
+    final others = stories.where((s) => s.authorId != currentUserId).toList();
+
     return SizedBox(
-      height: 88,
-      child: ListView(
+      height: 92,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        children: items,
-      ),
-    );
-  }
-
-  Widget _buildAddTile(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return InkWell(
-      onTap: onAdd,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(colors: [cs.primary, cs.secondary]),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            final hasActive = current.items.isNotEmpty;
+            final slide = hasActive ? current.items.first : null;
+            final imageUrl = slide?.media.thumbUrl ?? slide?.media.url;
+            return _storyBubble(
+              context: context,
+              imageUrl: imageUrl,
+              label: 'Your Story',
+              isUnviewed: hasActive,
+              showAddBadge: !hasActive && onAdd != null,
+            );
+          }
+          final story = others[index - 1];
+          final slide = story.items.isNotEmpty ? story.items.first : null;
+          final imageUrl = slide?.media.thumbUrl ?? slide?.media.url;
+          return GestureDetector(
+            onTap: () => onStoryTap?.call(story),
+            child: _storyBubble(
+              context: context,
+              imageUrl: imageUrl,
+              label: story.authorId,
+              isUnviewed: story.hasUnviewedBy(currentUserId),
             ),
-            child: const Center(
-                child: Icon(Icons.add, color: Colors.black, size: 28)),
-          ),
-          const SizedBox(height: 6),
-          Text('Your Story', style: Theme.of(context).textTheme.labelMedium),
-        ],
+          );
+        },
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemCount: 1 + others.length,
       ),
     );
   }
+}
 
-  Widget _buildStoryTile(BuildContext context, Story story) {
-    final cs = Theme.of(context).colorScheme;
-    final isMe = story.authorId == currentUserId;
-    final hasSeen = story.seen;
-    final label =
-        '${story.authorId} story, ${hasSeen ? 'seen' : 'unread'}, posted ${_relativeTime(story.postedAt)}';
-    final slide = story.items.isNotEmpty ? story.items.first : null;
-    final thumb = slide?.media.thumbUrl ?? slide?.media.url;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Semantics(
-        button: true,
-        label: label,
-        child: InkWell(
-          onTap: () => onStoryTap?.call(story),
-          child: Stack(
-            alignment: Alignment.bottomRight,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: hasSeen ? cs.outlineVariant : cs.primary,
-                    width: 3,
-                  ),
-                ),
-                child: ClipOval(
-                  child: thumb != null
-                      ? Image.network(
-                          thumb,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, _, __) =>
-                              Container(color: cs.surfaceVariant),
-                        )
-                      : Container(color: cs.surfaceVariant),
-                ),
-              ),
-              if (isMe && (!showAddFirst || onAdd == null))
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: InkWell(
-                    onTap: onAdd,
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: cs.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.add,
-                        size: 16,
-                        color: cs.onPrimary,
-                      ),
-                    ),
-                  ),
-                ),
+Widget _storyBubble({
+  required BuildContext context,
+  required String? imageUrl,
+  required String label,
+  required bool isUnviewed,
+  bool showAddBadge = false,
+}) {
+  final scheme = Theme.of(context).colorScheme;
+
+  final BoxDecoration ringDecoration = isUnviewed
+      ? const BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF138A5A),
+              Color(0xFFD4AF37),
             ],
           ),
-        ),
-      ),
-    );
-  }
+        )
+      : BoxDecoration(
+          shape: BoxShape.circle,
+          color: scheme.outlineVariant.withOpacity(0.35),
+        );
 
-  String _relativeTime(DateTime postedAt) {
-    final diff = DateTime.now().difference(postedAt);
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    return '${diff.inDays}d ago';
-  }
+  final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+        fontWeight: FontWeight.w600,
+        fontSize: 12,
+        color: Theme.of(context).colorScheme.onSurface,
+      );
+
+  return SizedBox(
+    width: kStoryOuterSize,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Stack(
+          children: [
+            Container(
+              width: kStoryOuterSize,
+              height: kStoryOuterSize,
+              decoration: ringDecoration,
+              padding: const EdgeInsets.all(kStoryRingWidth),
+              child: ClipOval(
+                child: (imageUrl == null || imageUrl.isEmpty)
+                    ? Container(color: scheme.surfaceVariant)
+                    : Image.network(imageUrl, fit: BoxFit.cover),
+              ),
+            ),
+            if (showAddBadge)
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: kBadgeSize,
+                  height: kBadgeSize,
+                  decoration: BoxDecoration(
+                    color: scheme.primary,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: scheme.shadow.withOpacity(0.25),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(Icons.add, size: 14, color: scheme.onPrimary),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(label,
+            maxLines: 1, overflow: TextOverflow.ellipsis, style: labelStyle),
+      ],
+    ),
+  );
 }

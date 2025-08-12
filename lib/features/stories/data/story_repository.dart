@@ -128,15 +128,21 @@ class StoryRepository {
     }).toList();
   }
 
-  Future<void> markViewed(String userId, String slideId) async {
-    await _firestore
-        .collection('stories')
-        .doc(userId)
-        .collection('slides')
-        .doc(slideId)
-        .set({
-      'viewedBy': FieldValue.arrayUnion([userId])
+  Future<void> markViewed({
+    required String ownerId,
+    required String slideId,
+    required String uid,
+  }) async {
+    final slideRef = _firestore
+        .doc('${FirestorePaths.stories()}/$ownerId/slides/$slideId');
+    final ownerRef = _firestore.doc('${FirestorePaths.stories()}/$ownerId');
+
+    final batch = _firestore.batch();
+    batch.update(slideRef, {'viewers': FieldValue.arrayUnion([uid])});
+    batch.set(ownerRef, {
+      'viewedBy': FieldValue.arrayUnion([uid])
     }, SetOptions(merge: true));
+    await batch.commit();
   }
 }
 

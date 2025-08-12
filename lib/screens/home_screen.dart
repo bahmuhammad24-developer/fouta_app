@@ -626,6 +626,7 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
           ),
           createdAt: (s['createdAt'] as Timestamp?)?.toDate(),
           expiresAt: (s['expiresAt'] as Timestamp?)?.toDate(),
+          viewers: List<String>.from(s['viewers'] ?? const []),
         );
       }).toList();
       if (slides.isNotEmpty) {
@@ -635,6 +636,7 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
           postedAt: (doc['updatedAt'] as Timestamp?)?.toDate() ?? now,
           expiresAt: now.add(const Duration(hours: 24)),
           items: slides,
+          viewedBy: List<String>.from(doc['viewedBy'] ?? const []),
         ));
       }
     }
