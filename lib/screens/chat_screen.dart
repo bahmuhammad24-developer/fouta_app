@@ -26,6 +26,7 @@ import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/utils/overlays.dart';
+import 'package:fouta_app/constants/media_limits.dart'; // Provides kMaxVideoBytes
 
 class ChatScreen extends StatefulWidget {
   final String? chatId;
@@ -67,9 +68,8 @@ class _ChatScreenState extends State<ChatScreen> {
   // Reaction emoji options to present to the user on long‑press
   static const List<String> _reactionOptions = ['❤️', '😂', '👍', '😮', '😢', '🙏'];
 
-  // Media upload limitations
-  // Increase limits so typical smartphone videos can be shared.
-  static const int _maxVideoFileSize = 500 * 1024 * 1024; // 500 MB
+  // Media upload limitations.
+  // Increase limits so typical smartphone videos can be shared; see kMaxVideoBytes.
 
   @override
   void initState() {
@@ -220,7 +220,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // Validate video size for non-web platforms
       if (isVideo && !kIsWeb) {
         final fileSize = File(pickedFile.path).lengthSync();
-        if (fileSize > _maxVideoFileSize) {
+        if (fileSize > kMaxVideoBytes) { // Enforce kMaxVideoBytes limit
           AppSnackBar.show(
             context,
             'Video is too large. Users are currently limited to 500 MB.',
