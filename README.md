@@ -445,3 +445,15 @@ Daily rollups stored at `artifacts/$APP_ID/public/data/metrics/daily/{YYYY-MM-DD
 Fouta sends notifications for follows, comments, likes, reposts, mentions, and messages. Users can manage per-type preferences from the unified settings screen.
 Preferences are stored at `artifacts/$APP_ID/public/data/users/{uid}/settings/notifications` with boolean flags for each type.
 In-app notifications live at `artifacts/$APP_ID/public/data/notifications/{uid}/items` and are marked read when opened.
+
+## Safety & Privacy v2 (route /privacy)
+Route `/privacy` exposes tabs for Privacy, Safety, Muted Words, and Blocked/Muted users.
+
+Data models are stored under `artifacts/\$APP_ID/public/data/users/{uid}/safety` documents:
+- `settings` document fields:
+  - `isPrivate` (`bool`)
+  - `limitReplies` (`everyone`|`followers`|`none`)
+  - `mutedUserIds` (`List<String>`)
+  - `blockedUserIds` (`List<String>`)
+- `muted_words` document field:
+  - `words` (`List<String>`; lowercased)
