@@ -6,6 +6,10 @@ import 'package:fouta_app/widgets/safe_stream_builder.dart';
 import 'package:fouta_app/widgets/video_player_widget.dart';
 import 'package:fouta_app/theme/motion.dart';
 import 'package:fouta_app/utils/error_reporter.dart';
+import 'package:fouta_app/triggers/flags.dart';
+import 'package:fouta_app/triggers/trigger_orchestrator.dart';
+import 'package:fouta_app/widgets/triggers/keyword_filter_chips.dart';
+import 'package:fouta_app/widgets/triggers/next_up_rail.dart';
 
 class ShortsScreen extends StatefulWidget {
   const ShortsScreen({super.key, this.service, this.onLoadMore});
@@ -71,7 +75,20 @@ class _ShortsScreenState extends State<ShortsScreen> {
             ),
           );
         }
+        final showChips = TriggerOrchestrator.instance.fire(
+          'keyword_chips',
+          context: context,
+          cap: 1,
+          enabled: AppFlags.keywordChipsEnabled,
+        );
+        final showNext = TriggerOrchestrator.instance.fire(
+          'next_up',
+          context: context,
+          cap: 1,
+          enabled: AppFlags.nextUpEnabled,
+        );
         return Scaffold(
+
           body: AnimatedSwitcher(
             duration: duration,
             child: PageView.builder(
@@ -139,6 +156,7 @@ class _ShortsScreenState extends State<ShortsScreen> {
                 }
               },
             ),
+
           ),
         );
       },

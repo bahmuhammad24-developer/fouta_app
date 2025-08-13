@@ -23,6 +23,7 @@
 - [Admin Analytics](#admin-analytics)
 - [Notifications](#notifications)
 - [Stability Utilities](#stability-utilities)
+- [Use Cases & App-Origin Triggers](#use-cases--app-origin-triggers)
 
 - [Composer V2 (route /composeV2)](#composer-v2-route-composev2)
 
@@ -390,6 +391,11 @@ To re-run checks, go to Actions and select **Run workflow**.
 
 - `FCM_SERVER_KEY` – required by Cloud Functions `onNewInteraction` to send push notifications. If unset, the function logs a TODO and exits without sending.
 
+## Use Cases & App-Origin Triggers
+Documentation lives in [docs/use_cases](docs/use_cases) and [docs/triggers](docs/triggers).
+**Rule:** Every new screen/feature PR must cite a UC-ID and, if applicable, a Trigger `id`.
+All triggers must respect flags, frequency caps, and user controls.
+
 ## Change Log
 
 - 2025-08-13 00:00 UTC – Search, hashtag index, trending chips.
@@ -575,3 +581,19 @@ Nav bar and feed ranking updates are permitted when gated and measurable.
 - **Feature flag**: `feed_ranking` (e.g., `v2`) selecting a new strategy class.
 - **Metrics**: watch time, completes, shares/DMs, follows-after-view with a 7-day decay.
 - **Rollback**: note previous strategy, disable flag, ensure Firestore queries remain indexable.
+
+## App-origin triggers (v1)
+- Next-Up rail surfaces three recommendations after shorts.
+- Keyword filter chips refine discovery queries.
+- Friends-first header nudges users to friends tab.
+- Story inline reply chip opens a prefilled DM composer.
+
+## Ranking V2
+Discovery Ranking V2 weights completion (40%), DM shares (25%), follows-after-view (15%),
+freshness decay (15%) and relationship proximity (5%). Freshness uses `exp(-ageHours/168)`.
+Enable with `AppFlags.feedRanking = 'v2'`.
+
+## NavBar V2
+Preview a five-tab layout (Home, Shorts, Explore, Messages, Profile) at
+`/_dev/navV2`. Feature flag `AppFlags.navVariant` controls rollout.
+
