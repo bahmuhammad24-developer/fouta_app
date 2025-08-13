@@ -8,7 +8,6 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:fouta_app/widgets/video_player_widget.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:fouta_app/utils/date_utils.dart';
-import 'package:flutter_blurhash/flutter_blurhash.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/create_post_screen.dart';
@@ -16,7 +15,6 @@ import 'package:fouta_app/screens/profile_screen.dart';
 // Use the unified FullScreenMediaViewer instead of separate full screen image/video widgets
 import '../models/media_item.dart';
 import 'media/post_media.dart';
-import 'package:fouta_app/screens/fullscreen_media_viewer.dart';
 import 'package:fouta_app/widgets/share_post_dialog.dart';
 import 'package:fouta_app/widgets/fouta_card.dart';
 import 'package:fouta_app/utils/overlays.dart';
@@ -27,6 +25,9 @@ import 'package:fouta_app/theme/tokens.dart';
 import '../services/collections_service.dart';
 import '../features/stories/composer/create_story_screen.dart';
 import '../features/creation/editor/overlays/overlay_models.dart';
+import 'package:fouta_app/navigation/transitions.dart';
+import 'package:fouta_app/screens/post_detail_screen.dart';
+import 'package:fouta_app/widgets/progressive_image.dart';
 
 class PostCardWidget extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -703,38 +704,24 @@ class _PostCardWidgetState extends State<PostCardWidget> {
   //</editor-fold>
 
   /// Builds a thumbnail for a single media attachment.  Tapping the thumbnail
-  /// opens a full‑screen [FullScreenMediaViewer] with all attachments for this post.
+  /// opens the post detail screen with a hero transition.
   Widget _buildAttachmentThumbnail(List<dynamic> attachments) {
     if (attachments.isEmpty) return const SizedBox.shrink();
 
     final Map<String, dynamic> first = attachments.first as Map<String, dynamic>;
     final String type = first['type'] ?? 'image';
     final String url = first['url'] ?? '';
-    final String blurhash = first['blurhash'] ?? '';
     final double? aspectRatio = first['aspectRatio'] as double?;
     final bool allowAutoplay = !widget.isDataSaverOn || !widget.isOnMobileData;
     Widget thumb;
     switch (type) {
       case 'image':
-        thumb = ClipRRect(
-          borderRadius: BorderRadius.circular(8.0),
-          child: CachedNetworkImage(
-            imageUrl: url,
-            fit: BoxFit.cover,
-            progressIndicatorBuilder: (context, url, progress) =>
-                blurhash.isNotEmpty
-                    ? BlurHash(hash: blurhash, imageFit: BoxFit.cover)
-                    : Container(
-                        color: Theme.of(context).colorScheme.surfaceVariant),
-            errorWidget: (context, url, error) => Container(
-              color: Theme.of(context).colorScheme.surfaceVariant,
-              child: Center(
-                child: Icon(Icons.broken_image,
-                    color: Theme.of(context).colorScheme.outline, size: 50),
-              ),
-            ),
-            width: double.infinity,
-          ),
+        thumb = ProgressiveImage(
+          imageUrl: url,
+          thumbUrl: first['thumbUrl'] ?? url,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          borderRadius: 8.0,
         );
         break;
       case 'video':
@@ -789,18 +776,17 @@ class _PostCardWidgetState extends State<PostCardWidget> {
     }
     return InkWell(
       onTap: () {
-        final items = attachments
-            .whereType<Map<String, dynamic>>()
-            .map(MediaItem.fromMap)
-            .whereType<MediaItem>()
-            .toList();
-        FullScreenMediaViewer.open(context, items, initialIndex: 0);
+        Navigator.of(context).push(
+          FoutaTransitions.pushFromRight(
+            PostDetailScreen(postId: widget.postId),
+          ),
+        );
       },
       onDoubleTap: _likeOnDoubleTap,
       focusColor: AppColors.primary.withOpacity(0.3),
       child: Stack(
         children: [
-          thumb,
+          Hero(tag: '${widget.postId}-media', child: thumb),
           if (attachments.length > 1)
             Positioned(
               right: 8,

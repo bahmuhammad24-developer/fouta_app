@@ -9,10 +9,15 @@ import 'package:fouta_app/utils/firestore_paths.dart';
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/widgets/post_card_widget.dart';
 import 'package:fouta_app/utils/snackbar.dart';
+import 'package:fouta_app/widgets/safe_stream_builder.dart';
+import 'package:fouta_app/widgets/progressive_image.dart';
+import 'package:fouta_app/widgets/video_player_widget.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final String postId;
-  const PostDetailScreen({super.key, required this.postId});
+  final FirebaseFirestore firestore;
+  const PostDetailScreen({super.key, required this.postId, FirebaseFirestore? firestore})
+      : firestore = firestore ?? FirebaseFirestore.instance;
 
   @override
   State<PostDetailScreen> createState() => _PostDetailScreenState();
@@ -77,7 +82,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   Future<void> _loadDataSaverPreference() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
-      final doc = await FirebaseFirestore.instance
+      final doc = await widget.firestore
           .collection(FirestorePaths.users())
           .doc(currentUser.uid)
           .get();
@@ -97,43 +102,73 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       appBar: AppBar(
         title: const Text('Post Details'),
       ),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
+      body: SafeStreamBuilder<DocumentSnapshot>(
+        stream: widget.firestore
             .collection('artifacts/$APP_ID/public/data/posts')
             .doc(widget.postId)
             .snapshots(),
+        empty: const Center(child: CircularProgressIndicator()),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || !snapshot.data!.exists) {
+          if (!snapshot.data!.exists) {
             return const Center(child: Text('Post not found.'));
           }
 
           final post = snapshot.data!.data() as Map<String, dynamic>;
           final postId = snapshot.data!.id;
+          final mediaUrl = post['mediaUrl'] as String? ?? '';
+          final mediaType = post['mediaType'] as String? ?? 'text';
+          final double? aspectRatio =
+              (post['aspectRatio'] as num?)?.toDouble();
+          final postForCard = Map<String, dynamic>.from(post)
+            ..remove('media')
+            ..remove('mediaUrl');
+
+          final mediaWidget = mediaUrl.isEmpty
+              ? const SizedBox.shrink()
+              : Hero(
+                  tag: '${postId}-media',
+                  child: mediaType == 'video'
+                      ? VideoPlayerWidget(
+                          videoUrl: mediaUrl,
+                          videoId: postId,
+                          aspectRatio: aspectRatio,
+                          areControlsVisible: true,
+                          shouldInitialize: true,
+                        )
+                      : ProgressiveImage(
+                          imageUrl: mediaUrl,
+                          thumbUrl: post['thumbUrl'] ?? mediaUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                        ),
+                );
 
           return Column(
             children: [
               if (_message != null)
                 Container(
                   padding: const EdgeInsets.all(8.0),
-                  color: _message!.contains('successful') ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.errorContainer,
+                  color: _message!.contains('successful')
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : Theme.of(context).colorScheme.errorContainer,
                   child: Center(
                     child: Text(
                       _message!,
                       style: TextStyle(
-                        color: _message!.contains('successful') ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
+                        color: _message!.contains('successful')
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.error,
                       ),
                     ),
                   ),
                 ),
+              if (mediaUrl.isNotEmpty) mediaWidget,
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16.0),
                   child: PostCardWidget(
                     key: ValueKey(postId),
-                    post: post,
+                    post: postForCard,
                     postId: postId,
                     currentUser: currentUser,
                     appId: APP_ID,

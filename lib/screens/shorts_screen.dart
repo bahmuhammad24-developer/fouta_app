@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:fouta_app/features/shorts/shorts_service.dart';
 import 'package:fouta_app/widgets/video_player_widget.dart';
 import 'package:fouta_app/theme/motion.dart';
+import 'package:fouta_app/utils/error_reporter.dart';
+
 
 class ShortsScreen extends StatelessWidget {
   ShortsScreen({super.key, ShortsService? service})
@@ -38,6 +40,7 @@ class ShortsScreen extends StatelessWidget {
           );
         }
         return Scaffold(
+
           body: AnimatedSwitcher(
             duration: duration,
             child: PageView.builder(
@@ -90,6 +93,7 @@ class ShortsScreen extends StatelessWidget {
                 }
               },
             ),
+
           ),
         );
       },

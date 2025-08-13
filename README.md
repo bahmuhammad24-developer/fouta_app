@@ -479,6 +479,9 @@ In-app notifications live at `artifacts/$APP_ID/public/data/notifications/{uid}/
 ## Stability Utilities
 Reusable helpers ensure widgets and async code fail gracefully.
 
+### Error Reporting Stub
+Errors surface through `ErrorReporter.report` for centralized capture.
+
 ## Composer V2 (route /composeV2)
 Experimental composer supporting drafts and scheduled posts.
 
@@ -540,7 +543,11 @@ ReactionTray(
 
 ## Navigation & List UX Utilities
 
+
 ## Accessibility & Motion
 
 The app adopts focus visuals for keyboard users, clamps text scaling to a sensible maximum, and shortens or skips animations when the operating system requests reduced motion. Adjust text size or motion preferences in your device's accessibility settings to toggle these features.
+## Hero/Transitions adoption
+Feed cards and shorts now use Hero images and FoutaTransitions for smoother detail navigation.
+
 
