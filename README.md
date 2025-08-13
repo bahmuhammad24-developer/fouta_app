@@ -20,7 +20,11 @@
 - [Monetization](#monetization)
 - [Admin Analytics](#admin-analytics)
 - [Notifications](#notifications)
+
+- [Composer V2 (route /composeV2)](#composer-v2-route-composev2)
+
 - [Internationalization (i18n) scaffolding](#internationalization-i18n-scaffolding)
+
 - [Testing](#testing)
 - [CI & Status Checks](#ci--status-checks)
 - [Change Log](#change-log)
@@ -458,11 +462,26 @@ Preferences are stored at `artifacts/$APP_ID/public/data/users/{uid}/settings/no
 In-app notifications live at `artifacts/$APP_ID/public/data/notifications/{uid}/items` and are marked read when opened.
 
 
+
+## Composer V2 (route /composeV2)
+Experimental composer supporting drafts and scheduled posts.
+
+### Data
+- Drafts: `users/{uid}/drafts/{draftId}` with `content`, `media[]`, `updatedAt`.
+- Scheduled: `users/{uid}/scheduled/{id}` with `publishAt`, `payload`.
+
+### Testing
+1. Launch the app and navigate to `/composeV2`.
+2. Enter text and optionally attach media.
+3. Use **Save Draft** to persist content or **Schedule** to pick a publish time.
+4. Verify entries appear in the respective Firestore collections.
+
 ## Link Preview module
 - Demo route: `/_dev/link-preview`
 - `LinkPreviewService` fetches Open Graph data for URLs.
 - Dev Cloud Function endpoint: `https://<region>-<project>.cloudfunctions.net/openGraph?url=`
   - Returns JSON `{ title, description, imageUrl, siteName }`
+
 
 ## Safety & Privacy v2 (route /privacy)
 Route `/privacy` exposes tabs for Privacy, Safety, Muted Words, and Blocked/Muted users.
