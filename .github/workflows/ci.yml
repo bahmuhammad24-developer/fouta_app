@@ -10,6 +10,7 @@ on:
     branches:
       - dev
 
+
 jobs:
   flutter:
     name: Flutter analyze, tests, and web build
@@ -43,10 +44,12 @@ jobs:
       - name: Flutter build web (release)
         run: flutter build web --release
 
+
   functions:
     name: Cloud Functions tests (Node 20)
     if: ${{ hashFiles('functions/package.json') != '' }}
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: functions
@@ -63,3 +66,4 @@ jobs:
 
       - name: Run tests
         run: npm test --if-present
+
