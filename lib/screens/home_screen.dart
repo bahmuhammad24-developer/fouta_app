@@ -47,6 +47,8 @@ import 'package:fouta_app/screens/ar_camera_screen.dart';
 import 'package:fouta_app/features/discovery/discovery_ranking_service.dart';
 import 'package:fouta_app/features/discovery/discovery_service.dart';
 import 'package:fouta_app/utils/json_safety.dart';
+import 'package:fouta_app/widgets/trending_chip_bar.dart';
+import 'package:fouta_app/screens/search_screen.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -62,6 +64,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Stream<int>? _unreadNotificationsStream;
   bool _showNewChatFab = true;
   int _titleTapCount = 0;
+  List<String> _trendingTags = [];
+  String? _selectedTag;
+  static const List<String> _fallbackTags = ['news', 'tech', 'sports'];
 
   final List<GlobalKey<NavigatorState>> _navigatorKeys = [
     GlobalKey<NavigatorState>(),
@@ -75,6 +80,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     _setupListeners();
+    _loadTrendingTags();
   }
 
   void _setupListeners() {
@@ -91,6 +97,30 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           .map((snapshot) => snapshot.docs.length);
 
     }
+  }
+
+  Future<void> _loadTrendingTags() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection(FirestorePaths.hashtags())
+          .orderBy('count', descending: true)
+          .limit(5)
+          .get();
+      final tags = snapshot.docs.map((d) => d.id).toList();
+      setState(() {
+        _trendingTags = tags.isEmpty ? _fallbackTags : tags;
+      });
+    } catch (e) {
+      setState(() {
+        _trendingTags = _fallbackTags;
+      });
+    }
+  }
+
+  void _onTagSelected(String tag) {
+    setState(() {
+      _selectedTag = _selectedTag == tag ? null : tag;
+    });
   }
 
   @override
@@ -255,6 +285,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       // Keep the app bar visible while scrolling
                       pinned: true,
                       actions: [
+                        IconButton(
+                          icon: const Icon(Icons.search),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const SearchScreen()),
+                            );
+                          },
+                        ),
                         _NotificationsButton(
                             unreadStream: _unreadNotificationsStream),
                         Builder(
@@ -834,6 +874,11 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
       final postAuthorId = postData['authorId'] ?? '';
       if (postAuthorId.isEmpty) return false;
 
+      final tags = asStringList(postData['meta']?['hashtags']);
+      if (_selectedTag != null && !tags.contains(_selectedTag)) {
+        return false;
+      }
+
       final postVisibility = postData['postVisibility'] ?? 'everyone';
       switch (_feedType) {
         case FeedType.following:
@@ -944,6 +989,11 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
               );
               widget.setNavBarVisibility(true);
             },
+          ),
+          TrendingChipBar(
+            tags: _trendingTags,
+            selectedTag: _selectedTag,
+            onSelected: _onTagSelected,
           ),
           FoutaCard(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

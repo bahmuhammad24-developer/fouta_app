@@ -137,6 +137,9 @@ Dedicated feature modules keep the project competitive with larger platforms. Th
 - `marketplace_screen.dart`
   - Icons: storefront_outlined
   - Colors: None
+- `search_screen.dart`
+  - Icons: search
+  - Colors: None
 - `shorts_screen.dart`
   - Icons: play_arrow_outlined
   - Colors: None
@@ -289,6 +292,7 @@ flutter test
 
 ## Change Log
 
+- 2025-08-13 00:00 UTC – Search, hashtag index, trending chips.
 - 2025-08-09 01:30 UTC – Implemented server-side media pipeline generating progressive images, video posters, and blurhash placeholders.
 - 2025-08-09 01:39 UTC – Introduced new story models, tray, viewer scaffolding, and documented gestures and accessibility.
 - 2025-08-09 01:39 UTC – Introduced chat composer, message models, and placeholders for advanced chat features.
