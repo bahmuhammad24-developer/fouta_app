@@ -479,6 +479,9 @@ In-app notifications live at `artifacts/$APP_ID/public/data/notifications/{uid}/
 ## Stability Utilities
 Reusable helpers ensure widgets and async code fail gracefully.
 
+### Error Reporting Stub
+Errors surface through `ErrorReporter.report` for centralized capture.
+
 ## Composer V2 (route /composeV2)
 Experimental composer supporting drafts and scheduled posts.
 
