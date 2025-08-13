@@ -457,6 +457,13 @@ Fouta sends notifications for follows, comments, likes, reposts, mentions, and m
 Preferences are stored at `artifacts/$APP_ID/public/data/users/{uid}/settings/notifications` with boolean flags for each type.
 In-app notifications live at `artifacts/$APP_ID/public/data/notifications/{uid}/items` and are marked read when opened.
 
+
+## Link Preview module
+- Demo route: `/_dev/link-preview`
+- `LinkPreviewService` fetches Open Graph data for URLs.
+- Dev Cloud Function endpoint: `https://<region>-<project>.cloudfunctions.net/openGraph?url=`
+  - Returns JSON `{ title, description, imageUrl, siteName }`
+
 ## Safety & Privacy v2 (route /privacy)
 Route `/privacy` exposes tabs for Privacy, Safety, Muted Words, and Blocked/Muted users.
 
@@ -468,3 +475,4 @@ Data models are stored under `artifacts/\$APP_ID/public/data/users/{uid}/safety`
   - `blockedUserIds` (`List<String>`)
 - `muted_words` document field:
   - `words` (`List<String>`; lowercased)
+
