@@ -462,6 +462,7 @@ Preferences are stored at `artifacts/$APP_ID/public/data/users/{uid}/settings/no
 In-app notifications live at `artifacts/$APP_ID/public/data/notifications/{uid}/items` and are marked read when opened.
 
 
+
 ## Composer V2 (route /composeV2)
 Experimental composer supporting drafts and scheduled posts.
 
@@ -474,6 +475,13 @@ Experimental composer supporting drafts and scheduled posts.
 2. Enter text and optionally attach media.
 3. Use **Save Draft** to persist content or **Schedule** to pick a publish time.
 4. Verify entries appear in the respective Firestore collections.
+
+## Link Preview module
+- Demo route: `/_dev/link-preview`
+- `LinkPreviewService` fetches Open Graph data for URLs.
+- Dev Cloud Function endpoint: `https://<region>-<project>.cloudfunctions.net/openGraph?url=`
+  - Returns JSON `{ title, description, imageUrl, siteName }`
+
 
 ## Safety & Privacy v2 (route /privacy)
 Route `/privacy` exposes tabs for Privacy, Safety, Muted Words, and Blocked/Muted users.
