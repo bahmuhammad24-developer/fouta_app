@@ -1,6 +1,13 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fouta_app/utils/firestore_paths.dart';
+import 'package:fouta_app/features/analytics/analytics_service.dart';
+import 'package:fouta_app/features/discovery/discovery_ranking_v2.dart';
 import 'package:fouta_app/main.dart';
+import 'package:fouta_app/models/post_model.dart';
+import 'package:fouta_app/utils/app_flags.dart';
+import 'package:fouta_app/utils/firestore_paths.dart';
+import 'package:fouta_app/utils/json_safety.dart';
 
 /// Handles content discovery, hashtags, and personalized feed ranking.
 class DiscoveryService {
@@ -82,5 +89,63 @@ class DiscoveryService {
     return _posts
         .where((p) => p.toLowerCase().contains('#$tag'))
         .toList();
+  }
+
+  Future<List<Post>> fetchRanked(
+    FirebaseFirestore firestore, {
+    int limit = 20,
+  }) async {
+    if (AppFlags.feedRanking == 'v2') {
+      return fetchRankedV2(firestore, limit: limit);
+    }
+    final snap =
+        await firestore.collection(FirestorePaths.posts(APP_ID)).limit(limit).get();
+    return snap.docs
+        .map((d) => Post.fromMap(d.id, d.data()))
+        .toList();
+  }
+
+  Future<List<Post>> fetchRankedV2(
+    FirebaseFirestore firestore, {
+    int limit = 20,
+  }) async {
+    final query =
+        await firestore.collection(FirestorePaths.posts(APP_ID)).limit(limit).get();
+    final ranking = const DiscoveryRankingV2();
+    final analytics = AnalyticsService();
+    final now = DateTime.now();
+
+    final scored = <MapEntry<Post, double>>[];
+    var index = 0;
+    for (final doc in query.docs) {
+      final data = doc.data();
+      final post = Post.fromMap(doc.id, data);
+      final createdAt =
+          (data['createdAt'] as Timestamp?)?.toDate() ?? now;
+      final ageHours =
+          now.difference(createdAt).inHours.toDouble();
+      final score = ranking.score(
+        completion: asDoubleOrNull(data['completion']) ?? 0,
+        sendDm: asDoubleOrNull(data['sendDm']) ?? 0,
+        followAfterView: asDoubleOrNull(data['followAfterView']) ?? 0,
+        ageHours: ageHours,
+        relationshipProximity:
+            asDoubleOrNull(data['relationshipProximity']) ?? 0,
+      );
+      scored.add(MapEntry(post, score));
+
+      final params = {
+        'position_in_session': index,
+        'age_hours': ageHours,
+        'tag': data['tag']?.toString() ?? '',
+      };
+      unawaited(analytics.logEvent('video_view', parameters: params));
+      unawaited(analytics.logEvent('video_complete', parameters: params));
+      unawaited(analytics.logEvent('send_dm', parameters: params));
+      unawaited(analytics.logEvent('follow_after_view', parameters: params));
+      index++;
+    }
+    scored.sort((a, b) => b.value.compareTo(a.value));
+    return scored.map((e) => e.key).toList();
   }
 }
