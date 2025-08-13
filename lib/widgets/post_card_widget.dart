@@ -9,6 +9,14 @@ import 'package:fouta_app/widgets/video_player_widget.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:fouta_app/utils/date_utils.dart';
 
+import 'package:fouta_app/widgets/animated_like_button.dart';
+import 'package:fouta_app/widgets/animated_bookmark_button.dart';
+import 'package:fouta_app/widgets/progressive_image.dart';
+import 'package:fouta_app/widgets/reaction_tray.dart';
+import 'package:fouta_app/widgets/skeleton.dart';
+import 'package:fouta_app/utils/haptics.dart';
+
+
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/create_post_screen.dart';
 import 'package:fouta_app/screens/profile_screen.dart';
@@ -180,6 +188,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
       return;
     }
 
+    Haptics.light();
+
     final bool newIsLiked = !_isLiked;
     final int newLikeCount = newIsLiked ? _likeCount + 1 : _likeCount - 1;
 
@@ -239,6 +249,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
       return;
     }
 
+    Haptics.light();
+
     final bool newIsBookmarked = !_isBookmarked;
     final int newBookmarkCount =
         newIsBookmarked ? _bookmarkCount + 1 : _bookmarkCount - 1;
@@ -269,6 +281,18 @@ class _PostCardWidgetState extends State<PostCardWidget> {
       });
       widget.onMessage('Failed to update bookmark: ${e.message}');
     }
+  }
+
+  void _openReactionTray() {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => ReactionTray(
+        onReactionSelected: (type) {
+          Navigator.pop(context);
+          widget.onMessage('Reacted: ${type.name}');
+        },
+      ),
+    );
   }
 
   Future<void> _addComment(String postId, String commentText) async {
@@ -716,12 +740,21 @@ class _PostCardWidgetState extends State<PostCardWidget> {
     Widget thumb;
     switch (type) {
       case 'image':
-        thumb = ProgressiveImage(
-          imageUrl: url,
-          thumbUrl: first['thumbUrl'] ?? url,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          borderRadius: 8.0,
+
+        thumb = ClipRRect(
+          borderRadius: BorderRadius.circular(8.0),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              const Skeleton.rect(),
+              ProgressiveImage(
+                imageUrl: url,
+                thumbUrl: first['thumbUrl'] ?? url,
+                fit: BoxFit.cover,
+              ),
+            ],
+          ),
+
         );
         break;
       case 'video':
@@ -745,12 +778,11 @@ class _PostCardWidgetState extends State<PostCardWidget> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  CachedNetworkImage(
+                  const Skeleton.rect(),
+                  ProgressiveImage(
                     imageUrl: poster,
+                    thumbUrl: poster,
                     fit: BoxFit.cover,
-                    errorWidget: (context, _, __) => Container(
-                      color: Theme.of(context).colorScheme.surfaceVariant,
-                    ),
                   ),
                   Container(
                       color: Theme.of(context)
@@ -1150,14 +1182,12 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        IconButton(
-                          icon: Icon(
-                            _isLiked ? Icons.favorite : Icons.favorite_border,
-
-                            color: _isLiked ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.outline,
-
+                        GestureDetector(
+                          onLongPress: _openReactionTray,
+                          child: AnimatedLikeButton(
+                            isLiked: _isLiked,
+                            onChanged: (v) => _toggleLike(),
                           ),
-                          onPressed: _toggleLike,
                         ),
                         const SizedBox(width: 4),
                         InkWell(
@@ -1249,6 +1279,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                     ),
                   ),
                   Expanded(
+
                     child: InkWell(
                       onTap: _toggleBookmark,
                       focusColor: AppColors.primary.withOpacity(0.3),
@@ -1269,9 +1300,10 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
+
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

@@ -2,6 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:fouta_app/features/shorts/shorts_service.dart';
+import 'package:fouta_app/utils/paging_controller.dart';
+import 'package:fouta_app/widgets/animated_like_button.dart';
+import 'package:fouta_app/widgets/refresh_scaffold.dart';
+import 'package:fouta_app/widgets/safe_stream_builder.dart';
 import 'package:fouta_app/widgets/video_player_widget.dart';
 import 'package:fouta_app/theme/motion.dart';
 import 'package:fouta_app/utils/error_reporter.dart';
@@ -9,23 +13,49 @@ import 'package:fouta_app/utils/error_reporter.dart';
 
 class ShortsScreen extends StatelessWidget {
   ShortsScreen({super.key, ShortsService? service})
+
       : _service = service ?? ShortsService();
 
   final ShortsService _service;
+  final Future<void> Function()? onLoadMore;
+
+  @override
+  State<ShortsScreen> createState() => _ShortsScreenState();
+}
+
+class _ShortsScreenState extends State<ShortsScreen> {
+  late final PagingController _paging;
+
+  @override
+  void initState() {
+    super.initState();
+    _paging = PagingController(
+      onLoadMore: widget.onLoadMore ?? () => widget._service.streamShorts().first,
+      scrollController: PageController(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _paging.dispose();
+    super.dispose();
+  }
+
+  Future<void> _reload() async {
+    await widget._service.streamShorts().first;
+    _paging.reset();
+  }
 
   @override
   Widget build(BuildContext context) {
+
     final reduceMotion = MediaQuery.of(context).disableAnimations;
     final duration = reduceMotion ? AppDurations.fast : AppDurations.normal;
 
     return StreamBuilder<List<Short>>(
       stream: _service.streamShorts(),
+
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
         final items = snapshot.data ?? [];
         if (items.isEmpty) {
           return const Scaffold(
@@ -40,6 +70,7 @@ class ShortsScreen extends StatelessWidget {
           );
         }
         return Scaffold(
+
 
           body: AnimatedSwitcher(
             duration: duration,
@@ -94,9 +125,11 @@ class ShortsScreen extends StatelessWidget {
               },
             ),
 
+
           ),
         );
       },
     );
   }
 }
+
