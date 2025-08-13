@@ -29,6 +29,7 @@ import 'package:fouta_app/utils/overlays.dart';
 import 'package:fouta_app/features/moderation/moderation_service.dart';
 import 'package:fouta_app/utils/json_safety.dart';
 import '../services/post_service.dart';
+import 'package:fouta_app/theme/tokens.dart';
 import '../services/collections_service.dart';
 import '../features/stories/composer/create_story_screen.dart';
 import '../features/creation/editor/overlays/overlay_models.dart';
@@ -805,7 +806,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
       default:
         thumb = const SizedBox.shrink();
     }
-    return GestureDetector(
+    return InkWell(
       onTap: () {
         Navigator.of(context).push(
           FoutaTransitions.pushFromRight(
@@ -814,6 +815,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
         );
       },
       onDoubleTap: _likeOnDoubleTap,
+      focusColor: AppColors.primary.withOpacity(0.3),
       child: Stack(
         children: [
           Hero(tag: '${widget.postId}-media', child: thumb),
@@ -929,9 +931,10 @@ class _PostCardWidgetState extends State<PostCardWidget> {
     final String originMediaUrl = widget.post['originMediaUrl'] ?? '';
     final String originMediaType = widget.post['originMediaType'] ?? 'text';
     final String originAuthorDisplayName = widget.post['originAuthorDisplayName'] ?? 'Original Author';
-    
+
     final double? aspectRatio = widget.post['aspectRatio'] as double?;
     final List<dynamic> attachments = (widget.post['media'] ?? []) as List<dynamic>;
+    final double textScale = MediaQuery.textScaleFactorOf(context).clamp(1.0, 1.3);
 
     return VisibilityDetector(
       key: Key(widget.postId),
@@ -967,13 +970,14 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                           fontStyle: FontStyle.italic,
                           fontSize: 13,
                         ),
+                        textScaleFactor: textScale,
                       ),
                     ],
                   ),
                 ),
               Row(
                 children: [
-                  GestureDetector(
+                  InkWell(
                     onTap: () {
                       Navigator.push(
                         context,
@@ -982,6 +986,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                         ),
                       );
                     },
+                    focusColor: AppColors.primary.withOpacity(0.3),
                     child: CircleAvatar(
                       radius: 20,
                       backgroundImage: authorProfileImageUrl.isNotEmpty
@@ -996,7 +1001,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  GestureDetector(
+                  InkWell(
                     onTap: () {
                       Navigator.push(
                         context,
@@ -1005,6 +1010,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                         ),
                       );
                     },
+                    focusColor: AppColors.primary.withOpacity(0.3),
                     child: Text(
                       authorDisplayName,
                       style: TextStyle(
@@ -1012,6 +1018,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
+                      textScaleFactor: textScale,
                     ),
                   ),
                   const Spacer(),
@@ -1139,6 +1146,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                         Text(
                           originContent,
                           style: const TextStyle(fontSize: 15),
+                          textScaleFactor: textScale,
+                          softWrap: true,
                         ),
                     ],
                   ),
@@ -1147,6 +1156,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                 Text(
                   widget.post['content'],
                   style: const TextStyle(fontSize: 16),
+                  textScaleFactor: textScale,
+                  softWrap: true,
                 ),
               // Display attachments if present.  Fall back to legacy single media for
               // backwards compatibility.
@@ -1179,8 +1190,9 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        GestureDetector(
+                        InkWell(
                           onTap: () => _showLikesDialog(context, asStringList(widget.post['likes'])),
+                          focusColor: AppColors.primary.withOpacity(0.3),
                           child: Text(
                             '$_likeCount',
                             style: TextStyle(
@@ -1192,12 +1204,13 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                     ),
                   ),
                   Expanded(
-                    child: GestureDetector(
+                    child: InkWell(
                       onTap: () {
                         setState(() {
                           _showComments = !_showComments;
                         });
                       },
+                      focusColor: AppColors.primary.withOpacity(0.3),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -1266,18 +1279,28 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                     ),
                   ),
                   Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        AnimatedBookmarkButton(
-                          isSaved: _isBookmarked,
-                          onChanged: (v) => _toggleBookmark(),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$_bookmarkCount',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
+
+                    child: InkWell(
+                      onTap: _toggleBookmark,
+                      focusColor: AppColors.primary.withOpacity(0.3),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _isBookmarked
+                                ? Icons.bookmark
+                                : Icons.bookmark_border,
+                            color: _isBookmarked
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).iconTheme.color,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$_bookmarkCount',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+
                           ),
                         ),
                       ],

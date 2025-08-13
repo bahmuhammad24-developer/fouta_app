@@ -68,33 +68,48 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           return LayoutBuilder(
             builder: (context, constraints) {
               final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
-              return RefreshScaffold(
-                onRefresh: () async {},
-                slivers: [
-                  SliverPadding(
-                    padding: const EdgeInsets.all(8),
-                    sliver: SliverGrid(
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        childAspectRatio: 3 / 4,
-                      ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final product = products[index];
-                          try {
-                            return _buildProductCard(product, userId);
-                          } catch (e) {
-                            if (kDebugMode) {
-                              print('Error rendering product ${product.id}: $e');
-                            }
-                            return const SizedBox.shrink();
-                          }
-                        },
-                        childCount: products.length,
-                      ),
-                    ),
+
+              return FocusTraversalGroup(
+                policy: OrderedTraversalPolicy(),
+                child: GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    childAspectRatio: 3 / 4,
                   ),
-                ],
+                  itemCount: products.length,
+                  itemBuilder: (context, index) {
+                  final product = products[index];
+                  try {
+                    return ProductCard(
+                      product: product,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProductDetailScreen(product: product),
+                          ),
+                        );
+                      },
+                      onFavorite: () => _service.toggleFavorite(product.id, userId),
+                      isFavorited: product.favoriteUserIds.contains(userId),
+                      onSellerTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SellerProfileScreen(sellerId: product.sellerId),
+                          ),
+                        );
+                      },
+                    );
+                  } catch (e) {
+                    if (kDebugMode) {
+                      print('Error rendering product ${product.id}: $e');
+                    }
+                    return const SizedBox.shrink();
+                  }
+                  },
+                ),
+
               );
             },
           );

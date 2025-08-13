@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'marketplace_service.dart';
+import 'package:fouta_app/theme/tokens.dart';
 
 class ProductCard extends StatelessWidget {
   const ProductCard({
@@ -25,6 +26,7 @@ class ProductCard extends StatelessWidget {
       clipBehavior: Clip.hardEdge,
       child: InkWell(
         onTap: onTap,
+        focusColor: AppColors.primary.withOpacity(0.3),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -33,7 +35,10 @@ class ProductCard extends StatelessWidget {
                 children: [
                   Positioned.fill(
                     child: image != null
-                        ? Image.network(image, width: double.infinity, fit: BoxFit.cover)
+                        ? Semantics(
+                            label: 'Product image: ${product.title}',
+                            child: Image.network(image, width: double.infinity, fit: BoxFit.cover),
+                          )
                         : Container(
                             color: Colors.grey.shade300,
                             child: const Icon(Icons.image, size: 48),
@@ -59,6 +64,7 @@ class ProductCard extends StatelessWidget {
                 product.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                softWrap: false,
               ),
             ),
             Padding(
@@ -67,11 +73,15 @@ class ProductCard extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: GestureDetector(
+              child: InkWell(
                 onTap: onSellerTap,
+                focusColor: AppColors.primary.withOpacity(0.3),
                 child: Text(
                   product.sellerId,
                   style: Theme.of(context).textTheme.bodySmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
                 ),
               ),
             ),

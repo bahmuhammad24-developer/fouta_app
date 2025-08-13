@@ -7,10 +7,13 @@ import 'package:fouta_app/widgets/animated_like_button.dart';
 import 'package:fouta_app/widgets/refresh_scaffold.dart';
 import 'package:fouta_app/widgets/safe_stream_builder.dart';
 import 'package:fouta_app/widgets/video_player_widget.dart';
+import 'package:fouta_app/theme/motion.dart';
 import 'package:fouta_app/utils/error_reporter.dart';
 
-class ShortsScreen extends StatefulWidget {
-  ShortsScreen({super.key, ShortsService? service, this.onLoadMore})
+
+class ShortsScreen extends StatelessWidget {
+  ShortsScreen({super.key, ShortsService? service})
+
       : _service = service ?? ShortsService();
 
   final ShortsService _service;
@@ -45,8 +48,13 @@ class _ShortsScreenState extends State<ShortsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeStreamBuilder<List<Short>>(
-      stream: widget._service.streamShorts(),
+
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final duration = reduceMotion ? AppDurations.fast : AppDurations.normal;
+
+    return StreamBuilder<List<Short>>(
+      stream: _service.streamShorts(),
+
       builder: (context, snapshot) {
         final items = snapshot.data ?? [];
         if (items.isEmpty) {
@@ -62,71 +70,61 @@ class _ShortsScreenState extends State<ShortsScreen> {
           );
         }
         return Scaffold(
-          body: RefreshScaffold(
-            onRefresh: _reload,
-            slivers: [
-              SliverFillRemaining(
-                child: PageView.builder(
-                  controller: _paging.scrollController as PageController,
-                  scrollDirection: Axis.vertical,
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final short = items[index];
-                    final likeCount = short.likeIds.length;
-                    try {
-                      return Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          VideoPlayerWidget(
-                            videoUrl: short.url,
-                            videoId: short.id,
-                            aspectRatio: short.aspectRatio,
-                            areControlsVisible: false,
-                            shouldInitialize: true,
-                          ),
 
-                          Positioned(
-                            right: 16,
-                            bottom: 80,
-                            child: Column(
-                              children: [
-                                AnimatedLikeButton(
-                                  isLiked: false,
-                                  onChanged: (_) {},
-                                ),
-                                Text('$likeCount',
-                                    style: const TextStyle(color: Colors.white)),
-                                const SizedBox(height: 16),
-                                IconButton(
-                                  icon: const Icon(Icons.comment,
-                                      color: Colors.white),
-                                  onPressed: () {},
-                                ),
-                                const SizedBox(height: 16),
-                                IconButton(
-                                  icon: const Icon(Icons.share,
-                                      color: Colors.white),
-                                  onPressed: () {},
-                                ),
-                                const SizedBox(height: 16),
-                                IconButton(
-                                  icon: const Icon(Icons.person_add,
-                                      color: Colors.white),
-                                  onPressed: () {},
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      );
-                    } catch (e, st) {
-                      debugPrint('Error rendering short ${short.id}: $e');
-                      return const SizedBox.shrink();
-                    }
-                  },
-                ),
-              ),
-            ],
+
+          body: AnimatedSwitcher(
+            duration: duration,
+            child: PageView.builder(
+              scrollDirection: Axis.vertical,
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                final short = items[index];
+                try {
+                  final likeCount = short.likeIds.length;
+                  Widget actionButton(IconData icon, VoidCallback onPressed) {
+                    final button = IconButton(
+                      icon: Icon(icon, color: Colors.white),
+                      onPressed: onPressed,
+                    );
+                    return reduceMotion ? button : animateOnTap(child: button, onTap: onPressed);
+                  }
+
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      VideoPlayerWidget(
+                        videoUrl: short.url,
+                        videoId: short.id,
+                        aspectRatio: short.aspectRatio,
+                        areControlsVisible: false,
+                        shouldInitialize: true,
+                      ),
+                      Positioned(
+                        right: 16,
+                        bottom: 80,
+                        child: Column(
+                          children: [
+                            actionButton(Icons.favorite, () {}),
+                            Text('$likeCount',
+                                style: const TextStyle(color: Colors.white)),
+                            const SizedBox(height: 16),
+                            actionButton(Icons.comment, () {}),
+                            const SizedBox(height: 16),
+                            actionButton(Icons.share, () {}),
+                            const SizedBox(height: 16),
+                            actionButton(Icons.person_add, () {}),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                } catch (e, st) {
+                  debugPrint('Error rendering short ${short.id}: $e');
+                  return const SizedBox.shrink();
+                }
+              },
+            ),
+
 
           ),
         );
