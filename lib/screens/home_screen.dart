@@ -581,15 +581,20 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
   List<Story> _stories = [];
 
   // Trending chips state
-  List<String> _trendingTags = const [];
+  List<String> _trendingTags = const <String>[];
   String? _selectedTag;
 
   static const List<String> _fallbackTags = ['news', 'tech', 'sports'];
 
   void _onTagSelected(String? tag) {
+    if (_selectedTag == tag) return;
     setState(() {
       _selectedTag = tag;
+      _posts = [];
+      _lastDocument = null;
+      _hasMore = true;
     });
+    _fetchFirstPosts();
   }
 
 
@@ -829,6 +834,9 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
         .collection(FirestorePaths.posts())
         .orderBy('timestamp', descending: true)
         .limit(_postsLimit);
+    if (_selectedTag != null) {
+      query = query.where('meta.hashtags', arrayContains: _selectedTag);
+    }
 
     final querySnapshot = await query.get();
 
@@ -854,6 +862,9 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
         .orderBy('timestamp', descending: true)
         .startAfterDocument(_lastDocument!)
         .limit(_postsLimit);
+    if (_selectedTag != null) {
+      query = query.where('meta.hashtags', arrayContains: _selectedTag);
+    }
 
     final querySnapshot = await query.get();
 
