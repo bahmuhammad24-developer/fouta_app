@@ -1,36 +1,36 @@
 # Contributor Guide
 
 ## Project
-- Default base branch: `dev`. Do not push directly to `main` (protected).
-- Languages: Flutter (web-first) + Firebase Functions (Node 20).
+- Base branch: `dev` (protected `main`).
+- Tech: Flutter (web-first) + Firebase Functions (Node 20).
 
-## Local checks to run before any PR
+## Local checks (before PR)
 - `flutter pub get`
 - `flutter analyze`
 - `dart format --output=none --set-exit-if-changed .`
 - `flutter test --no-pub --coverage`
 - If `/functions` exists: `npm ci && npm test --if-present`
-- Optional smoke tests (if environment allows):
-  - `flutter build web --release`
-  - `flutter build apk --debug` (Android)
-  - `flutter build ios --no-codesign` (macOS runner)
+- Optional smoke: `flutter build web --release`
 
 ## PR requirements
-- Title uses Conventional Commits.
-- Summary: what / why / how.
-- Risks: top 5 with mitigations.
-- Tests: list added/updated tests and show relevant passing output.
-- Migration notes (if any).
-- Citations to changed files and test output (reference paths and commands).
+- Conventional Commit title.
+- Summary (what/why/how), top 5 risks + mitigations, test output, migration notes.
+- Cite changed files and test logs.
 
-## Repo policy (updated)
-- **File output**: Return complete file replacements (no ellipses).
-- **Branches**: Agents **may create/switch** branches (feature/*, fix/*, meta/*). If your system forbids it, work on `dev` and note the fallback in the changelog.
-- **Dependencies**: Agents **may add runtime or dev dependencies** when all of the following are done:
-  1) Create a short DEP record under `docs/dependencies/` using the template (see `DEP-TEMPLATE.md`).
-  2) Update `pubspec.yaml` (and `functions/package.json` if applicable), then run `flutter pub get` (or `npm ci`).
-  3) Update platform settings if required (Android minSdk/Gradle, iOS Pod settings, Web `index.html`).
-  4) Update `README.md` with setup notes if manual steps are needed.
-  5) Ensure tests and CI pass.
-- **Feed sorting**: Do not modify the custom feed sorting unless a task explicitly authorizes it.
-- **Auth screens**: No bottom navigation on Login/Signup.
+## Repo policy
+- **File output:** Full file replacements (no ellipses).
+- **Branches:** Agents may create/switch branches. If blocked, commit on `dev` and note fallback.
+- **Dependencies:** Allowed when a DEP record is added and CI passes (see DEP policy).
+- **Auth screens:** No bottom nav on Login/Signup.
+
+## Navigation & Feed policy (updated)
+- **Nav bar changes are allowed** when:
+  1) Changes are behind a **feature flag** (e.g., `remoteConfig.nav_variant = 'A'|'B'` or Firestore config).
+  2) A short measurement plan is included (click‑through, dwell time, nav errors).
+  3) A rollback note is included in the PR.
+
+- **Feed ranking changes are allowed** when:
+  1) Implemented as a **new strategy class** (e.g., `DiscoveryRankingV2`) without deleting the previous one.
+  2) Gated by a **feature flag** (e.g., `feed_ranking='v2'`).
+  3) Instrumented for **watch time, completes, shares/DMs, follows-after-view**, with a 7‑day decay.
+  4) PR includes a **rollback plan** and index notes (Firestore queries must be indexable).
