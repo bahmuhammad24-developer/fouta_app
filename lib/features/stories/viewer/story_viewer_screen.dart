@@ -4,6 +4,9 @@ import 'package:video_player/video_player.dart';
 
 import '../stories_service.dart';
 import '../../creation/editor/overlays/overlay_models.dart';
+import 'package:fouta_app/triggers/flags.dart';
+import 'package:fouta_app/triggers/trigger_orchestrator.dart';
+import 'package:fouta_app/widgets/triggers/story_inline_reply_chip.dart';
 
 /// Viewer for playing a sequence of stories with basic controls and overlays.
 class StoryViewerScreen extends StatefulWidget {
@@ -164,6 +167,13 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                 }),
               ),
             ),
+            if (TriggerOrchestrator.instance.fire(
+              'story_reply_chip',
+              context: context,
+              cap: 1,
+              enabled: AppFlags.storyReplyChipEnabled,
+            ))
+              const StoryInlineReplyChip(onTap: () {}),
           ],
         ),
       ),

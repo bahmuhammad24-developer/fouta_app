@@ -575,3 +575,9 @@ Nav bar and feed ranking updates are permitted when gated and measurable.
 - **Feature flag**: `feed_ranking` (e.g., `v2`) selecting a new strategy class.
 - **Metrics**: watch time, completes, shares/DMs, follows-after-view with a 7-day decay.
 - **Rollback**: note previous strategy, disable flag, ensure Firestore queries remain indexable.
+
+## App-origin triggers (v1)
+- Next-Up rail surfaces three recommendations after shorts.
+- Keyword filter chips refine discovery queries.
+- Friends-first header nudges users to friends tab.
+- Story inline reply chip opens a prefilled DM composer.
