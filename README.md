@@ -12,6 +12,7 @@
 - [Getting Started](#getting-started)
 - [Documentation & Logging Guidelines](#documentation--logging-guidelines)
   - [AI Collaboration](#ai-collaboration)
+- [AI Collaboration & Policy](#ai-collaboration--policy)
 - [Development Notes](#development-notes)
 - [Media Pipeline](#media-pipeline)
 - [Stories](#stories)
@@ -218,6 +219,11 @@ For help getting started with Flutter development, view the [online documentatio
 ### AI Collaboration
 - AI agents must document their work, including context, decisions, and timestamps.
 - Append updates to existing documentation and logs rather than overwriting previous entries.
+
+## AI Collaboration & Policy
+- Agents may create or switch branches other than the protected `main` branch.
+- Agents may add runtime and dev dependencies when a DEP record is created and all CI checks pass.
+- See [AGENTS.md](AGENTS.md) and [DEPENDENCIES.md](DEPENDENCIES.md) for full details.
 
 ## Development Notes
 
