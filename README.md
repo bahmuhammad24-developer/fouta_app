@@ -15,6 +15,8 @@
 - [Development Notes](#development-notes)
 - [Media Pipeline](#media-pipeline)
 - [Stories](#stories)
+- [Monetization](#monetization)
+- [Admin Analytics](#admin-analytics)
 - [Testing](#testing)
 - [CI & Status Checks](#ci--status-checks)
 - [Change Log](#change-log)
@@ -87,21 +89,27 @@ Dedicated feature modules keep the project competitive with larger platforms. Th
 - `edit_event_screen.dart`
   - Icons: calendar_today, camera_alt, save
   - Colors: grey
-- `event_details_screen.dart`
-  - Icons: access_time, calendar_today, check_circle_outline, edit, event, location_on, person, send
-  - Colors: grey, white
+- `event_detail_screen.dart`
+  - Icons: none
+  - Colors: none
 - `event_invite_screen.dart`
   - Icons: person
   - Colors: white
 - `events_list_screen.dart`
   - Icons: add, event, filter_list, location_on_outlined, people_outline
   - Colors: grey
+- `group_detail_screen.dart`
+  - Icons: none
+  - Colors: none
 - `group_member_selection_screen.dart`
   - Icons: arrow_forward, person
   - Colors: None
 - `group_setup_screen.dart`
   - Icons: group_add
   - Colors: None
+- `groups_list_screen.dart`
+  - Icons: add
+  - Colors: none
 - `home_screen.dart`
   - Icons: archive_outlined, chat_bubble_outline, event_outlined, home_outlined, info_outline, logout, menu, message, notifications_outlined, people_outlined, person, person_outlined, search, settings_outlined, volume_mute_outlined, wifi_off
   - Colors: blue, green, grey, white
@@ -291,6 +299,31 @@ Stories let people share ephemeral moments.
 - Items are marked seen after being visible for at least one second and cached locally for instant tray updates.
 
 
+## Groups
+Users can create communities and join or leave them.
+Firestore: `artifacts/$APP_ID/public/data/groups/{groupId}` with fields:
+- `name` (`String`)
+- `description` (`String?`)
+- `coverUrl` (`String?`)
+- `ownerId` (`String`)
+- `memberIds` (`List<String>`)
+- `createdAt` (`Timestamp`)
+
+## Events
+Events allow attendees to RSVP.
+Firestore: `artifacts/$APP_ID/public/data/events/{eventId}` with fields:
+- `title` (`String`)
+- `start` (`Timestamp`)
+- `end` (`Timestamp`)
+- `location` (`String?`)
+- `description` (`String?`)
+- `coverUrl` (`String?`)
+- `ownerId` (`String`)
+- `attendingIds` (`List<String>`)
+- `interestedIds` (`List<String>`)
+- `createdAt` (`Timestamp`)
+- `updatedAt` (`Timestamp`)
+
 ## Firestore Collections
 
 - `products` – documents contain `name`, `price`, `description`, and `imageUrl` for marketplace listings.
@@ -363,9 +396,34 @@ To re-run checks, go to Actions and select **Run workflow**.
   - `likeIds` (`List<String>`)
   - `createdAt` (`Timestamp`)
 - `artifacts/$APP_ID/public/data/products`
-  - `authorId` (`String`)
+  - `sellerId` (`String`)
   - `urls` (`List<String>`)
   - `title` (`String`)
+  - `category` (`String`)
   - `price` (`double`)
-  - `favoriteIds` (`List<String>`)
+  - `currency` (`String`)
+  - `favoriteUserIds` (`List<String>`)
   - `createdAt` (`Timestamp`)
+
+## Monetization
+Payment flows are stubbed. The app records intents at `artifacts/$APP_ID/public/data/monetization/intents/{intentId}` with:
+- `type` (`tip`\|`subscription`\|`purchase`)
+- `amount` (`double`)
+- `currency` (`String`)
+- `targetUserId` or `productId` (`String`)
+- `createdBy` (`String`)
+- `createdAt` (`Timestamp`)
+- `status` (`draft`\|`ready`\|`completed`\|`failed`)
+
+**Safety:** No payment provider is wired yet; intents are placeholders pending security review.
+
+## Admin Analytics
+Daily rollups stored at `artifacts/$APP_ID/public/data/metrics/daily/{YYYY-MM-DD}` with:
+- `dau` (`int`)
+- `posts` (`int`)
+- `shortViews` (`int`)
+- `purchaseIntents` (`int`)
+
+**Safety:** Aggregations run in scheduled functions; ensure admin-only access and monitor Firestore read costs.
+
+
