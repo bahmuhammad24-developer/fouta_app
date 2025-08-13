@@ -38,6 +38,10 @@ import 'package:fouta_app/widgets/fouta_card.dart';
 import 'package:fouta_app/widgets/skeletons/feed_skeleton.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/models/story.dart';
+import 'package:fouta_app/triggers/flags.dart';
+import 'package:fouta_app/triggers/trigger_orchestrator.dart';
+import 'package:fouta_app/widgets/triggers/keyword_filter_chips.dart';
+import 'package:fouta_app/widgets/triggers/friends_first_header.dart';
 import 'package:fouta_app/services/push_notification_service.dart';
 import 'package:fouta_app/widgets/system/offline_banner.dart';
 import 'package:fouta_app/widgets/post_composer.dart';
@@ -1027,6 +1031,17 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
             selectedTag: _selectedTag,
             onSelected: _onTagSelected,
           ),
+          if (TriggerOrchestrator.instance.fire(
+            'keyword_chips',
+            context: context,
+            cap: 1,
+            enabled: AppFlags.keywordChipsEnabled &&
+                _feedType == FeedType.forYou,
+          ))
+            KeywordFilterChips(
+              keywords: const ['Music', 'Sports', 'News'],
+              onSelected: (_) {},
+            ),
           FoutaCard(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Row(
@@ -1052,6 +1067,16 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
               ],
             ),
           ),
+          if (TriggerOrchestrator.instance.fire(
+            'friends_first',
+            context: context,
+            cap: 1,
+            enabled: AppFlags.friendsFirstEnabled &&
+                _feedType == FeedType.friends,
+          ))
+            FriendsFirstHeader(
+              onTap: () {},
+            ),
           Expanded(
             child: (_posts.isEmpty && _isLoading)
                 ? const FeedSkeleton()

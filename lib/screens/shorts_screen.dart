@@ -9,6 +9,10 @@ import 'package:fouta_app/widgets/safe_stream_builder.dart';
 import 'package:fouta_app/widgets/video_player_widget.dart';
 import 'package:fouta_app/theme/motion.dart';
 import 'package:fouta_app/utils/error_reporter.dart';
+import 'package:fouta_app/triggers/flags.dart';
+import 'package:fouta_app/triggers/trigger_orchestrator.dart';
+import 'package:fouta_app/widgets/triggers/keyword_filter_chips.dart';
+import 'package:fouta_app/widgets/triggers/next_up_rail.dart';
 
 
 class ShortsScreen extends StatelessWidget {
@@ -69,63 +73,94 @@ class _ShortsScreenState extends State<ShortsScreen> {
             ),
           );
         }
+        final showChips = TriggerOrchestrator.instance.fire(
+          'keyword_chips',
+          context: context,
+          cap: 1,
+          enabled: AppFlags.keywordChipsEnabled,
+        );
+        final showNext = TriggerOrchestrator.instance.fire(
+          'next_up',
+          context: context,
+          cap: 1,
+          enabled: AppFlags.nextUpEnabled,
+        );
         return Scaffold(
+          body: Stack(
+            children: [
+              AnimatedSwitcher(
+                duration: duration,
+                child: PageView.builder(
+                  scrollDirection: Axis.vertical,
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    final short = items[index];
+                    try {
+                      final likeCount = short.likeIds.length;
+                      Widget actionButton(IconData icon, VoidCallback onPressed) {
+                        final button = IconButton(
+                          icon: Icon(icon, color: Colors.white),
+                          onPressed: onPressed,
+                        );
+                        return reduceMotion ? button : animateOnTap(child: button, onTap: onPressed);
+                      }
 
-
-          body: AnimatedSwitcher(
-            duration: duration,
-            child: PageView.builder(
-              scrollDirection: Axis.vertical,
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final short = items[index];
-                try {
-                  final likeCount = short.likeIds.length;
-                  Widget actionButton(IconData icon, VoidCallback onPressed) {
-                    final button = IconButton(
-                      icon: Icon(icon, color: Colors.white),
-                      onPressed: onPressed,
-                    );
-                    return reduceMotion ? button : animateOnTap(child: button, onTap: onPressed);
-                  }
-
-                  return Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      VideoPlayerWidget(
-                        videoUrl: short.url,
-                        videoId: short.id,
-                        aspectRatio: short.aspectRatio,
-                        areControlsVisible: false,
-                        shouldInitialize: true,
-                      ),
-                      Positioned(
-                        right: 16,
-                        bottom: 80,
-                        child: Column(
-                          children: [
-                            actionButton(Icons.favorite, () {}),
-                            Text('$likeCount',
-                                style: const TextStyle(color: Colors.white)),
-                            const SizedBox(height: 16),
-                            actionButton(Icons.comment, () {}),
-                            const SizedBox(height: 16),
-                            actionButton(Icons.share, () {}),
-                            const SizedBox(height: 16),
-                            actionButton(Icons.person_add, () {}),
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-                } catch (e, st) {
-                  debugPrint('Error rendering short ${short.id}: $e');
-                  return const SizedBox.shrink();
-                }
-              },
-            ),
-
-
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          VideoPlayerWidget(
+                            videoUrl: short.url,
+                            videoId: short.id,
+                            aspectRatio: short.aspectRatio,
+                            areControlsVisible: false,
+                            shouldInitialize: true,
+                          ),
+                          Positioned(
+                            right: 16,
+                            bottom: 80,
+                            child: Column(
+                              children: [
+                                actionButton(Icons.favorite, () {}),
+                                Text('$likeCount',
+                                    style: const TextStyle(color: Colors.white)),
+                                const SizedBox(height: 16),
+                                actionButton(Icons.comment, () {}),
+                                const SizedBox(height: 16),
+                                actionButton(Icons.share, () {}),
+                                const SizedBox(height: 16),
+                                actionButton(Icons.person_add, () {}),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    } catch (e, st) {
+                      debugPrint('Error rendering short ${short.id}: $e');
+                      return const SizedBox.shrink();
+                    }
+                  },
+                ),
+              ),
+              if (showChips)
+                Positioned(
+                  top: 40,
+                  left: 0,
+                  right: 0,
+                  child: KeywordFilterChips(
+                    keywords: const ['Music', 'Sports', 'News'],
+                    onSelected: (_) {},
+                  ),
+                ),
+              if (showNext)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: NextUpRail(
+                    onSelected: (_) {},
+                  ),
+                ),
+            ],
           ),
         );
       },
