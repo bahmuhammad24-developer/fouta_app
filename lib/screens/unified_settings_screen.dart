@@ -25,11 +25,20 @@ class UnifiedSettingsScreen extends StatefulWidget {
 class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   final _newPasswordController = TextEditingController();
   bool _pushEnabled = false;
+  Map<String, bool> _notifPrefs = {
+    'follows': true,
+    'comments': true,
+    'likes': true,
+    'reposts': true,
+    'mentions': true,
+    'messages': true,
+  };
 
   @override
   void initState() {
     super.initState();
     _loadPushPref();
+    _loadNotificationPrefs();
   }
 
   Future<void> _loadPushPref() async {
@@ -44,6 +53,37 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
     if (mounted) {
       setState(() => _pushEnabled = doc.exists);
     }
+  }
+
+  Future<void> _loadNotificationPrefs() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final doc = await FirebaseFirestore.instance
+        .collection(FirestorePaths.users())
+        .doc(uid)
+        .collection('settings')
+        .doc('notifications')
+        .get();
+    if (doc.exists && mounted) {
+      final data = doc.data() ?? {};
+      setState(() {
+        for (final entry in data.entries) {
+          _notifPrefs[entry.key] = entry.value == true;
+        }
+      });
+    }
+  }
+
+  Future<void> _updateNotificationPref(String key, bool value) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    setState(() => _notifPrefs[key] = value);
+    await FirebaseFirestore.instance
+        .collection(FirestorePaths.users())
+        .doc(uid)
+        .collection('settings')
+        .doc('notifications')
+        .set({key: value}, SetOptions(merge: true));
   }
 
   @override
@@ -255,6 +295,38 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                 await PushNotificationService.disablePush();
               }
             },
+          ),
+
+          _buildSectionHeader('NOTIFICATIONS'),
+          SwitchListTile(
+            title: const Text('Follows'),
+            value: _notifPrefs['follows'] ?? true,
+            onChanged: (v) => _updateNotificationPref('follows', v),
+          ),
+          SwitchListTile(
+            title: const Text('Comments'),
+            value: _notifPrefs['comments'] ?? true,
+            onChanged: (v) => _updateNotificationPref('comments', v),
+          ),
+          SwitchListTile(
+            title: const Text('Likes'),
+            value: _notifPrefs['likes'] ?? true,
+            onChanged: (v) => _updateNotificationPref('likes', v),
+          ),
+          SwitchListTile(
+            title: const Text('Reposts'),
+            value: _notifPrefs['reposts'] ?? true,
+            onChanged: (v) => _updateNotificationPref('reposts', v),
+          ),
+          SwitchListTile(
+            title: const Text('Mentions'),
+            value: _notifPrefs['mentions'] ?? true,
+            onChanged: (v) => _updateNotificationPref('mentions', v),
+          ),
+          SwitchListTile(
+            title: const Text('Messages'),
+            value: _notifPrefs['messages'] ?? true,
+            onChanged: (v) => _updateNotificationPref('messages', v),
           ),
 
           // Theme mode selection using ThemeController.

@@ -1,6 +1,6 @@
 # Changelog
 
-
+- 2025-08-12 – Notifications v2: per-type prefs, in-app inbox, batched push.
 
 - 2025-08-12 – Profiles v2: creator analytics, pinned post, richer bios.
 - 2025-08-12 – Stories v2 with overlay editor; viewer pause/seek; 24h expiry; safe parsing.
