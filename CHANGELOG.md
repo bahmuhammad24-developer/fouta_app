@@ -2,6 +2,7 @@
 
 
 
+- 2025-08-12 – Micro-interactions: animated like/bookmark, reaction tray.
 - 2025-08-12 – Composer V2: drafts & scheduling (route-only).
 - 2025-08-12 – Link Preview module + demo screen (route-only).
 - 2025-08-12 – i18n scaffolding (EN/FR) with dev sandbox; no app wiring yet.
