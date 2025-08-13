@@ -1,5 +1,7 @@
 # Changelog
 
+- 2025-08-12 – Marketplace v2 (filters/favorites/seller profile), Monetization stubs (tips/subscriptions/purchase intents), Admin analytics dashboard with daily rollups.
+
 
 - 2025-08-13 – Messaging v2 (typing/read receipts/media hardening); Notifications v1 (opt-in + Function trigger).
 - 2025-08-13 – Search, hashtag index, trending chips.

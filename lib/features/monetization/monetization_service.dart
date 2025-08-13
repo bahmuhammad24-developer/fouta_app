@@ -1,34 +1,93 @@
-/// Placeholder for ads, subscriptions, and marketplace transactions.
-import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// A naive monetization service that records purchases locally. Real payment
-/// processing would integrate with platform-specific providers.
+import '../../main.dart';
+
+/// Records monetization intents for tips, subscriptions, and purchases.
+///
+/// TODO: Wire a verified payment provider after security review to fulfill
+/// intents and securely handle funds.
 class MonetizationService {
-  final Set<String> _purchases = {};
+  MonetizationService({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  /// Simulates purchasing an item identified by [productId]. Always succeeds
-  /// after a short delay and records the purchase locally.
-  Future<bool> purchase(String productId) async {
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-    _purchases.add(productId);
-    return true;
+  final FirebaseFirestore _firestore;
+
+  CollectionReference<Map<String, dynamic>> get _intents => _firestore
+      .collection('artifacts')
+      .doc(APP_ID)
+      .collection('public')
+      .doc('data')
+      .collection('monetization')
+      .doc('intents')
+      .collection('items');
+
+  Future<String> _createIntent({
+    required String type,
+    required double amount,
+    required String currency,
+    String? targetUserId,
+    String? productId,
+    required String createdBy,
+  }) async {
+    final doc = await _intents.add({
+      'type': type,
+      'amount': amount,
+      'currency': currency,
+      if (targetUserId != null) 'targetUserId': targetUserId,
+      if (productId != null) 'productId': productId,
+      'createdBy': createdBy,
+      'createdAt': FieldValue.serverTimestamp(),
+      'status': 'draft',
+    });
+    return doc.id;
   }
 
-  Future<bool> purchaseProduct(String productId) async {
-    // TODO: integrate real payment gateway pending security review.
-    return purchase(productId);
+  Future<String> createTipIntent({
+    required double amount,
+    required String currency,
+    required String targetUserId,
+    required String createdBy,
+  }) {
+    return _createIntent(
+      type: 'tip',
+      amount: amount,
+      currency: currency,
+      targetUserId: targetUserId,
+      createdBy: createdBy,
+    );
   }
 
-  Future<bool> subscribeToCreator(String creatorId) async {
-    // TODO: handle recurring subscription payments securely.
-    return purchase('sub-$creatorId');
+  Future<String> createSubscriptionIntent({
+    required double amount,
+    required String currency,
+    required String targetUserId,
+    required String createdBy,
+  }) {
+    return _createIntent(
+      type: 'subscription',
+      amount: amount,
+      currency: currency,
+      targetUserId: targetUserId,
+      createdBy: createdBy,
+    );
   }
 
-  Future<bool> tipCreator(String creatorId, int amountCents) async {
-    // TODO: implement tipping once payment integration is approved.
-    return purchase('tip-$creatorId-$amountCents');
+  Future<String> createPurchaseIntent({
+    required double amount,
+    required String currency,
+    required String productId,
+    required String createdBy,
+  }) {
+    return _createIntent(
+      type: 'purchase',
+      amount: amount,
+      currency: currency,
+      productId: productId,
+      createdBy: createdBy,
+    );
   }
 
-  /// Whether the given [productId] has been purchased in this session.
-  bool hasPurchased(String productId) => _purchases.contains(productId);
+  Future<void> markIntentStatus(String intentId, String status) {
+    return _intents.doc(intentId).update({'status': status});
+  }
 }
