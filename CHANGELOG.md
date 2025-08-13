@@ -1,5 +1,7 @@
 # Changelog
 
+- 2025-08-12 America/New_York – fix(build): resolve trigger/widget API mismatches, nullability, and syntax issues; stabilize imports.
+
 
 - 2025-08-12 – Fix Shorts widget structure; remove const misuse in Events; stabilize Profile; tighten trending tags state.
 - 2025-08-12 – Trigger Orchestrator + Next-Up rail, Keyword filter chips, Friends-first header, Story inline reply chip (flagged). (Committed on fallback branch `work` due to branch creation restrictions.)

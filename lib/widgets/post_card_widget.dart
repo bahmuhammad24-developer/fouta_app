@@ -745,8 +745,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
           borderRadius: BorderRadius.circular(8.0),
           child: Stack(
             fit: StackFit.expand,
-            children: [
-              const Skeleton.rect(),
+              children: [
+            Skeleton.rect(),
               ProgressiveImage(
                 imageUrl: url,
                 thumbUrl: first['thumbUrl'] ?? url,
@@ -777,8 +777,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
               aspectRatio: aspectRatio ?? 16 / 9,
               child: Stack(
                 fit: StackFit.expand,
-                children: [
-                  const Skeleton.rect(),
+                  children: [
+                  Skeleton.rect(),
                   ProgressiveImage(
                     imageUrl: poster,
                     thumbUrl: poster,
@@ -1278,36 +1278,34 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                       ),
                     ),
                   ),
-                  Expanded(
-
-                    child: InkWell(
-                      onTap: _toggleBookmark,
-                      focusColor: AppColors.primary.withOpacity(0.3),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            _isBookmarked
-                                ? Icons.bookmark
-                                : Icons.bookmark_border,
-                            color: _isBookmarked
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).iconTheme.color,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '$_bookmarkCount',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface,
+                    Expanded(
+                      child: InkWell(
+                        onTap: _toggleBookmark,
+                        focusColor: AppColors.primary.withOpacity(0.3),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _isBookmarked
+                                  ? Icons.bookmark
+                                  : Icons.bookmark_border,
+                              color: _isBookmarked
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).iconTheme.color,
                             ),
-
-                          ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$_bookmarkCount',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               if (_showComments) ...[
                 const SizedBox(height: 10),
                 StreamBuilder<QuerySnapshot>(

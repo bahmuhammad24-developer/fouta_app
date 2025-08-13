@@ -468,49 +468,50 @@ class _ProfileScreenState extends State<ProfileScreen>
           shrinkWrap: true,
           itemCount: ordered.length,
           itemBuilder: (context, index) {
-            final doc = ordered[index];
-            final post = doc.data();
-            return Column(
-              children: [
-                if (index == 0 && _pinnedPostId != null)
-                  Container(
-                    width: double.infinity,
-                    color: Theme.of(context).colorScheme.surfaceVariant,
-                    padding: const EdgeInsets.all(8),
-                    child: const Text('Pinned Post'),
-                  ),
-                PostCardWidget(
-                  postId: doc.id,
-                  post: post,
-                  currentUser: currentUser,
-                  appId: APP_ID,
-                  onMessage: _showMessage,
-                  isDataSaverOn: _isDataSaverOn,
-                  isOnMobileData: _isOnMobileData,
-                ),
-                if (isMyProfile)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () async {
-                        if (_pinnedPostId == doc.id) {
-                          await _profileService.unpinPost(widget.userId);
-                          mountedSetState(this, () {
-                            _pinnedPostId = null;
-                          });
-                        } else {
-                          await _profileService.pinPost(widget.userId, doc.id);
-                          mountedSetState(this, () {
-                            _pinnedPostId = doc.id;
-                          });
-                        }
-                      },
-                      child:
-                          Text(_pinnedPostId == doc.id ? 'Unpin' : 'Pin'),
+              final doc = ordered[index];
+              final post = doc.data();
+              if (post == null) return const SizedBox.shrink();
+              return Column(
+                children: [
+                  if (index == 0 && _pinnedPostId != null)
+                    Container(
+                      width: double.infinity,
+                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      padding: const EdgeInsets.all(8),
+                      child: const Text('Pinned Post'),
                     ),
+                  PostCardWidget(
+                    postId: doc.id,
+                    post: post,
+                    currentUser: currentUser,
+                    appId: APP_ID,
+                    onMessage: _showMessage,
+                    isDataSaverOn: _isDataSaverOn,
+                    isOnMobileData: _isOnMobileData,
                   ),
-              ],
-            );
+                  if (isMyProfile)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () async {
+                          if (_pinnedPostId == doc.id) {
+                            await _profileService.unpinPost(widget.userId);
+                            mountedSetState(this, () {
+                              _pinnedPostId = null;
+                            });
+                          } else {
+                            await _profileService.pinPost(widget.userId, doc.id);
+                            mountedSetState(this, () {
+                              _pinnedPostId = doc.id;
+                            });
+                          }
+                        },
+                        child:
+                            Text(_pinnedPostId == doc.id ? 'Unpin' : 'Pin'),
+                      ),
+                    ),
+                ],
+              );
           },
         );
       },
@@ -560,13 +561,14 @@ class _ProfileScreenState extends State<ProfileScreen>
             mainAxisSpacing: 4,
           ),
           itemCount: posts.length,
-          itemBuilder: (context, index) {
-            final post = posts[index].data();
-            return _MediaGridTile(
-              postId: posts[index].id,
-              post: post,
-            );
-          },
+            itemBuilder: (context, index) {
+              final post = posts[index].data();
+              if (post == null) return const SizedBox.shrink();
+              return _MediaGridTile(
+                postId: posts[index].id,
+                post: post,
+              );
+            },
         );
       },
     );
@@ -642,7 +644,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       isEditing: _isEditing,
       bioController: _bioController,
       profileImageUrl: _currentProfileImageUrl,
-      newProfileImage: _newProfileImage,
+      newProfileImage: _newProfileImage?.file,
       isUploading: _isUploading,
       uploadProgress: _uploadProgress,
       followers: followers,

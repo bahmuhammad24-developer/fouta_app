@@ -75,17 +75,15 @@ class _ShortsScreenState extends State<ShortsScreen> {
             ),
           );
         }
-        final showChips = TriggerOrchestrator.instance.fire(
-          'keyword_chips',
-          context: context,
-          cap: 1,
+        final _showChips = TriggerOrchestrator.instance.fire(
+          id: 'keyword_chips',
           enabled: AppFlags.keywordChipsEnabled,
+          perSessionCap: 1,
         );
-        final showNext = TriggerOrchestrator.instance.fire(
-          'next_up',
-          context: context,
-          cap: 1,
+        final _showNext = TriggerOrchestrator.instance.fire(
+          id: 'next_up',
           enabled: AppFlags.nextUpEnabled,
+          perSessionCap: 1,
         );
         return Scaffold(
 

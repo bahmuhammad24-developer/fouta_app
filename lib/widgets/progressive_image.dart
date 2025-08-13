@@ -93,7 +93,7 @@ class _ProgressiveImageState extends State<ProgressiveImage> {
     );
 
     return ClipRRect(
-      borderRadius: border,
+      borderRadius: border ?? BorderRadius.zero,
       child: Stack(
         fit: StackFit.passthrough,
         children: [

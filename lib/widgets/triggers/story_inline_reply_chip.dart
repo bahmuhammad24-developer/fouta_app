@@ -4,20 +4,23 @@ import 'package:flutter/material.dart';
 /// Non-modal reply affordance you can overlay on a story viewer.
 /// Hook onReply to open your DM composer with context.
 class StoryInlineReplyChip extends StatelessWidget {
-  final VoidCallback onReply;
+  final VoidCallback? onReply;
+  final VoidCallback? onTap; // alias
 
   const StoryInlineReplyChip({
     super.key,
-    required this.onReply,
+    this.onReply,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     // Use Positioned in parent or put this at the bottom of your story controls.
+    final handler = onReply ?? onTap ?? () {};
     return Padding(
       padding: const EdgeInsets.all(12.0),
       child: ElevatedButton.icon(
-        onPressed: onReply,
+        onPressed: handler,
         icon: const Icon(Icons.reply),
         label: const Text('Reply'),
         style: ElevatedButton.styleFrom(

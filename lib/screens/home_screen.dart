@@ -427,7 +427,7 @@ class _NotificationsButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeStreamBuilder<int>(
-      stream: unreadStream,
+      stream: unreadStream ?? const Stream<int>.empty(),
       onError: (e, st) => ErrorReporter.report(e, st),
       builder: (context, snapshot) {
         final unreadCount = snapshot.data ?? 0;
@@ -1043,11 +1043,10 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
             onSelected: _onTagSelected,
           ),
           if (TriggerOrchestrator.instance.fire(
-            'keyword_chips',
-            context: context,
-            cap: 1,
+            id: 'keyword_chips',
             enabled: AppFlags.keywordChipsEnabled &&
                 _feedType == FeedType.forYou,
+            perSessionCap: 1,
           ))
             KeywordFilterChips(
               keywords: const ['Music', 'Sports', 'News'],
@@ -1079,13 +1078,13 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
             ),
           ),
           if (TriggerOrchestrator.instance.fire(
-            'friends_first',
-            context: context,
-            cap: 1,
+            id: 'friends_first',
             enabled: AppFlags.friendsFirstEnabled &&
                 _feedType == FeedType.friends,
+            perSessionCap: 1,
           ))
             FriendsFirstHeader(
+              newPostsCount: 0,
               onTap: () {},
             ),
           Expanded(
