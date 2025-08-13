@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - dev
+      - 'feature/**'
+      - 'fix/**'
+  pull_request:
+    branches:
+      - dev
+
+jobs:
+  flutter:
+    name: Flutter analyze, tests, and web build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Flutter analyze
+        run: flutter analyze
+
+      - name: Dart format
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Flutter tests with coverage
+        run: flutter test --no-pub --coverage
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/lcov.info
+
+      - name: Flutter build web (release)
+        run: flutter build web --release
+
+  functions:
+    name: Cloud Functions tests (Node 20)
+    if: ${{ hashFiles('functions/package.json') != '' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: functions
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test --if-present
