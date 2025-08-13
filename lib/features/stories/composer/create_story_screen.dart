@@ -1,28 +1,21 @@
 import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
-import 'package:fouta_app/utils/video_controller_extensions.dart';
-import 'package:fouta_app/utils/snackbar.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
-import '../data/story_repository.dart';
-import '../../../models/story.dart';
-import '../../../models/media_item.dart';
 
-/// Composer for creating and publishing a story slide.
+import '../stories_service.dart';
+import '../../../features/creation/editor/overlays/editor_canvas.dart';
+
+/// Screen for composing a story with overlay editing.
 class CreateStoryScreen extends StatefulWidget {
   final String? initialImagePath;
   final String? initialVideoPath;
-  final String? initialCaption;
 
   const CreateStoryScreen({
     super.key,
     this.initialImagePath,
     this.initialVideoPath,
-    this.initialCaption,
   });
 
   @override
@@ -30,128 +23,64 @@ class CreateStoryScreen extends StatefulWidget {
 }
 
 class _CreateStoryScreenState extends State<CreateStoryScreen> {
-  Player? _player;
-  VideoController? _controller;
-  bool _isUploading = false;
-  late final TextEditingController _captionController;
+  final _canvasKey = GlobalKey<EditorCanvasState>();
+  bool _uploading = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _captionController = TextEditingController(text: widget.initialCaption ?? '');
-    if (widget.initialVideoPath != null) {
-      _initializeVideo();
-    }
-  }
-
-  Future<void> _initializeVideo() async {
-    _player = Player();
-    try {
-      // `media_kit` interprets bare paths as remote URLs, yielding a black
-      // preview. Prefix with `file://` so it knows the source is local.
-      final uri = Uri.file(widget.initialVideoPath!).toString();
-      await _player!.open(Media(uri));
-      await _player!.play();
-      if (!mounted) return;
-      setState(() {
-        _controller = VideoController(_player!);
-      });
-    } catch (e) {
-      debugPrint('Error initializing video: $e');
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller?.dispose();
-    _player?.dispose();
-    _captionController.dispose();
-    super.dispose();
-  }
+  String get _path => widget.initialVideoPath ?? widget.initialImagePath ?? '';
+  String get _type => widget.initialVideoPath != null ? 'video' : 'image';
 
   @override
   Widget build(BuildContext context) {
-    Widget preview;
-    final isVideo = widget.initialVideoPath != null;
-    if (isVideo) {
-      preview = (_controller != null)
-          ? Video(
-              key: ValueKey(widget.initialVideoPath),
-              controller: _controller!,
-              fit: BoxFit.contain,
-            )
-          : CircularProgressIndicator(color: Theme.of(context).colorScheme.onPrimary);
-    } else {
-      preview = Image.file(
-        File(widget.initialImagePath ?? ''),
-        fit: BoxFit.contain,
-      );
-    }
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Story'),
-      ),
-      backgroundColor: Theme.of(context).colorScheme.onSurface,
-      body: Column(
-        children: [
-          Expanded(
-            child: Center(
-              child: _isUploading
-                  ? CircularProgressIndicator(
-                      color: Theme.of(context).colorScheme.onPrimary)
-                  : preview,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _captionController,
-              decoration: const InputDecoration(hintText: 'Say something...'),
-            ),
-          ),
-        ],
+      appBar: AppBar(title: const Text('Create Story')),
+      body: EditorCanvas(
+        key: _canvasKey,
+        mediaPath: _path,
+        mediaType: _type,
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _isUploading ? null : _uploadStory,
-        child: const Icon(Icons.send),
+        onPressed: _uploading ? null : _share,
+        child: _uploading
+            ? const CircularProgressIndicator()
+            : const Icon(Icons.send),
       ),
     );
   }
 
-  Future<void> _uploadStory() async {
+  Future<void> _share() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      if (mounted) {
-        AppSnackBar.show(context, 'Please log in to post stories',
-            isError: true);
-      }
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Please log in')));
       return;
     }
-
-    setState(() => _isUploading = true);
+    setState(() => _uploading = true);
     try {
-      final String path =
-          widget.initialVideoPath ?? widget.initialImagePath ?? '';
-      final bool isVideo = widget.initialVideoPath != null;
-      final repo = StoryRepository();
-      final item = await repo.publishSlide(
-        user.uid,
-        XFile(path),
-        isVideo ? MediaType.video : MediaType.image,
-        caption: _captionController.text.trim().isEmpty
-            ? null
-            : _captionController.text.trim(),
-      );
+      final file = File(_path);
+      final ext = _type == 'video' ? 'mp4' : 'jpg';
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('stories/${user.uid}/${DateTime.now().millisecondsSinceEpoch}.$ext');
+      final metadata = SettableMetadata(
+          contentType: _type == 'video' ? 'video/mp4' : 'image/jpeg');
+      await ref.putFile(file, metadata);
+      final url = await ref.getDownloadURL();
 
-      if (mounted) Navigator.pop(context, item);
+      final overlays = _canvasKey.currentState?.getSerializedOverlays() ?? [];
+      await StoriesService().createStory(
+        userId: user.uid,
+        mediaUrl: url,
+        mediaType: _type,
+        overlays: overlays,
+      );
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
-      debugPrint('Error uploading story: $e');
       if (mounted) {
-        AppSnackBar.show(context, 'Failed to upload story', isError: true);
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to share story')));
       }
     } finally {
-      if (mounted) setState(() => _isUploading = false);
+      if (mounted) setState(() => _uploading = false);
     }
   }
 }

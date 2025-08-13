@@ -1,14 +1,13 @@
-import 'package:flutter/material.dart';
-
-import '../../../models/story.dart';
-import '../../../models/media_item.dart';
-import '../data/story_repository.dart';
-import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 
-/// Full-screen viewer for stories with basic gestures.
+import '../stories_service.dart';
+import '../../creation/editor/overlays/overlay_models.dart';
+
+/// Viewer for playing a sequence of stories with basic controls and overlays.
 class StoryViewerScreen extends StatefulWidget {
-  final List<Story> stories;
+  final List<Map<String, dynamic>> stories;
   final int initialIndex;
 
   const StoryViewerScreen({
@@ -23,71 +22,72 @@ class StoryViewerScreen extends StatefulWidget {
 
 class _StoryViewerScreenState extends State<StoryViewerScreen>
     with TickerProviderStateMixin {
-  late PageController _storyController;
+  late PageController _controller;
   late AnimationController _progress;
-  final StoryRepository _repo = StoryRepository();
-  final Set<String> _marked = {};
-
-  int _storyIndex = 0;
-  int _itemIndex = 0;
+  int _index = 0;
+  final _marked = <String>{};
+  VideoPlayerController? _video;
 
   @override
   void initState() {
     super.initState();
-    _storyIndex = widget.initialIndex;
-    _storyController = PageController(initialPage: _storyIndex);
-    _progress = AnimationController(vsync: this);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    _startCurrent();
+    _index = widget.initialIndex;
+    _controller = PageController(initialPage: _index);
+    _progress = AnimationController(vsync: this)
+      ..addStatusListener((s) {
+        if (s == AnimationStatus.completed) _next();
+      });
+    _loadCurrent();
   }
 
   @override
   void dispose() {
+    _video?.dispose();
     _progress.dispose();
-    _storyController.dispose();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    _controller.dispose();
     super.dispose();
   }
 
-  void _startCurrent() {
-    final story = widget.stories[_storyIndex];
-    final item = story.items[_itemIndex];
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null &&
-        !_marked.contains(item.media.id) &&
-        !item.viewers.contains(uid)) {
-      _marked.add(item.media.id);
-      _repo.markViewed(ownerId: story.authorId, slideId: item.media.id, uid: uid);
+  void _loadCurrent() {
+    _video?.dispose();
+    final story = widget.stories[_index];
+    if (story['mediaType'] == 'video') {
+      _video = VideoPlayerController.network(story['mediaUrl'])
+        ..initialize().then((_) {
+          setState(() {});
+          _video?.play();
+        });
+    } else {
+      _video = null;
     }
-    _progress
-      ..duration = _slideDuration(item)
-      ..forward(from: 0)
-      ..addStatusListener(_handleStatus);
-  }
 
-  void _handleStatus(AnimationStatus status) {
-    if (status == AnimationStatus.completed) {
-      _nextItem();
-    }
-  }
-
-  Duration _slideDuration(StoryItem item) {
-    // Prefer an explicit duration on the slide/media; fallback to 6s for images.
-    final d = item.media.duration;
-    if (d != null) return d;
-    return item.media.type == MediaType.video
-        ? const Duration(seconds: 15) // safety cap if unknown
+    final duration = story['mediaType'] == 'video'
+        ? (_video?.value.duration ?? const Duration(seconds: 15))
         : const Duration(seconds: 6);
+    _progress
+      ..duration = duration
+      ..forward(from: 0);
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null && !_marked.contains(story['id'])) {
+      StoriesService().markViewed(storyId: story['id'], userId: uid);
+      _marked.add(story['id']);
+    }
   }
 
-  void _nextItem() {
-    _progress.removeStatusListener(_handleStatus);
-    final story = widget.stories[_storyIndex];
-    if (_itemIndex < story.items.length - 1) {
-      setState(() => _itemIndex++);
-      _startCurrent();
-    } else if (_storyIndex < widget.stories.length - 1) {
-      _storyController.nextPage(
+  void _pause() {
+    _progress.stop();
+    _video?.pause();
+  }
+
+  void _resume() {
+    _progress.forward();
+    if (_video != null && _video!.value.isInitialized) _video!.play();
+  }
+
+  void _next() {
+    if (_index < widget.stories.length - 1) {
+      _controller.nextPage(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut);
     } else {
@@ -95,13 +95,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     }
   }
 
-  void _prevItem() {
-    _progress.removeStatusListener(_handleStatus);
-    if (_itemIndex > 0) {
-      setState(() => _itemIndex--);
-      _startCurrent();
-    } else if (_storyIndex > 0) {
-      _storyController.previousPage(
+  void _prev() {
+    if (_index > 0) {
+      _controller.previousPage(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut);
     }
@@ -109,72 +105,132 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: cs.background,
+      backgroundColor: Colors.black,
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onLongPressStart: (_) => _progress.stop(),
-        onLongPressEnd: (_) => _progress.forward(),
-        onTapUp: (details) {
-          final width = MediaQuery.of(context).size.width;
-          if (details.globalPosition.dx < width / 2) {
-            _prevItem();
+        onLongPressStart: (_) => _pause(),
+        onLongPressEnd: (_) => _resume(),
+        onTapUp: (d) {
+          final w = MediaQuery.of(context).size.width;
+          if (d.globalPosition.dx < w / 2) {
+            _prev();
           } else {
-            _nextItem();
+            _next();
           }
         },
-        onVerticalDragEnd: (details) {
-          if (details.primaryVelocity != null &&
-              details.primaryVelocity! > 500) {
-            Navigator.of(context).maybePop();
-          }
-        },
-        child: PageView.builder(
-          controller: _storyController,
-          onPageChanged: (index) {
-            setState(() {
-              _storyIndex = index;
-              _itemIndex = 0;
-            });
-            _startCurrent();
-          },
-          itemCount: widget.stories.length,
-          itemBuilder: (context, index) {
-            final story = widget.stories[index];
-            return _buildStory(story);
-          },
+        child: Stack(
+          children: [
+            PageView.builder(
+              controller: _controller,
+              onPageChanged: (i) {
+                setState(() => _index = i);
+                _loadCurrent();
+              },
+              itemCount: widget.stories.length,
+              itemBuilder: (context, i) => _buildStory(widget.stories[i]),
+            ),
+            Positioned(
+              top: 40,
+              left: 16,
+              right: 16,
+              child: Row(
+                children: List.generate(widget.stories.length, (i) {
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: AnimatedBuilder(
+                        animation: _progress,
+                        builder: (context, _) {
+                          double value;
+                          if (i < _index) {
+                            value = 1;
+                          } else if (i == _index) {
+                            value = _progress.value;
+                          } else {
+                            value = 0;
+                          }
+                          return LinearProgressIndicator(
+                            key: ValueKey('progress_$i'),
+                            value: value,
+                            backgroundColor: Colors.white24,
+                            valueColor:
+                                const AlwaysStoppedAnimation<Color>(Colors.white),
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildStory(Story story) {
-    final item = story.items[_itemIndex];
-    final cs = Theme.of(context).colorScheme;
+  Widget _buildStory(Map<String, dynamic> story) {
+    final type = story['mediaType'];
+    Widget media;
+    if (type == 'video') {
+      media = _video != null && _video!.value.isInitialized
+          ? FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                  width: _video!.value.size.width,
+                  height: _video!.value.size.height,
+                  child: VideoPlayer(_video!)))
+          : const SizedBox.shrink();
+    } else {
+      media = Image.network(story['mediaUrl'], fit: BoxFit.cover);
+    }
+
+    final overlays = (story['overlays'] as List?)
+            ?.whereType<Map>()
+            .map((e) => OverlayModel.fromMap(e.cast<String, dynamic>()))
+            .toList() ??
+        const [];
+
     return Stack(
       fit: StackFit.expand,
       children: [
-        Image.network(
-          item.media.url,
-          fit: BoxFit.cover,
-        ),
-        Positioned(
-          top: 40,
-          left: 16,
-          right: 16,
-          child: AnimatedBuilder(
-            animation: _progress,
-            builder: (context, _) {
-              return LinearProgressIndicator(
-                value: _progress.value,
-                backgroundColor: cs.surface.withOpacity(0.3),
-                valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
-              );
-            },
-          ),
-        ),
+        media,
+        ...overlays.map(_overlayWidget),
       ],
     );
   }
+
+  Widget _overlayWidget(OverlayModel o) {
+    Widget child;
+    if (o is TextOverlay) {
+      child = Text(o.text,
+          style: TextStyle(color: Color(o.color), fontSize: o.fontSize));
+    } else if (o is StickerOverlay) {
+      child = Text(o.emoji, style: const TextStyle(fontSize: 48));
+    } else if (o is ShapeOverlay) {
+      child = Container(
+        width: 100,
+        height: 100,
+        decoration: BoxDecoration(
+          color: Color(o.color).withOpacity(o.opacity),
+          shape: o.shape == 'circle' ? BoxShape.circle : BoxShape.rectangle,
+        ),
+      );
+    } else {
+      child = const SizedBox();
+    }
+    return Positioned(
+      left: o.dx,
+      top: o.dy,
+      child: Transform.rotate(
+        angle: o.rotation,
+        child: Transform.scale(
+          scale: o.scale,
+          child: Opacity(opacity: o.opacity, child: child),
+        ),
+      ),
+    );
+  }
 }
+
