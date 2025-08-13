@@ -8,7 +8,7 @@ import 'package:fouta_app/services/media_service.dart';
 import 'dart:io';
 import 'dart:async';
 import 'package:intl/intl.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, mapEquals;
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/chat_screen.dart';
@@ -25,6 +25,10 @@ import 'package:fouta_app/widgets/skeletons/feed_skeleton.dart';
 import 'package:fouta_app/utils/overlays.dart';
 import 'package:fouta_app/features/profile/profile_service.dart';
 import 'package:fouta_app/features/analytics/creator_insights.dart';
+import 'package:fouta_app/widgets/safe_stream_builder.dart';
+import 'package:fouta_app/widgets/safe_future_builder.dart';
+import 'package:fouta_app/utils/async_guard.dart';
+import 'package:fouta_app/screens/profile/profile_header.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userId;
@@ -60,6 +64,12 @@ class _ProfileScreenState extends State<ProfileScreen>
   String? _pinnedPostId;
   bool _isCreator = false;
   Map<String, dynamic>? _userData;
+  Map<String, dynamic>? _lastUserData;
+  bool _loadingUser = true;
+  late final Stream<DocumentSnapshot<Map<String, dynamic>>> _userStream;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _userSubscription;
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _postsStream;
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _mediaStream;
 
   bool _isDataSaverOn = true;
   bool _isOnMobileData = false;
@@ -75,23 +85,56 @@ class _ProfileScreenState extends State<ProfileScreen>
     _profileService = ProfileService(firestore: widget.firestore);
     _insights = CreatorInsights(firestore: widget.firestore);
     _tabController = TabController(length: 3, vsync: this);
+    _userStream = widget.firestore
+        .collection('artifacts/$APP_ID/public/data/users')
+        .doc(widget.userId)
+        .snapshots();
+    _postsStream = widget.firestore
+        .collection('artifacts/$APP_ID/public/data/posts')
+        .where('authorId', isEqualTo: widget.userId)
+        .orderBy('timestamp', descending: true)
+        .snapshots();
+    _mediaStream = widget.firestore
+        .collection('artifacts/$APP_ID/public/data/posts')
+        .where('authorId', isEqualTo: widget.userId)
+        .where('mediaType', whereIn: ['image', 'video'])
+        .orderBy('timestamp', descending: true)
+        .snapshots();
+    _userSubscription = _userStream.listen((snapshot) {
+      final data = snapshot.data();
+      _loadingUser = false;
+      if (data == null) {
+        mountedSetState(this, () {
+          _userData = null;
+        });
+        return;
+      }
+      if (!mapEquals(_lastUserData, data)) {
+        _lastUserData = Map<String, dynamic>.from(data);
+        mountedSetState(this, () {
+          _userData = data;
+          _currentProfileImageUrl = data['profileImageUrl'] ?? '';
+          _pinnedPostId = data['pinnedPostId'];
+          _isCreator = data['isCreator'] == true;
+        });
+        if (_isCreator) {
+          _loadCreatorInsights(widget.userId);
+        }
+      }
+    });
     _loadDataSaverPreference();
     Connectivity().checkConnectivity().then((result) {
-      if (mounted) {
-        setState(() {
-          _isOnMobileData = result is List<ConnectivityResult>
-              ? result.contains(ConnectivityResult.mobile)
-              : result == ConnectivityResult.mobile;
-        });
-      }
+      mountedSetState(this, () {
+        _isOnMobileData = result is List<ConnectivityResult>
+            ? result.contains(ConnectivityResult.mobile)
+            : result == ConnectivityResult.mobile;
+      });
     });
     _connectivitySubscription =
         Connectivity().onConnectivityChanged.listen((results) {
-      if (mounted) {
-        setState(() {
-          _isOnMobileData = results.contains(ConnectivityResult.mobile);
-        });
-      }
+      mountedSetState(this, () {
+        _isOnMobileData = results.contains(ConnectivityResult.mobile);
+      });
     });
   }
 
@@ -103,6 +146,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     _bioController.dispose();
     _tabController.dispose();
     _connectivitySubscription?.cancel();
+    _userSubscription?.cancel();
     super.dispose();
   }
 
@@ -129,23 +173,19 @@ class _ProfileScreenState extends State<ProfileScreen>
           .collection(FirestorePaths.users())
           .doc(currentUser.uid)
           .get();
-      if (mounted) {
-        setState(() {
-          _isDataSaverOn = doc.data()?['dataSaver'] ?? true;
-        });
-      }
+      mountedSetState(this, () {
+        _isDataSaverOn = doc.data()?['dataSaver'] ?? true;
+      });
     }
   }
 
   Future<void> _loadCreatorInsights(String uid) async {
     final posts = await _insights.countPostsLastNDays(uid, 7);
     final engagement = await _insights.sumEngagementLastNDays(uid, 7);
-    if (mounted) {
-      setState(() {
-        _posts7d = posts;
-        _engagement7d = engagement;
-      });
-    }
+    mountedSetState(this, () {
+      _posts7d = posts;
+      _engagement7d = engagement;
+    });
   }
 
   Widget _dashboardTile(BuildContext context, String label, int value) {
@@ -157,6 +197,24 @@ class _ProfileScreenState extends State<ProfileScreen>
             style: TextStyle(color: Theme.of(context).colorScheme.outline)),
       ],
     );
+  }
+
+  void _onAvatarTap() {
+    if (_isEditing) {
+      _pickProfileImage();
+    } else if (_currentProfileImageUrl.isNotEmpty) {
+      FullScreenMediaViewer.open(
+        context,
+        [
+          MediaItem(
+            id: 'profile-image',
+            type: MediaType.image,
+            url: _currentProfileImageUrl,
+          ),
+        ],
+        initialIndex: 0,
+      );
+    }
   }
 
   Future<void> _pickProfileImage() async {
@@ -172,7 +230,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
 
     _showMessage('Image selected. Tap the checkmark to save changes.');
-    setState(() {
+    mountedSetState(this, () {
       _newProfileImage = attachment;
     });
   }
@@ -186,7 +244,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     String? newImageUrl = currentProfileImageUrl;
     if (_newProfileImage != null) {
-      setState(() {
+      mountedSetState(this, () {
         _isUploading = true;
         _uploadProgress = 0.0;
       });
@@ -199,10 +257,14 @@ class _ProfileScreenState extends State<ProfileScreen>
         _showMessage('Profile image uploaded successfully!');
       } on FirebaseException catch (e) {
         _showMessage('Profile image upload failed: ${e.message}');
-        if (mounted) setState(() => _isUploading = false);
+        mountedSetState(this, () {
+          _isUploading = false;
+        });
         return;
       } finally {
-        if (mounted) setState(() => _isUploading = false);
+        mountedSetState(this, () {
+          _isUploading = false;
+        });
       }
     }
 
@@ -224,13 +286,11 @@ class _ProfileScreenState extends State<ProfileScreen>
       }
 
       _showMessage('Profile updated successfully!');
-      if(mounted) {
-        setState(() {
-          _isEditing = false;
-          _newProfileImage = null;
-          _uploadProgress = 0.0;
-        });
-      }
+      mountedSetState(this, () {
+        _isEditing = false;
+        _newProfileImage = null;
+        _uploadProgress = 0.0;
+      });
     } on FirebaseException catch (e) {
       _showMessage('Failed to update profile: ${e.message}');
     }
@@ -288,18 +348,21 @@ class _ProfileScreenState extends State<ProfileScreen>
               itemCount: userIds.length,
               itemBuilder: (context, index) {
                 final userId = userIds[index];
-                return FutureBuilder<DocumentSnapshot>(
-                  future: FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(userId).get(),
+                return SafeFutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                  future: FirebaseFirestore.instance
+                      .collection('artifacts/$APP_ID/public/data/users')
+                      .doc(userId)
+                      .get(),
+                  empty: const ListTile(title: Text('Loading...')),
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const ListTile(title: Text('Loading...'));
-                    }
-                    if (!snapshot.hasData || !snapshot.data!.exists) {
+                    if (!snapshot.data!.exists) {
                       return const ListTile(title: Text('Unknown User'));
                     }
-                    final userData = snapshot.data!.data() as Map<String, dynamic>;
-                    final String displayName = userData['displayName'] ?? 'Unknown User';
-                    final String profileImageUrl = userData['profileImageUrl'] ?? '';
+                    final userData = snapshot.data!.data()!;
+                    final String displayName =
+                        userData['displayName'] ?? 'Unknown User';
+                    final String profileImageUrl =
+                        userData['profileImageUrl'] ?? '';
 
                     return ListTile(
                       leading: CircleAvatar(
@@ -307,9 +370,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ? CachedNetworkImageProvider(profileImageUrl)
                             : null,
                         child: profileImageUrl.isEmpty
-                            ? Icon(Icons.person, color: Theme.of(context).colorScheme.onPrimary)
+                            ? Icon(Icons.person,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimary)
                             : null,
-                        backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                        backgroundColor:
+                            Theme.of(context).colorScheme.surfaceVariant,
                       ),
                       title: Text(displayName),
                       onTap: () {
@@ -346,204 +413,24 @@ class _ProfileScreenState extends State<ProfileScreen>
     return DateFormat('MMM d, yyyy').format(date);
   }
 
-  // WIDGET BUILDERS FOR UI SECTIONS
-  Widget _buildProfileHeader(Map<String, dynamic> userData, bool isMyProfile, User? currentUser) {
-    final String displayName = userData['displayName'] ?? 'No Name';
-    final String bio = userData['bio'] ?? 'No bio yet.';
-    final Timestamp? createdAt = userData['createdAt'] as Timestamp?;
-    final List<dynamic> followers = userData['followers'] ?? [];
-    final List<dynamic> following = userData['following'] ?? [];
-    final bool isFollowing = (userData['followers'] ?? []).contains(currentUser?.uid);
-    
-    if (_isEditing) {
-      _bioController.text = bio;
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          GestureDetector(
-            onTap: isMyProfile ? () {
-              if (_isEditing) {
-                _pickProfileImage();
-              } else if (_currentProfileImageUrl.isNotEmpty) {
-                FullScreenMediaViewer.open(
-                  context,
-                  [
-                    MediaItem(
-                      id: 'profile-image',
-                      type: MediaType.image,
-                      url: _currentProfileImageUrl,
-                    ),
-                  ],
-                  initialIndex: 0,
-                );
-              }
-            } : null,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CircleAvatar(
-                  radius: 60,
-                  backgroundImage: (_newProfileImage != null && kIsWeb && _newProfileImage!.bytes != null)
-                      ? MemoryImage(_newProfileImage!.bytes!)
-                      : (_newProfileImage != null && !kIsWeb)
-                          ? FileImage(File(_newProfileImage!.file.path)) as ImageProvider
-                          : (_currentProfileImageUrl.isNotEmpty ? CachedNetworkImageProvider(_currentProfileImageUrl) : null),
-                  child: (_currentProfileImageUrl.isEmpty && _newProfileImage == null)
-                      ? Icon(Icons.person, size: 60, color: Theme.of(context).colorScheme.onPrimary)
-                      : null,
-                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                ),
-                if (isMyProfile)
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: CircleAvatar(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      child: IconButton(
-                        icon: Icon(_isEditing ? Icons.check : Icons.edit, color: Theme.of(context).colorScheme.onPrimary),
-                        onPressed: () {
-                          if (_isEditing) {
-                            _updateProfile(_currentProfileImageUrl);
-                          } else {
-                            setState(() {
-                              _isEditing = true;
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          if (_isUploading)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: LinearProgressIndicator(value: _uploadProgress),
-            ),
-          const SizedBox(height: 16),
-          Text(displayName, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          if (_isEditing)
-            TextField(
-              controller: _bioController,
-              maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Bio'),
-              textAlign: TextAlign.center,
-            )
-          else
-            Text(bio, textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.outline)),
-          const SizedBox(height: 16),
-          Text('Joined: ${_formatTimestamp(createdAt)}', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline)),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              GestureDetector(
-                onTap: () => _showUserListDialog(context, followers, 'Followers'),
-                child: Column(
-                  children: [
-                    Text('${followers.length}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text('Followers', style: TextStyle(color: Theme.of(context).colorScheme.outline)),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 30),
-              GestureDetector(
-                onTap: () => _showUserListDialog(context, following, 'Following'),
-                child: Column(
-                  children: [
-                    Text('${following.length}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text('Following', style: TextStyle(color: Theme.of(context).colorScheme.outline)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          if (_isCreator)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _dashboardTile(context, 'Followers', followers.length),
-                  _dashboardTile(context, '7-day posts', _posts7d),
-                  _dashboardTile(context, '7-day engagement', _engagement7d),
-                ],
-              ),
-            ),
-          if (isMyProfile)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 20),
-              child: ElevatedButton(
-                onPressed: () {
-                  if (_userData != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => EditProfileScreen(
-                          uid: widget.userId,
-                          initialData: _userData!,
-                        ),
-                      ),
-                    );
-                  }
-                },
-                child: const Text('Edit Profile'),
-              ),
-            ),
-          if (!isMyProfile && currentUser != null && !currentUser.isAnonymous)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: () => _toggleFollow(currentUser.uid, widget.userId, isFollowing),
-                  child: Text(isFollowing ? 'Unfollow' : 'Follow'),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChatScreen(
-                          otherUserId: widget.userId,
-                          otherUserName: displayName,
-                        ),
-                      ),
-                    );
-                  },
-                  child: const Text('Message'),
-                ),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
 
   // WIDGET FOR POSTS LIST
   Widget _buildPostsList(User? currentUser, bool isMyProfile) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('artifacts/$APP_ID/public/data/posts')
-          .where('authorId', isEqualTo: widget.userId)
-          .orderBy('timestamp', descending: true)
-          .snapshots(),
+    return SafeStreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _postsStream,
+      empty: const FeedSkeleton(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const FeedSkeleton();
-        if (snapshot.data!.docs.isEmpty) {
+        final docs = snapshot.data!.docs;
+        if (docs.isEmpty) {
           return Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 32.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(isMyProfile ? 'You have no posts yet.' : 'This user has no posts yet.'),
+                  Text(isMyProfile
+                      ? 'You have no posts yet.'
+                      : 'This user has no posts yet.'),
                   if (isMyProfile) ...[
                     const SizedBox(height: 16),
                     FoutaButton(
@@ -563,15 +450,13 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           );
         }
-        
-        final docs = snapshot.data!.docs;
-        DocumentSnapshot? pinned;
+        DocumentSnapshot<Map<String, dynamic>>? pinned;
         if (_pinnedPostId != null) {
           try {
             pinned = docs.firstWhere((d) => d.id == _pinnedPostId);
           } catch (_) {}
         }
-        final ordered = <DocumentSnapshot>[];
+        final ordered = <DocumentSnapshot<Map<String, dynamic>>>[];
         if (pinned != null) {
           ordered.add(pinned);
         }
@@ -583,7 +468,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           itemCount: ordered.length,
           itemBuilder: (context, index) {
             final doc = ordered[index];
-            final post = doc.data() as Map<String, dynamic>;
+            final post = doc.data();
             return Column(
               children: [
                 if (index == 0 && _pinnedPostId != null)
@@ -609,10 +494,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                       onPressed: () async {
                         if (_pinnedPostId == doc.id) {
                           await _profileService.unpinPost(widget.userId);
-                          setState(() => _pinnedPostId = null);
+                          mountedSetState(this, () {
+                            _pinnedPostId = null;
+                          });
                         } else {
                           await _profileService.pinPost(widget.userId, doc.id);
-                          setState(() => _pinnedPostId = doc.id);
+                          mountedSetState(this, () {
+                            _pinnedPostId = doc.id;
+                          });
                         }
                       },
                       child:
@@ -629,19 +518,14 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   // WIDGET FOR MEDIA GRID
   Widget _buildMediaGrid(User? currentUser) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('artifacts/$APP_ID/public/data/posts')
-          .where('authorId', isEqualTo: widget.userId)
-          .where('mediaType', whereIn: ['image', 'video']) // FIX: Corrected query
-          .orderBy('timestamp', descending: true)
-          .snapshots(),
+    return SafeStreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _mediaStream,
+      empty: const FeedSkeleton(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const FeedSkeleton();
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          final bool isMyProfile = currentUser != null && currentUser.uid == widget.userId;
+        final posts = snapshot.data!.docs;
+        if (posts.isEmpty) {
+          final bool isMyProfile =
+              currentUser != null && currentUser.uid == widget.userId;
           return Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 32.0),
@@ -668,7 +552,6 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           );
         }
-        final posts = snapshot.data!.docs;
         return GridView.builder(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
@@ -677,7 +560,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           itemCount: posts.length,
           itemBuilder: (context, index) {
-            final post = posts[index].data() as Map<String, dynamic>;
+            final post = posts[index].data();
             return _MediaGridTile(
               postId: posts[index].id,
               post: post,
@@ -727,75 +610,161 @@ class _ProfileScreenState extends State<ProfileScreen>
     final currentUser = FirebaseAuth.instance.currentUser;
     final bool isMyProfile = currentUser?.uid == widget.userId;
 
-    return widget.userId.isEmpty
-        ? const Center(child: Text('User ID is missing.'))
-        : Scaffold(
-            body: StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(widget.userId).snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const ProfileSkeleton();
-                }
-                if (!snapshot.hasData || !snapshot.data!.exists) {
-                  return const Center(child: Text('User not found.'));
-                }
+    if (widget.userId.isEmpty) {
+      return const Center(child: Text('User ID is missing.'));
+    }
+    if (_loadingUser) {
+      return const ProfileSkeleton();
+    }
+    if (_userData == null) {
+      return const Center(child: Text('User not found.'));
+    }
 
-                final userData = snapshot.data!.data() as Map<String, dynamic>;
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (!mounted) return;
-                  _userData = userData;
-                  final newImage = userData['profileImageUrl'] ?? '';
-                  final newPinned = userData['pinnedPostId'];
-                  final newCreator = userData['isCreator'] == true;
-                  setState(() {
-                    _currentProfileImageUrl = newImage;
-                    _pinnedPostId = newPinned;
-                    _isCreator = newCreator;
-                  });
-                  if (newCreator) {
-                    _loadCreatorInsights(widget.userId);
-                  }
+    final userData = _userData!;
+    final String displayName = userData['displayName'] ?? 'No Name';
+    final String bio = userData['bio'] ?? 'No bio yet.';
+    final Timestamp? createdAt = userData['createdAt'] as Timestamp?;
+    final List<dynamic> followers = userData['followers'] ?? [];
+    final List<dynamic> following = userData['following'] ?? [];
+    final bool isFollowing = followers.contains(currentUser?.uid);
+
+    if (_isEditing) {
+      _bioController.text = bio;
+    }
+
+    final header = ProfileHeader(
+      userId: widget.userId,
+      displayName: displayName,
+      bio: bio,
+      joinedDate: _formatTimestamp(createdAt),
+      isMyProfile: isMyProfile,
+      isEditing: _isEditing,
+      bioController: _bioController,
+      profileImageUrl: _currentProfileImageUrl,
+      newProfileImage: _newProfileImage,
+      isUploading: _isUploading,
+      uploadProgress: _uploadProgress,
+      followers: followers,
+      following: following,
+      onAvatarTap: isMyProfile ? _onAvatarTap : () {},
+      onEditPressed: isMyProfile
+          ? () {
+              if (_isEditing) {
+                _updateProfile(_currentProfileImageUrl);
+              } else {
+                mountedSetState(this, () {
+                  _isEditing = true;
                 });
+              }
+            }
+          : () {},
+      onFollowersTap:
+          () => _showUserListDialog(context, followers, 'Followers'),
+      onFollowingTap:
+          () => _showUserListDialog(context, following, 'Following'),
+      creatorStats: _isCreator
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _dashboardTile(context, 'Followers', followers.length),
+                _dashboardTile(context, '7-day posts', _posts7d),
+                _dashboardTile(context, '7-day engagement', _engagement7d),
+              ],
+            )
+          : null,
+    );
 
-                return NestedScrollView(
-                  headerSliverBuilder: (context, innerBoxIsScrolled) {
-                    return [
-                      SliverToBoxAdapter(
-                        child: _buildProfileHeader(userData, isMyProfile, currentUser),
+    final Widget actionButtons = isMyProfile
+        ? Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: ElevatedButton(
+              onPressed: () {
+                if (_userData != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EditProfileScreen(
+                        uid: widget.userId,
+                        initialData: _userData!,
                       ),
-                      SliverPersistentHeader(
-                        delegate: _SliverTabBarDelegate(
-                          TabBar(
-                            controller: _tabController,
-                            labelColor:
-                                Theme.of(context).colorScheme.onSurface,
-                            unselectedLabelColor: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withOpacity(0.6),
-                            tabs: const [
-                              Tab(text: 'Posts'),
-                              Tab(text: 'Shorts'),
-                              Tab(text: 'About'),
-                            ],
+                    ),
+                  );
+                }
+              },
+              child: const Text('Edit Profile'),
+            ),
+          )
+        : (currentUser != null && !currentUser.isAnonymous)
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () => _toggleFollow(
+                        currentUser.uid, widget.userId, isFollowing),
+                    child: Text(isFollowing ? 'Unfollow' : 'Follow'),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChatScreen(
+                            otherUserId: widget.userId,
+                            otherUserName: displayName,
                           ),
                         ),
-                        pinned: true,
-                      ),
-                    ];
-                  },
-                  body: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildPostsList(currentUser, isMyProfile),
-                      _buildMediaGrid(currentUser),
-                      _buildAboutSection(),
-                    ],
+                      );
+                    },
+                    child: const Text('Message'),
                   ),
-                );
-              },
+                ],
+              )
+            : const SizedBox.shrink();
+
+    final headerSection = Column(
+      children: [
+        header,
+        if (isMyProfile || (currentUser != null && !currentUser.isAnonymous))
+          actionButtons,
+      ],
+    );
+
+    return Scaffold(
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverToBoxAdapter(child: headerSection),
+            SliverPersistentHeader(
+              delegate: _SliverTabBarDelegate(
+                TabBar(
+                  controller: _tabController,
+                  labelColor: Theme.of(context).colorScheme.onSurface,
+                  unselectedLabelColor: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withOpacity(0.6),
+                  tabs: const [
+                    Tab(text: 'Posts'),
+                    Tab(text: 'Shorts'),
+                    Tab(text: 'About'),
+                  ],
+                ),
+              ),
+              pinned: true,
             ),
-          );
+          ];
+        },
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildPostsList(currentUser, isMyProfile),
+            _buildMediaGrid(currentUser),
+            _buildAboutSection(),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -948,7 +917,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           SwitchListTile(
             title: const Text('Creator Mode'),
             value: _isCreator,
-            onChanged: (v) => setState(() => _isCreator = v),
+            onChanged: (v) => mountedSetState(this, () {
+              _isCreator = v;
+            }),
           ),
           const SizedBox(height: 20),
           ElevatedButton(onPressed: _save, child: const Text('Save')),
