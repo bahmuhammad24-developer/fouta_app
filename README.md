@@ -20,6 +20,7 @@
 - [Monetization](#monetization)
 - [Admin Analytics](#admin-analytics)
 - [Notifications](#notifications)
+- [Stability Utilities](#stability-utilities)
 
 - [Composer V2 (route /composeV2)](#composer-v2-route-composev2)
 
@@ -462,6 +463,9 @@ Preferences are stored at `artifacts/$APP_ID/public/data/users/{uid}/settings/no
 In-app notifications live at `artifacts/$APP_ID/public/data/notifications/{uid}/items` and are marked read when opened.
 
 
+
+## Stability Utilities
+Reusable helpers ensure widgets and async code fail gracefully.
 
 ## Composer V2 (route /composeV2)
 Experimental composer supporting drafts and scheduled posts.

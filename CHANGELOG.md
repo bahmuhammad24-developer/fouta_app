@@ -2,6 +2,7 @@
 
 
 
+- 2025-08-12 – Stability: safe stream/future builders, async guards, error reporter stub.
 - 2025-08-12 – Composer V2: drafts & scheduling (route-only).
 - 2025-08-12 – Link Preview module + demo screen (route-only).
 - 2025-08-12 – i18n scaffolding (EN/FR) with dev sandbox; no app wiring yet.
