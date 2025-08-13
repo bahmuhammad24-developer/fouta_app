@@ -1,27 +1,45 @@
+// lib/widgets/triggers/keyword_filter_chips.dart
 import 'package:flutter/material.dart';
 
 class KeywordFilterChips extends StatelessWidget {
-  const KeywordFilterChips({super.key, required this.keywords, required this.onSelected});
+  final List<String> tags;
+  final String? selectedTag;
+  final ValueChanged<String?> onSelected;
+  final EdgeInsetsGeometry padding;
 
-  final List<String> keywords;
-  final ValueChanged<String> onSelected;
+  const KeywordFilterChips({
+    super.key,
+    required this.tags,
+    required this.selectedTag,
+    required this.onSelected,
+    this.padding = const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (keywords.isEmpty) return const SizedBox.shrink();
-    return SizedBox(
-      height: 40,
-      child: ListView(
+    if (tags.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: padding,
+      child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        children: keywords
-            .map((k) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: ActionChip(
-                    label: Text(k),
-                    onPressed: () => onSelected(k),
+        child: Row(
+          children: [
+            FilterChip(
+              label: const Text('All'),
+              selected: selectedTag == null,
+              onSelected: (_) => onSelected(null),
+            ),
+            const SizedBox(width: 8),
+            ...tags.map((t) => Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: Text('#$t'),
+                    selected: selectedTag == t,
+                    onSelected: (_) => onSelected(t),
                   ),
-                ))
-            .toList(),
+                )),
+          ],
+        ),
       ),
     );
   }

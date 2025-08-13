@@ -597,3 +597,12 @@ Enable with `AppFlags.feedRanking = 'v2'`.
 Preview a five-tab layout (Home, Shorts, Explore, Messages, Profile) at
 `/_dev/navV2`. Feature flag `AppFlags.navVariant` controls rollout.
 
+
+## App-origin triggers & Ranking V2 (skeleton)
+Added a small Trigger Orchestrator with session caps and eligibility helpers (no integration yet).
+
+UI components: NextUpRail, KeywordFilterChips, FriendsFirstHeader, StoryInlineReplyChip.
+
+DiscoveryRankingV2 computes scores from completion, sends/DMs, follows-after-view, freshness decay (7d), relationship proximity.
+
+Flags live in lib/triggers/flags.dart. Integration will be added behind flags in a later PR.
