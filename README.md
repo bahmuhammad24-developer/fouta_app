@@ -479,6 +479,9 @@ In-app notifications live at `artifacts/$APP_ID/public/data/notifications/{uid}/
 ## Stability Utilities
 Reusable helpers ensure widgets and async code fail gracefully.
 
+### Error Reporting Stub
+Errors surface through `ErrorReporter.report` for centralized capture.
+
 ## Composer V2 (route /composeV2)
 Experimental composer supporting drafts and scheduled posts.
 
@@ -540,8 +543,12 @@ ReactionTray(
 
 ## Navigation & List UX Utilities
 
+
 ## Integration Pass 1 adoption notes
 
 - Feed, Shorts, and Marketplace now use ProgressiveImage with skeleton placeholders, SafeBuilders, and animated like/bookmark buttons.
 - To revert, restore prior widgets (CachedNetworkImage, IconButton) and standard Scaffold/StreamBuilder usage.
+## Hero/Transitions adoption
+Feed cards and shorts now use Hero images and FoutaTransitions for smoother detail navigation.
+
 

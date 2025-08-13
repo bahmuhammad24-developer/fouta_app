@@ -7,6 +7,7 @@ import 'package:fouta_app/widgets/animated_like_button.dart';
 import 'package:fouta_app/widgets/refresh_scaffold.dart';
 import 'package:fouta_app/widgets/safe_stream_builder.dart';
 import 'package:fouta_app/widgets/video_player_widget.dart';
+import 'package:fouta_app/utils/error_reporter.dart';
 
 class ShortsScreen extends StatefulWidget {
   ShortsScreen({super.key, ShortsService? service, this.onLoadMore})
@@ -83,6 +84,7 @@ class _ShortsScreenState extends State<ShortsScreen> {
                             areControlsVisible: false,
                             shouldInitialize: true,
                           ),
+
                           Positioned(
                             right: 16,
                             bottom: 80,
@@ -125,6 +127,7 @@ class _ShortsScreenState extends State<ShortsScreen> {
                 ),
               ),
             ],
+
           ),
         );
       },
