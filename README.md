@@ -323,3 +323,20 @@ flutter test
 
 ## Troubleshooting
 - Firestore may store ID collections as lists rather than counters. Ensure fields like `likes` or `bookmarks` are read as lists before counting to avoid type cast errors.
+
+## Data collections
+
+- `artifacts/$APP_ID/public/data/shorts`
+  - `authorId` (`String`)
+  - `url` (`String`)
+  - `aspectRatio` (`double`)
+  - `duration` (`double` seconds)
+  - `likeIds` (`List<String>`)
+  - `createdAt` (`Timestamp`)
+- `artifacts/$APP_ID/public/data/products`
+  - `authorId` (`String`)
+  - `urls` (`List<String>`)
+  - `title` (`String`)
+  - `price` (`double`)
+  - `favoriteIds` (`List<String>`)
+  - `createdAt` (`Timestamp`)

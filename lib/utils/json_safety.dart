@@ -16,11 +16,18 @@ double? asDoubleOrNull(dynamic v) {
 }
 
 List<T> asListOf<T>(dynamic v) {
-  if (v is List) return v.map((e) => e as T).whereType<T>().toList();
+  if (v is List) {
+    return v.whereType<T>().toList();
+  }
   return <T>[];
 }
 
 List<String> asStringList(dynamic v) {
-  if (v is List) return v.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+  if (v is List) {
+    return v
+        .map((e) => e?.toString() ?? '')
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
   return const <String>[];
 }
