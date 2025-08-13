@@ -543,3 +543,7 @@ ReactionTray(
 
 ## Navigation & List UX Utilities
 
+
+## Hero/Transitions adoption
+Feed cards and shorts now use Hero images and FoutaTransitions for smoother detail navigation.
+
