@@ -519,6 +519,8 @@ Data models are stored under `artifacts/\$APP_ID/public/data/users/{uid}/safety`
 If constructors use non-const initializers (e.g., FirebaseAuth, service instances), remove const from widget constructors.
 If a widget constructor uses services/auth in initializers, don’t construct it with const or place it inside a const list.
 
+- Flicker often comes from recreating streams in build; cache in initState and compare maps before setState.
+
 
 
 ### Micro-interaction widgets
