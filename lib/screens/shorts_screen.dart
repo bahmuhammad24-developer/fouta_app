@@ -65,7 +65,10 @@ class ShortsScreen extends StatelessWidget {
                           const SizedBox(height: 16),
                           IconButton(
                             icon: const Icon(Icons.comment, color: Colors.white),
-                            onPressed: () {},
+                            onPressed: () {
+                              // TODO: Replace with ShortDetailScreen using
+                              // FoutaTransitions.fadeIn once implemented.
+                            },
                           ),
                           const SizedBox(height: 16),
                           IconButton(

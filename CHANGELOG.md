@@ -3,6 +3,7 @@
 
 
 
+- 2025-08-12 – Integration Pass 2: Hero images, FoutaTransitions in Post/Shorts detail flows. (Committed on fallback branch `work` due to branch creation restrictions.)
 - 2025-08-12 – Micro-interactions: animated like/bookmark, reaction tray.
 - 2025-08-12 – Stability: safe stream/future builders, async guards, error reporter stub.
 - 2025-08-12 – Nav transitions & List UX: refresh, paging, empty/error states. (Committed on fallback branch `work` due to branch creation restrictions.)
