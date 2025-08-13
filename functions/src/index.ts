@@ -3,3 +3,4 @@ export {
   queueNotification,
   dispatchQueuedNotifications,
 } from './notifyBatched';
+export { schedulePosts } from './schedulePosts';

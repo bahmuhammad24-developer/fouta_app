@@ -20,6 +20,7 @@
 - [Monetization](#monetization)
 - [Admin Analytics](#admin-analytics)
 - [Notifications](#notifications)
+- [Composer V2 (route /composeV2)](#composer-v2-route-composev2)
 - [Testing](#testing)
 - [CI & Status Checks](#ci--status-checks)
 - [Change Log](#change-log)
@@ -445,3 +446,16 @@ Daily rollups stored at `artifacts/$APP_ID/public/data/metrics/daily/{YYYY-MM-DD
 Fouta sends notifications for follows, comments, likes, reposts, mentions, and messages. Users can manage per-type preferences from the unified settings screen.
 Preferences are stored at `artifacts/$APP_ID/public/data/users/{uid}/settings/notifications` with boolean flags for each type.
 In-app notifications live at `artifacts/$APP_ID/public/data/notifications/{uid}/items` and are marked read when opened.
+
+## Composer V2 (route /composeV2)
+Experimental composer supporting drafts and scheduled posts.
+
+### Data
+- Drafts: `users/{uid}/drafts/{draftId}` with `content`, `media[]`, `updatedAt`.
+- Scheduled: `users/{uid}/scheduled/{id}` with `publishAt`, `payload`.
+
+### Testing
+1. Launch the app and navigate to `/composeV2`.
+2. Enter text and optionally attach media.
+3. Use **Save Draft** to persist content or **Schedule** to pick a publish time.
+4. Verify entries appear in the respective Firestore collections.
