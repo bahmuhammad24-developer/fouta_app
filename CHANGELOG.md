@@ -2,6 +2,7 @@
 
 
 
+- 2025-08-12 – Nav transitions & List UX: refresh, paging, empty/error states. (Committed on fallback branch `work` due to branch creation restrictions.)
 - 2025-08-12 – Composer V2: drafts & scheduling (route-only).
 - 2025-08-12 – Link Preview module + demo screen (route-only).
 - 2025-08-12 – i18n scaffolding (EN/FR) with dev sandbox; no app wiring yet.
