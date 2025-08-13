@@ -8,14 +8,10 @@ class EventsListScreen extends StatefulWidget {
   final EventsService service;
   final String currentUserId;
 
-  EventsListScreen({
-    Key? key,
-    EventsService? service,
-    String? currentUserId,
-  })  : service = service ?? EventsService(),
+  EventsListScreen({super.key, EventsService? service, String? currentUserId})
+      : service = service ?? EventsService(),
         currentUserId =
-            currentUserId ?? FirebaseAuth.instance.currentUser?.uid ?? '',
-        super(key: key);
+            currentUserId ?? FirebaseAuth.instance.currentUser?.uid ?? '';
 
   @override
   State<EventsListScreen> createState() => _EventsListScreenState();

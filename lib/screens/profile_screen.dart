@@ -29,6 +29,7 @@ import 'package:fouta_app/widgets/safe_stream_builder.dart';
 import 'package:fouta_app/widgets/safe_future_builder.dart';
 import 'package:fouta_app/utils/async_guard.dart';
 import 'package:fouta_app/screens/profile/profile_header.dart';
+import 'package:fouta_app/widgets/progressive_image.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userId;
@@ -789,14 +790,10 @@ class _MediaGridTile extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            CachedNetworkImage(
+            ProgressiveImage(
               imageUrl: mediaUrl,
+              thumbUrl: post['thumbUrl'] ?? mediaUrl,
               fit: BoxFit.cover,
-              progressIndicatorBuilder: (context, url, progress) => Container(
-                color: Theme.of(context).colorScheme.surfaceVariant,
-                child: const Center(child: CircularProgressIndicator()),
-              ),
-              errorWidget: (context, url, error) => const Icon(Icons.error),
             ),
             if (mediaType == 'video')
               Positioned(

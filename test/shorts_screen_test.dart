@@ -18,7 +18,7 @@ class _FakeShortsService extends ShortsService {
 void main() {
   testWidgets('Shorts screen scrolls vertically', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
         home: ShortsScreen(service: _FakeShortsService()),
       ),
     );

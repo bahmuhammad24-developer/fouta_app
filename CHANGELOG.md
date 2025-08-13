@@ -1,7 +1,6 @@
 # Changelog
 
-
-
+- 2025-08-12 – Fix Shorts widget structure; remove const misuse in Events; stabilize Profile; tighten trending tags state.
 - 2025-08-12 – fix(profile): eliminate flicker by caching streams, distinct setState, and gapless image rendering. (Committed on fallback branch `work` due to branch creation restrictions.)
 - 2025-08-12 – Integration Pass 3: focus visuals, textScale guardrails, reduced-motion fallbacks. (Committed on fallback branch `work` due to branch creation restrictions.)
 - 2025-08-12 – Integration Pass 2: Hero images, FoutaTransitions in Post/Shorts detail flows. (Committed on fallback branch `work` due to branch creation restrictions.)
