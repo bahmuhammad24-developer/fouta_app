@@ -34,3 +34,4 @@
 - 2025-08-12 – UI Kit: tokens, motion, skeletons, progressive images.
 - 2025-08-12 – Integration Pass 1: ProgressiveImage + Skeletons + SafeBuilders + AnimatedLike/Bookmark in Feed, Shorts, Marketplace.
 - 2025-08-12 – docs(policy): allow nav bar and feed ranking edits with flags + measurement.
+- 2025-08-12 America/New_York – docs: add App-Origin Trigger Catalog, JSON rules, and UC flow rewrites.

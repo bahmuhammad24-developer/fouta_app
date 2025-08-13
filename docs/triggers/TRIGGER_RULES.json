@@ -1,0 +1,156 @@
+[
+  {
+    "id": "next_up_rail",
+    "surface": "shorts",
+    "eligibility": {"completed_ratio_gte": 0.9, "cooldown_minutes": 30},
+    "fires": {"on": "video_complete"},
+    "frequency_cap": {"per_session": 3, "per_day": 8},
+    "flag": "triggers.next_up.enabled",
+    "priority": 90,
+    "dismiss": "remember_for_session",
+    "metrics": ["video_complete", "next_up_click", "session_length_delta"]
+  },
+  {
+    "id": "keyword_filter_chips",
+    "surface": "for_you",
+    "eligibility": {"has_trending_keywords": true},
+    "fires": {"on": "feed_load"},
+    "frequency_cap": {"per_session": 1, "per_day": 5},
+    "flag": "triggers.keyword_filter_chips",
+    "priority": 70,
+    "dismiss": "hide_for_day",
+    "metrics": ["filter_chip_impression", "filter_chip_click"]
+  },
+  {
+    "id": "friends_first_header",
+    "surface": "home_feed",
+    "eligibility": {"friend_posts_gt": 0},
+    "fires": {"on": "feed_open"},
+    "frequency_cap": {"per_session": 2, "per_day": 6},
+    "flag": "triggers.friends_first_header",
+    "priority": 80,
+    "dismiss": "remember_for_session",
+    "metrics": ["friends_first_impression", "friends_first_click", "session_length_delta"]
+  },
+  {
+    "id": "story_inline_reply_chip",
+    "surface": "stories",
+    "eligibility": {"viewer_can_dm": true},
+    "fires": {"on": "story_view"},
+    "frequency_cap": {"per_session": 5, "per_day": 15},
+    "flag": "triggers.story_inline_reply_chip",
+    "priority": 60,
+    "dismiss": "hide_for_session",
+    "metrics": ["story_view", "inline_reply_send"]
+  },
+  {
+    "id": "template_suggestion_composer",
+    "surface": "composer",
+    "eligibility": {"draft_empty": true},
+    "fires": {"on": "composer_open"},
+    "frequency_cap": {"per_session": 2, "per_day": 4},
+    "flag": "triggers.template_suggestion",
+    "priority": 50,
+    "dismiss": "remember_per_device",
+    "metrics": ["template_suggestion_impression", "template_use"]
+  },
+  {
+    "id": "best_time_to_post_hint",
+    "surface": "composer",
+    "eligibility": {"has_audience_data": true},
+    "fires": {"on": "composer_open"},
+    "frequency_cap": {"per_day": 1},
+    "flag": "triggers.best_time_to_post",
+    "priority": 55,
+    "dismiss": "hide_for_day",
+    "metrics": ["hint_impression", "post_publish"]
+  },
+  {
+    "id": "hashtag_overview_panel",
+    "surface": "search",
+    "eligibility": {"query_hashtag": true},
+    "fires": {"on": "search_submit"},
+    "frequency_cap": {"per_day": 5},
+    "flag": "triggers.hashtag_overview",
+    "priority": 65,
+    "dismiss": "remember_per_query",
+    "metrics": ["hashtag_panel_open", "hashtag_follow"]
+  },
+  {
+    "id": "query_suggestions_search",
+    "surface": "search",
+    "eligibility": {"query_empty": true},
+    "fires": {"on": "search_focus"},
+    "frequency_cap": {"per_session": -1},
+    "flag": "triggers.query_suggestions",
+    "priority": 40,
+    "dismiss": "hide_for_session",
+    "metrics": ["suggestion_impression", "suggestion_click"]
+  },
+  {
+    "id": "group_rules_pinned",
+    "surface": "groups",
+    "eligibility": {"is_member": true},
+    "fires": {"on": "group_open"},
+    "frequency_cap": {"per_group_per_day": 1},
+    "flag": "triggers.group_rules",
+    "priority": 75,
+    "dismiss": "remember_acknowledgment",
+    "metrics": ["rules_view", "rule_acknowledge"]
+  },
+  {
+    "id": "event_invite_via_dm",
+    "surface": "events",
+    "eligibility": {"rsvp_positive": true},
+    "fires": {"on": "rsvp_success"},
+    "frequency_cap": {"per_event": 3},
+    "flag": "triggers.event_invite_dm",
+    "priority": 70,
+    "dismiss": "remember_per_event",
+    "metrics": ["invite_sent", "invite_accept"]
+  },
+  {
+    "id": "saved_filter_alert_market",
+    "surface": "marketplace",
+    "eligibility": {"has_saved_filter": true},
+    "fires": {"on": "price_match"},
+    "frequency_cap": {"per_day": 5},
+    "flag": "triggers.saved_filter_alert",
+    "priority": 60,
+    "dismiss": "hide_for_day",
+    "metrics": ["alert_impression", "listing_click"]
+  },
+  {
+    "id": "price_drop_banner",
+    "surface": "marketplace",
+    "eligibility": {"price_drop_pct_gte": 10},
+    "fires": {"on": "price_drop_detected"},
+    "frequency_cap": {"per_item_per_day": 2},
+    "flag": "triggers.price_drop",
+    "priority": 85,
+    "dismiss": "remember_per_item",
+    "metrics": ["price_drop_impression", "price_drop_click", "purchase_intent"]
+  },
+  {
+    "id": "tune_your_feed_prompt",
+    "surface": "feed_settings",
+    "eligibility": {"reported_irrelevant": true},
+    "fires": {"on": "settings_open"},
+    "frequency_cap": {"per_session": 1},
+    "flag": "triggers.tune_feed",
+    "priority": 50,
+    "dismiss": "hide_for_session",
+    "metrics": ["tune_feed_prompt", "tune_action"]
+  },
+  {
+    "id": "muted_words_suggest",
+    "surface": "safety_settings",
+    "eligibility": {"recent_negative_interactions": true},
+    "fires": {"on": "settings_open"},
+    "frequency_cap": {"per_day": 1},
+    "flag": "triggers.muted_words_suggest",
+    "priority": 45,
+    "dismiss": "remember_per_word",
+    "metrics": ["muted_word_suggestion", "muted_word_add"]
+  }
+]

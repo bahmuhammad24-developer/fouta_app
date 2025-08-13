@@ -23,6 +23,7 @@
 - [Admin Analytics](#admin-analytics)
 - [Notifications](#notifications)
 - [Stability Utilities](#stability-utilities)
+- [Use Cases & App-Origin Triggers](#use-cases--app-origin-triggers)
 
 - [Composer V2 (route /composeV2)](#composer-v2-route-composev2)
 
@@ -389,6 +390,11 @@ To re-run checks, go to Actions and select **Run workflow**.
 ## Environment Keys
 
 - `FCM_SERVER_KEY` – required by Cloud Functions `onNewInteraction` to send push notifications. If unset, the function logs a TODO and exits without sending.
+
+## Use Cases & App-Origin Triggers
+Documentation lives in [docs/use_cases](docs/use_cases) and [docs/triggers](docs/triggers).
+**Rule:** Every new screen/feature PR must cite a UC-ID and, if applicable, a Trigger `id`.
+All triggers must respect flags, frequency caps, and user controls.
 
 ## Change Log
 
