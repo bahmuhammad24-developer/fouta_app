@@ -23,11 +23,19 @@ import 'package:fouta_app/widgets/skeletons/profile_skeleton.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/widgets/skeletons/feed_skeleton.dart';
 import 'package:fouta_app/utils/overlays.dart';
+import 'package:fouta_app/features/profile/profile_service.dart';
+import 'package:fouta_app/features/analytics/creator_insights.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userId;
   final bool initialIsEditing;
-  const ProfileScreen({super.key, required this.userId, this.initialIsEditing = false});
+  final FirebaseFirestore firestore;
+  const ProfileScreen({
+    super.key,
+    required this.userId,
+    this.initialIsEditing = false,
+    FirebaseFirestore? firestore,
+  }) : firestore = firestore ?? FirebaseFirestore.instance;
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -45,6 +53,14 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   final MediaService _mediaService = MediaService();
 
+  late final ProfileService _profileService;
+  late final CreatorInsights _insights;
+  int _posts7d = 0;
+  int _engagement7d = 0;
+  String? _pinnedPostId;
+  bool _isCreator = false;
+  Map<String, dynamic>? _userData;
+
   bool _isDataSaverOn = true;
   bool _isOnMobileData = false;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
@@ -56,7 +72,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   void initState() {
     super.initState();
     _isEditing = widget.initialIsEditing;
-    _tabController = TabController(length: 2, vsync: this);
+    _profileService = ProfileService(firestore: widget.firestore);
+    _insights = CreatorInsights(firestore: widget.firestore);
+    _tabController = TabController(length: 3, vsync: this);
     _loadDataSaverPreference();
     Connectivity().checkConnectivity().then((result) {
       if (mounted) {
@@ -117,6 +135,28 @@ class _ProfileScreenState extends State<ProfileScreen>
         });
       }
     }
+  }
+
+  Future<void> _loadCreatorInsights(String uid) async {
+    final posts = await _insights.countPostsLastNDays(uid, 7);
+    final engagement = await _insights.sumEngagementLastNDays(uid, 7);
+    if (mounted) {
+      setState(() {
+        _posts7d = posts;
+        _engagement7d = engagement;
+      });
+    }
+  }
+
+  Widget _dashboardTile(BuildContext context, String label, int value) {
+    return Column(
+      children: [
+        Text('$value',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text(label,
+            style: TextStyle(color: Theme.of(context).colorScheme.outline)),
+      ],
+    );
   }
 
   Future<void> _pickProfileImage() async {
@@ -424,6 +464,38 @@ class _ProfileScreenState extends State<ProfileScreen>
             ],
           ),
           const SizedBox(height: 20),
+          if (_isCreator)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _dashboardTile(context, 'Followers', followers.length),
+                  _dashboardTile(context, '7-day posts', _posts7d),
+                  _dashboardTile(context, '7-day engagement', _engagement7d),
+                ],
+              ),
+            ),
+          if (isMyProfile)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: ElevatedButton(
+                onPressed: () {
+                  if (_userData != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EditProfileScreen(
+                          uid: widget.userId,
+                          initialData: _userData!,
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Edit Profile'),
+              ),
+            ),
           if (!isMyProfile && currentUser != null && !currentUser.isAnonymous)
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -492,20 +564,62 @@ class _ProfileScreenState extends State<ProfileScreen>
           );
         }
         
+        final docs = snapshot.data!.docs;
+        DocumentSnapshot? pinned;
+        if (_pinnedPostId != null) {
+          try {
+            pinned = docs.firstWhere((d) => d.id == _pinnedPostId);
+          } catch (_) {}
+        }
+        final ordered = <DocumentSnapshot>[];
+        if (pinned != null) {
+          ordered.add(pinned);
+        }
+        ordered.addAll(docs.where((d) => d.id != _pinnedPostId));
+
         return ListView.builder(
           physics: const NeverScrollableScrollPhysics(),
           shrinkWrap: true,
-          itemCount: snapshot.data!.docs.length,
+          itemCount: ordered.length,
           itemBuilder: (context, index) {
-            final post = snapshot.data!.docs[index].data() as Map<String, dynamic>;
-            return PostCardWidget(
-              postId: snapshot.data!.docs[index].id,
-              post: post,
-              currentUser: currentUser,
-              appId: APP_ID,
-              onMessage: _showMessage,
-              isDataSaverOn: _isDataSaverOn,
-              isOnMobileData: _isOnMobileData,
+            final doc = ordered[index];
+            final post = doc.data() as Map<String, dynamic>;
+            return Column(
+              children: [
+                if (index == 0 && _pinnedPostId != null)
+                  Container(
+                    width: double.infinity,
+                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    padding: const EdgeInsets.all(8),
+                    child: const Text('Pinned Post'),
+                  ),
+                PostCardWidget(
+                  postId: doc.id,
+                  post: post,
+                  currentUser: currentUser,
+                  appId: APP_ID,
+                  onMessage: _showMessage,
+                  isDataSaverOn: _isDataSaverOn,
+                  isOnMobileData: _isOnMobileData,
+                ),
+                if (isMyProfile)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () async {
+                        if (_pinnedPostId == doc.id) {
+                          await _profileService.unpinPost(widget.userId);
+                          setState(() => _pinnedPostId = null);
+                        } else {
+                          await _profileService.pinPost(widget.userId, doc.id);
+                          setState(() => _pinnedPostId = doc.id);
+                        }
+                      },
+                      child:
+                          Text(_pinnedPostId == doc.id ? 'Unpin' : 'Pin'),
+                    ),
+                  ),
+              ],
             );
           },
         );
@@ -574,6 +688,39 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  Widget _buildAboutSection() {
+    final data = _userData ?? {};
+    final links = (data['links'] as List?)?.cast<String>() ?? const [];
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if ((data['bio'] ?? '').toString().isNotEmpty)
+          Text(data['bio']),
+        if ((data['location'] ?? '').toString().isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Text('Location: ${data['location']}'),
+          ),
+        if ((data['pronouns'] ?? '').toString().isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Text('Pronouns: ${data['pronouns']}'),
+          ),
+        if (links.isNotEmpty) ...[
+          const Padding(
+            padding: EdgeInsets.only(top: 8.0),
+            child: Text('Links:'),
+          ),
+          for (final l in links)
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Text(l),
+            ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -594,12 +741,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                 }
 
                 final userData = snapshot.data!.data() as Map<String, dynamic>;
-                
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && _currentProfileImageUrl != (userData['profileImageUrl'] ?? '')) {
-                    setState(() {
-                      _currentProfileImageUrl = userData['profileImageUrl'] ?? '';
-                    });
+                  if (!mounted) return;
+                  _userData = userData;
+                  final newImage = userData['profileImageUrl'] ?? '';
+                  final newPinned = userData['pinnedPostId'];
+                  final newCreator = userData['isCreator'] == true;
+                  setState(() {
+                    _currentProfileImageUrl = newImage;
+                    _pinnedPostId = newPinned;
+                    _isCreator = newCreator;
+                  });
+                  if (newCreator) {
+                    _loadCreatorInsights(widget.userId);
                   }
                 });
 
@@ -620,8 +774,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 .onSurface
                                 .withOpacity(0.6),
                             tabs: const [
-                              Tab(icon: Icon(Icons.grid_on)),
-                              Tab(icon: Icon(Icons.photo_library)),
+                              Tab(text: 'Posts'),
+                              Tab(text: 'Shorts'),
+                              Tab(text: 'About'),
                             ],
                           ),
                         ),
@@ -634,6 +789,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     children: [
                       _buildPostsList(currentUser, isMyProfile),
                       _buildMediaGrid(currentUser),
+                      _buildAboutSection(),
                     ],
                   ),
                 );
@@ -710,3 +866,95 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
     return false;
   }
 }
+
+class EditProfileScreen extends StatefulWidget {
+  final String uid;
+  final Map<String, dynamic> initialData;
+  const EditProfileScreen({super.key, required this.uid, required this.initialData});
+
+  @override
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
+}
+
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  late final TextEditingController _displayName;
+  late final TextEditingController _bio;
+  late final TextEditingController _links;
+  late final TextEditingController _location;
+  late final TextEditingController _pronouns;
+  late bool _isCreator;
+  final ProfileService _service = ProfileService();
+
+  @override
+  void initState() {
+    super.initState();
+    final data = widget.initialData;
+    _displayName = TextEditingController(text: data['displayName'] ?? '');
+    _bio = TextEditingController(text: data['bio'] ?? '');
+    _links = TextEditingController(text: (data['links'] as List?)?.join('\n') ?? '');
+    _location = TextEditingController(text: data['location'] ?? '');
+    _pronouns = TextEditingController(text: data['pronouns'] ?? '');
+    _isCreator = data['isCreator'] == true;
+  }
+
+  @override
+  void dispose() {
+    _displayName.dispose();
+    _bio.dispose();
+    _links.dispose();
+    _location.dispose();
+    _pronouns.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final links = _links.text
+        .split('\n')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+    await _service.updateProfile(
+      widget.uid,
+      displayName: _displayName.text.trim(),
+      bio: _bio.text.trim(),
+      links: links,
+      location: _location.text.trim(),
+      pronouns: _pronouns.text.trim(),
+    );
+    await _service.toggleCreatorMode(widget.uid, _isCreator);
+    if (mounted) Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Edit Profile')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          TextField(
+              controller: _displayName,
+              decoration: const InputDecoration(labelText: 'Display Name')),
+          TextField(controller: _bio, decoration: const InputDecoration(labelText: 'Bio')),
+          TextField(
+              controller: _links,
+              decoration: const InputDecoration(labelText: 'Links (one per line)')),
+          TextField(
+              controller: _location,
+              decoration: const InputDecoration(labelText: 'Location')),
+          TextField(
+              controller: _pronouns,
+              decoration: const InputDecoration(labelText: 'Pronouns')),
+          SwitchListTile(
+            title: const Text('Creator Mode'),
+            value: _isCreator,
+            onChanged: (v) => setState(() => _isCreator = v),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(onPressed: _save, child: const Text('Save')),
+        ],
+      ),
+    );
+  }
+}
+
