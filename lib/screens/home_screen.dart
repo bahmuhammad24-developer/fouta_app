@@ -50,6 +50,9 @@ import 'package:fouta_app/features/discovery/discovery_service.dart';
 import 'package:fouta_app/utils/json_safety.dart';
 import 'package:fouta_app/widgets/trending_tags_bar.dart';
 import 'package:fouta_app/screens/search_screen.dart';
+import 'package:fouta_app/widgets/safe_stream_builder.dart';
+import 'package:fouta_app/widgets/safe_future_builder.dart';
+import 'package:fouta_app/utils/error_reporter.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -419,8 +422,9 @@ class _NotificationsButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<int>(
+    return SafeStreamBuilder<int>(
       stream: unreadStream,
+      onError: (e, st) => ErrorReporter.report(e, st),
       builder: (context, snapshot) {
         final unreadCount = snapshot.data ?? 0;
         return IconButton(
@@ -1179,11 +1183,12 @@ class _ChatsTabState extends State<ChatsTab> with AutomaticKeepAliveClientMixin 
           ),
         ),
         Expanded(
-          child: StreamBuilder<QuerySnapshot>(
+          child: SafeStreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection(FirestorePaths.chats())
                 .where('participants', arrayContains: currentUser.uid)
                 .snapshots(),
+            onError: (e, st) => ErrorReporter.report(e, st),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -1347,11 +1352,12 @@ class _ChatListItem extends StatelessWidget {
       // Fallback: fetch user document if participantDetails is missing
       final otherUserId = (List<String>.from(chat['participants'])).firstWhere((uid) => uid != currentUserId, orElse: () => '');
       if (otherUserId.isEmpty) return const SizedBox.shrink();
-      return FutureBuilder<DocumentSnapshot>(
+      return SafeFutureBuilder<DocumentSnapshot>(
         future: FirebaseFirestore.instance
             .collection(FirestorePaths.users())
             .doc(otherUserId)
             .get(),
+        onError: (e, st) => ErrorReporter.report(e, st),
         builder: (context, userSnapshot) {
           if (!userSnapshot.hasData) return const SizedBox.shrink();
           final userData = userSnapshot.data!.data() as Map<String, dynamic>;
@@ -1556,8 +1562,9 @@ class _PeopleTabState extends State<PeopleTab> with AutomaticKeepAliveClientMixi
     // Load minimal user lists instead of streaming the entire collection
     final usersCollection =
         FirebaseFirestore.instance.collection(FirestorePaths.users());
-    return StreamBuilder<DocumentSnapshot>(
+    return SafeStreamBuilder<DocumentSnapshot>(
       stream: usersCollection.doc(currentUser.uid).snapshots(),
+      onError: (e, st) => ErrorReporter.report(e, st),
       builder: (context, currentUserSnap) {
         if (!currentUserSnap.hasData) {
           return const Center(child: CircularProgressIndicator());
@@ -1582,8 +1589,9 @@ class _PeopleTabState extends State<PeopleTab> with AutomaticKeepAliveClientMixi
 
         if (type == 'suggestions') {
           // Query a limited number of users and filter out self and people already followed
-          return FutureBuilder<QuerySnapshot>(
+          return SafeFutureBuilder<QuerySnapshot>(
             future: usersCollection.orderBy('createdAt', descending: true).limit(30).get(),
+            onError: (e, st) => ErrorReporter.report(e, st),
             builder: (context, snap) {
               if (!snap.hasData) return const Center(child: CircularProgressIndicator());
               List<DocumentSnapshot> docs = snap.data!.docs;
@@ -1635,8 +1643,9 @@ class _PeopleTabState extends State<PeopleTab> with AutomaticKeepAliveClientMixi
             final chunk = targetIds.sublist(i, i + chunkSize > targetIds.length ? targetIds.length : i + chunkSize);
             futures.add(usersCollection.where(FieldPath.documentId, whereIn: chunk).get());
           }
-          return FutureBuilder<List<QuerySnapshot>>(
+          return SafeFutureBuilder<List<QuerySnapshot>>(
             future: Future.wait(futures),
+            onError: (e, st) => ErrorReporter.report(e, st),
             builder: (context, snap) {
               if (!snap.hasData) return const Center(child: CircularProgressIndicator());
               List<DocumentSnapshot> docs = snap.data!.expand((q) => q.docs).toList();
