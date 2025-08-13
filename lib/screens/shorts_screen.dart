@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:fouta_app/features/shorts/shorts_service.dart';
 import 'package:fouta_app/widgets/video_player_widget.dart';
+import 'package:fouta_app/utils/error_reporter.dart';
 
 class ShortsScreen extends StatelessWidget {
   ShortsScreen({super.key, ShortsService? service})
@@ -83,8 +84,16 @@ class ShortsScreen extends StatelessWidget {
                   ],
                 );
               } catch (e, st) {
-                debugPrint('Error rendering short ${short.id}: $e');
-                return const SizedBox.shrink();
+                ErrorReporter.report(e, st);
+                return Center(
+                  child: SizedBox(
+                    width: 120,
+                    height: 80,
+                    child: const Card(
+                      child: Center(child: Text('failed to render')),
+                    ),
+                  ),
+                );
               }
             },
           ),

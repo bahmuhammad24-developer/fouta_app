@@ -18,6 +18,8 @@ import 'package:fouta_app/features/discovery/discovery_service.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/constants/media_limits.dart'; // Provides kMaxVideoBytes
+import 'package:fouta_app/utils/async_guard.dart';
+import 'package:fouta_app/utils/error_reporter.dart';
 
 class CreatePostScreen extends StatefulWidget {
   final String? postId;
@@ -147,7 +149,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       file = XFile(trimmedFile.path); // Convert back to XFile
     }
 
-    setState(() {
+    mountedSetState(this, () {
       _selectedMediaFiles.add(file);
       _mediaTypesList.add(attachment.type);
       _videoAspectRatios.add(isVideo ? attachment.aspectRatio : null);
@@ -156,7 +158,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
     final proceed = await _showPreviewDialog();
     if (!proceed) {
-      setState(() {
+      mountedSetState(this, () {
         _selectedMediaFiles.removeLast();
         _mediaTypesList.removeLast();
         _videoAspectRatios.removeLast();
@@ -164,7 +166,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         _message = 'Media selection cancelled.';
       });
     } else {
-      setState(() {
+      mountedSetState(this, () {
         _message = null;
       });
     }
@@ -186,7 +188,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         final int shares = data['shares'] ?? 0;
 
         final int newEngagement = _calculateEngagement(likes, comments, shares);
-        await postRef.update({'calculatedEngagement': newEngagement});
+        await guardAsync(
+          () => postRef.update({'calculatedEngagement': newEngagement}),
+          onError: (e, st) => ErrorReporter.report(e, st),
+        );
       }
     } catch (e) {
       debugPrint('Error updating engagement score: $e');
@@ -194,7 +199,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Future<void> _handlePostSubmission() async {
-    setState(() {
+    mountedSetState(this, () {
       _message = null;
     });
 
@@ -224,7 +229,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     }
 
     if (_selectedMediaFiles.isNotEmpty) {
-      setState(() {
+      mountedSetState(this, () {
         _isUploading = true;
         _uploadProgress = 0.0;
       });
@@ -240,7 +245,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           bytes: _selectedMediaBytesList[i],
         );
         try {
-          final uploaded = await _mediaService.upload(attachment);
+          final uploaded = await guardAsync(
+            () => _mediaService.upload(attachment),
+            onError: (e, st) => ErrorReporter.report(e, st),
+          );
           attachments.add({
             'type': uploaded.type,
             'url': uploaded.url,
@@ -252,20 +260,18 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           });
         } on FirebaseException catch (e) {
           _showMessage('Media upload failed: ${e.message}');
-          setState(() {
+          mountedSetState(this, () {
             _isUploading = false;
           });
           return;
         }
         uploadedCount++;
-        if (mounted) {
-          setState(() {
-            _uploadProgress = uploadedCount / _selectedMediaFiles.length;
-          });
-        }
+        mountedSetState(this, () {
+          _uploadProgress = uploadedCount / _selectedMediaFiles.length;
+        });
       }
       // Reset uploading state after all uploads
-      setState(() {
+      mountedSetState(this, () {
         _isUploading = false;
         _uploadProgress = 0.0;
       });
@@ -319,11 +325,17 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           if (summaryType == 'video') 'aspectRatio': summaryAspect,
         };
         final firestore = FirebaseFirestore.instance;
-        final newPostRef = await firestore
-            .collection('artifacts/$APP_ID/public/data/posts')
-            .add(postData);
-        await DiscoveryService.updateHashtagAggregates(
-            firestore, hashtags);
+        final newPostRef = await guardAsync(
+          () => firestore
+              .collection('artifacts/$APP_ID/public/data/posts')
+              .add(postData),
+          onError: (e, st) => ErrorReporter.report(e, st),
+        );
+        await guardAsync(
+          () => DiscoveryService.updateHashtagAggregates(
+              firestore, hashtags),
+          onError: (e, st) => ErrorReporter.report(e, st),
+        );
         _showMessage('Post added successfully!');
         _updateEngagementScore(newPostRef.id);
       } else {
@@ -337,21 +349,27 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 ?.map((e) => e.toString())
                 .toList() ??
             [];
-        await postRef.update({
-          'content': content,
-          'contentLower': content.toLowerCase(),
-          'media': attachments,
-          'meta.hashtags': hashtags,
-        });
-        await DiscoveryService.updateHashtagAggregates(
-            firestore, hashtags,
-            oldTags: oldTags);
+        await guardAsync(
+          () => postRef.update({
+            'content': content,
+            'contentLower': content.toLowerCase(),
+            'media': attachments,
+            'meta.hashtags': hashtags,
+          }),
+          onError: (e, st) => ErrorReporter.report(e, st),
+        );
+        await guardAsync(
+          () => DiscoveryService.updateHashtagAggregates(
+              firestore, hashtags,
+              oldTags: oldTags),
+          onError: (e, st) => ErrorReporter.report(e, st),
+        );
         _showMessage('Post updated successfully!');
         _updateEngagementScore(widget.postId!);
       }
 
       _postContentController.clear();
-      setState(() {
+      mountedSetState(this, () {
         _selectedMediaFiles.clear();
         _selectedMediaBytesList.clear();
         _mediaTypesList.clear();
