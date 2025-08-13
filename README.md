@@ -517,4 +517,26 @@ If constructors use non-const initializers (e.g., FirebaseAuth, service instance
 If a widget constructor uses services/auth in initializers, don’t construct it with const or place it inside a const list.
 
 
+
+### Micro-interaction widgets
+
+```dart
+AnimatedLikeButton(
+  isLiked: false,
+  onChanged: (liked) {},
+);
+
+AnimatedBookmarkButton(
+  isSaved: false,
+  onChanged: (saved) {},
+);
+
+ReactionTray(
+  onReactionSelected: (reaction) {
+    // handle ReactionType
+  },
+);
+```
+
 ## Navigation & List UX Utilities
+
