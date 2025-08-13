@@ -9,6 +9,7 @@
   - [Screens](#screens)
   - [Widgets](#widgets)
   - [Theme](#theme)
+- [UI Kit (Tokens/Motion/Skeleton/Images)](#ui-kit-tokensmotion-skeletonimages)
 - [Getting Started](#getting-started)
 - [Documentation & Logging Guidelines](#documentation--logging-guidelines)
   - [AI Collaboration](#ai-collaboration)
@@ -193,6 +194,17 @@ Dedicated feature modules keep the project competitive with larger platforms. Th
 - `fouta_theme_diaspora.dart`
   - Light: primary `#3C7548`, secondary `#F4D87B`, background `#F7F5EF`, surface `#FFFFFF`, error `#D9534F`
   - Dark: primary `#2A4930`, secondary `#B38A40`, background `#1F2620`, surface `#2D362D`, error `#D9534F`, text `#E5E5E5`
+
+## UI Kit (Tokens/Motion/Skeleton/Images)
+
+The UI kit provides reusable building blocks:
+
+- **Design Tokens** – color, spacing, radii, elevation, and text style tokens live in `lib/theme/tokens.dart`.
+- **Motion System** – duration and curve tokens plus `animateOnTap` and `animatedVisibility` helpers in `lib/theme/motion.dart`.
+- **Skeleton Loaders** – `Skeleton.line`, `Skeleton.rect`, and `Skeleton.avatar` with optional shimmer are in `lib/widgets/skeleton.dart`.
+- **Progressive Images** – `ProgressiveImage` fades from a low-res thumbnail to the final image with error handling in `lib/widgets/progressive_image.dart`.
+
+To adopt, import the relevant file and swap hard‑coded styles for the provided tokens or widgets.
 
 ## Getting Started
 This project is a starting point for a Flutter application.
