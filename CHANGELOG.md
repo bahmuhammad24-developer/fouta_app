@@ -1,7 +1,8 @@
 # Changelog
 
-- 2025-08-12 – Groups & Events v1: create, join/leave, RSVP, safe parsing.
 
+- 2025-08-12 – Marketplace v2 (filters/favorites/seller profile), Monetization stubs (tips/subscriptions/purchase intents), Admin analytics dashboard with daily rollups.
+- 2025-08-12 – Groups & Events v1: create, join/leave, RSVP, safe parsing.
 - 2025-08-13 – Messaging v2 (typing/read receipts/media hardening); Notifications v1 (opt-in + Function trigger).
 - 2025-08-13 – Search, hashtag index, trending chips.
 - 2025-08-15 – Added discovery ranking, onboarding, AR camera, shorts module, marketplace, growth, moderation and analytics updates.

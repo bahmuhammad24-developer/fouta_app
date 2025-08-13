@@ -1,41 +1,69 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import 'package:fouta_app/features/marketplace/marketplace_service.dart';
-import 'package:fouta_app/features/marketplace/product_card.dart';
-import 'package:fouta_app/features/marketplace/product_detail_screen.dart';
+import '../features/marketplace/marketplace_service.dart';
+import '../features/marketplace/product_card.dart';
+import '../features/marketplace/product_detail_screen.dart';
+import 'marketplace_filters_sheet.dart';
+import 'seller_profile_screen.dart';
 
-class MarketplaceScreen extends StatelessWidget {
-  MarketplaceScreen({super.key, MarketplaceService? service})
-      : _service = service ?? MarketplaceService();
+class MarketplaceScreen extends StatefulWidget {
+  const MarketplaceScreen({super.key});
 
-  final MarketplaceService _service;
+  @override
+  State<MarketplaceScreen> createState() => _MarketplaceScreenState();
+}
+
+class _MarketplaceScreenState extends State<MarketplaceScreen> {
+  final MarketplaceService _service = MarketplaceService();
+  MarketplaceFilters _filters = MarketplaceFilters();
+
+  void _openFilters() {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => MarketplaceFiltersSheet(
+        initial: _filters,
+        onApply: (f) {
+          setState(() => _filters = f);
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Product>>(
-      stream: _service.streamProducts(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-        final products = snapshot.data ?? [];
-        if (products.isEmpty) {
-          return const Scaffold(
-            body: Center(
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Marketplace'),
+        actions: [
+          IconButton(onPressed: _openFilters, icon: const Icon(Icons.filter_list)),
+        ],
+      ),
+      body: StreamBuilder<List<Product>>(
+        stream: _service.streamProducts(
+          category: _filters.category,
+          minPrice: _filters.minPrice,
+          maxPrice: _filters.maxPrice,
+          query: _filters.query,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final products = snapshot.data ?? [];
+          if (products.isEmpty) {
+            return const Center(
               child: Card(
                 child: Padding(
                   padding: EdgeInsets.all(24),
                   child: Text('No listings yet'),
                 ),
               ),
-            ),
-          );
-        }
-        return Scaffold(
-          body: LayoutBuilder(
+            );
+          }
+          return LayoutBuilder(
             builder: (context, constraints) {
               final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
               return GridView.builder(
@@ -57,17 +85,29 @@ class MarketplaceScreen extends StatelessWidget {
                           ),
                         );
                       },
+                      onFavorite: () => _service.toggleFavorite(product.id, userId),
+                      isFavorited: product.favoriteUserIds.contains(userId),
+                      onSellerTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SellerProfileScreen(sellerId: product.sellerId),
+                          ),
+                        );
+                      },
                     );
                   } catch (e) {
-                    debugPrint('Error rendering product ${product.id}: $e');
+                    if (kDebugMode) {
+                      print('Error rendering product ${product.id}: $e');
+                    }
                     return const SizedBox.shrink();
                   }
                 },
               );
             },
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
