@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fouta_app/widgets/trending_chip_bar.dart';
+import 'package:fouta_app/widgets/trending_tags_bar.dart';
 
 void main() {
-  testWidgets('TrendingChipBar renders and handles tap', (tester) async {
+  testWidgets('TrendingTagsBar renders and handles tap', (tester) async {
     String? tapped;
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: TrendingChipBar(
+          body: TrendingTagsBar(
             tags: const ['one', 'two'],
             selectedTag: null,
             onSelected: (t) => tapped = t,

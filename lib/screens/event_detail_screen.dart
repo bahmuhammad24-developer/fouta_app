@@ -4,18 +4,19 @@ import 'package:flutter/material.dart';
 import '../features/events/events_service.dart';
 
 class EventDetailScreen extends StatefulWidget {
-  const EventDetailScreen({
-    super.key,
+  final Event event;
+  final EventsService service;
+  final String currentUserId;
+
+  EventDetailScreen({
+    Key? key,
     required this.event,
     EventsService? service,
     String? currentUserId,
   })  : service = service ?? EventsService(),
         currentUserId =
-            currentUserId ?? FirebaseAuth.instance.currentUser?.uid ?? '';
-
-  final Event event;
-  final EventsService service;
-  final String currentUserId;
+            currentUserId ?? FirebaseAuth.instance.currentUser?.uid ?? '',
+        super(key: key);
 
   @override
   State<EventDetailScreen> createState() => _EventDetailScreenState();

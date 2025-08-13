@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class TrendingChipBar extends StatelessWidget {
-  const TrendingChipBar({
+class TrendingTagsBar extends StatelessWidget {
+  const TrendingTagsBar({
     super.key,
     required this.tags,
     required this.onSelected,
@@ -9,7 +9,7 @@ class TrendingChipBar extends StatelessWidget {
   });
 
   final List<String> tags;
-  final ValueChanged<String> onSelected;
+  final ValueChanged<String?> onSelected;
   final String? selectedTag;
 
   @override
@@ -25,7 +25,8 @@ class TrendingChipBar extends StatelessWidget {
                   child: ChoiceChip(
                     label: Text('#$t'),
                     selected: selectedTag == t,
-                    onSelected: (_) => onSelected(t),
+                    onSelected: (_) =>
+                        onSelected(selectedTag == t ? null : t),
                   ),
                 ))
             .toList(),

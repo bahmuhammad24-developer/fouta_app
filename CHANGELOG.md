@@ -22,3 +22,4 @@
 - 2025-08-12 – Project policy update: allow branch creation/switching and new dependencies with DEP records. If branch switching was forbidden by runtime, changes were committed directly to `dev` (fallback).
 
 - 2025-08-12 – Safety & Privacy v2: mute words, reply limits, private account, block/mute manager (route-only).
+- 2025-08-12 – Fix compile errors: Shorts route const call; trending chips state; stories type; chat upload progress param; message status helper; non-const constructors in events screens.
