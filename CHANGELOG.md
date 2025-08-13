@@ -3,6 +3,7 @@
 
 
 
+- 2025-08-12 – Integration Pass 3: focus visuals, textScale guardrails, reduced-motion fallbacks. (Committed on fallback branch `work` due to branch creation restrictions.)
 - 2025-08-12 – Micro-interactions: animated like/bookmark, reaction tray.
 - 2025-08-12 – Stability: safe stream/future builders, async guards, error reporter stub.
 - 2025-08-12 – Nav transitions & List UX: refresh, paging, empty/error states. (Committed on fallback branch `work` due to branch creation restrictions.)

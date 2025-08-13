@@ -540,3 +540,7 @@ ReactionTray(
 
 ## Navigation & List UX Utilities
 
+## Accessibility & Motion
+
+The app adopts focus visuals for keyboard users, clamps text scaling to a sensible maximum, and shortens or skips animations when the operating system requests reduced motion. Adjust text size or motion preferences in your device's accessibility settings to toggle these features.
+

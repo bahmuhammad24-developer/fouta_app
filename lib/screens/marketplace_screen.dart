@@ -66,13 +66,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           return LayoutBuilder(
             builder: (context, constraints) {
               final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
-              return GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  childAspectRatio: 3 / 4,
-                ),
-                itemCount: products.length,
-                itemBuilder: (context, index) {
+              return FocusTraversalGroup(
+                policy: OrderedTraversalPolicy(),
+                child: GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    childAspectRatio: 3 / 4,
+                  ),
+                  itemCount: products.length,
+                  itemBuilder: (context, index) {
                   final product = products[index];
                   try {
                     return ProductCard(
@@ -102,7 +104,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     }
                     return const SizedBox.shrink();
                   }
-                },
+                  },
+                ),
               );
             },
           );
