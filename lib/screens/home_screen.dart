@@ -48,7 +48,7 @@ import 'package:fouta_app/screens/ar_camera_screen.dart';
 import 'package:fouta_app/features/discovery/discovery_ranking_service.dart';
 import 'package:fouta_app/features/discovery/discovery_service.dart';
 import 'package:fouta_app/utils/json_safety.dart';
-import 'package:fouta_app/widgets/trending_chip_bar.dart';
+import 'package:fouta_app/widgets/trending_tags_bar.dart';
 import 'package:fouta_app/screens/search_screen.dart';
 
 
@@ -65,9 +65,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Stream<int>? _unreadNotificationsStream;
   bool _showNewChatFab = true;
   int _titleTapCount = 0;
-  List<String> _trendingTags = [];
-  String? _selectedTag;
-  static const List<String> _fallbackTags = ['news', 'tech', 'sports'];
 
   final List<GlobalKey<NavigatorState>> _navigatorKeys = [
     GlobalKey<NavigatorState>(),
@@ -81,7 +78,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     _setupListeners();
-    _loadTrendingTags();
   }
 
   void _setupListeners() {
@@ -100,29 +96,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
-  Future<void> _loadTrendingTags() async {
-    try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection(FirestorePaths.hashtags())
-          .orderBy('count', descending: true)
-          .limit(5)
-          .get();
-      final tags = snapshot.docs.map((d) => d.id).toList();
-      setState(() {
-        _trendingTags = tags.isEmpty ? _fallbackTags : tags;
-      });
-    } catch (e) {
-      setState(() {
-        _trendingTags = _fallbackTags;
-      });
-    }
-  }
-
-  void _onTagSelected(String tag) {
-    setState(() {
-      _selectedTag = _selectedTag == tag ? null : tag;
-    });
-  }
+  
 
   @override
   void dispose() {
@@ -523,7 +497,7 @@ class _AppDrawer extends StatelessWidget {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ShortsScreen()),
+                MaterialPageRoute(builder: (context) => ShortsScreen()),
               );
             },
           ),
@@ -598,6 +572,18 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
   // Stories currently loaded in the feed
   List<Story> _stories = [];
 
+  // Trending chips state
+  List<String> _trendingTags = const [];
+  String? _selectedTag;
+
+  static const List<String> _fallbackTags = ['news', 'tech', 'sports'];
+
+  void _onTagSelected(String? tag) {
+    setState(() {
+      _selectedTag = tag;
+    });
+  }
+
 
   bool _isDataSaverOn = true;
   bool _isOnMobileData = false;
@@ -621,6 +607,7 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
     _scrollController.addListener(_scrollListener);
     _fetchFirstPosts();
     _fetchStories();
+    _loadTrendingTags();
     Connectivity().checkConnectivity().then((result) {
       if (mounted) {
         setState(() {
@@ -730,6 +717,45 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
       setState(() => _stories = owners);
       StoryDiagnostics.instance.owners = owners;
     }
+  }
+
+  Future<void> _loadTrendingTags() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection(FirestorePaths.hashtags())
+          .orderBy('count', descending: true)
+          .limit(5)
+          .get();
+      final tags = snapshot.docs.map((d) => d.id).toList();
+      if (_selectedTag != null && !tags.contains(_selectedTag)) {
+        _selectedTag = null;
+      }
+      setState(() {
+        _trendingTags = tags.isEmpty ? _fallbackTags : tags;
+      });
+    } catch (e) {
+      if (_selectedTag != null && !_fallbackTags.contains(_selectedTag)) {
+        _selectedTag = null;
+      }
+      setState(() {
+        _trendingTags = _fallbackTags;
+      });
+    }
+  }
+
+  Map<String, dynamic> _storyToMap(Story s) {
+    final item = s.items.isNotEmpty ? s.items.first : null;
+    return {
+      'id': s.id,
+      'authorId': s.authorId,
+      'mediaUrl': item?.media.url ?? '',
+      'mediaType':
+          item?.media.type == MediaType.video ? 'video' : 'image',
+      'aspectRatio': (item?.media.width != null && item?.media.height != null)
+          ? item!.media.width! / item.media.height!
+          : null,
+      'createdAt': item?.createdAt,
+    };
   }
 
   Future<void> _onAddStory() async {
@@ -962,7 +988,7 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) => StoryViewerScreen(
-                                      stories: [story],
+                                      stories: [_storyToMap(story)],
                                     ),
                                     fullscreenDialog: true,
                                   ),
@@ -992,7 +1018,7 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
               widget.setNavBarVisibility(true);
             },
           ),
-          TrendingChipBar(
+          TrendingTagsBar(
             tags: _trendingTags,
             selectedTag: _selectedTag,
             onSelected: _onTagSelected,

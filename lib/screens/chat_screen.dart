@@ -21,7 +21,6 @@ import 'package:fouta_app/screens/fullscreen_media_viewer.dart';
 import 'package:fouta_app/models/media_item.dart';
 import 'package:image/image.dart' as img;
 import 'package:provider/provider.dart';
-import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/widgets/chat_audio_player.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
@@ -31,6 +30,14 @@ import 'package:fouta_app/constants/media_limits.dart'; // Provides kMaxVideoByt
 import 'package:fouta_app/widgets/chat/typing_indicator.dart';
 import 'package:fouta_app/services/chat_utils.dart';
 import 'package:fouta_app/utils/firestore_paths.dart';
+
+enum MessageStatus { sending, sent, delivered, read }
+
+bool _isReadStatus(dynamic status) {
+  if (status is MessageStatus) return status == MessageStatus.read;
+  final s = (status?.toString() ?? '').toLowerCase();
+  return s.contains('read');
+}
 
 class ChatScreen extends StatefulWidget {
   final String? chatId;
@@ -376,11 +383,7 @@ class _ChatScreenState extends State<ChatScreen> {
         final uploaded = await _mediaService.upload(
           attachment,
           pathPrefix: 'chat_media/$_currentChatId',
-          onProgress: (p) {
-            if (mounted) {
-              setState(() => _uploadProgress = p);
-            }
-          },
+          // TODO: Wire up progress when MediaService.upload supports it.
         );
         mediaUrl = uploaded.url;
       }
@@ -661,12 +664,12 @@ class _ChatScreenState extends State<ChatScreen> {
                 if (isMe) ...[
                   const SizedBox(width: 4),
                   Icon(
-                    status == MessageStatus.read
-                        ? Icons.done_all
-                        : Icons.check,
+                    _isReadStatus(status) ? Icons.done_all : Icons.check,
                     size: 16,
-                    color: Theme.of(context).colorScheme.onPrimary.withOpacity(
-                        status == MessageStatus.read ? 1 : 0.7),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withOpacity(_isReadStatus(status) ? 1 : 0.7),
                   ),
                 ]
               ],
