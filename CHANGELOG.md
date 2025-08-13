@@ -2,7 +2,11 @@
 
 
 
+
 - 2025-08-12 – Trigger Orchestrator + Next-Up rail, Keyword filter chips, Friends-first header, Story inline reply chip (flagged). (Committed on fallback branch `work` due to branch creation restrictions.)
+
+- 2025-08-12 – Discovery Ranking V2 (watch-time/DM shares/follows-after-view + 7d decay) and NavBar V2 scaffold, both flagged.
+
 - 2025-08-12 – fix(profile): eliminate flicker by caching streams, distinct setState, and gapless image rendering. (Committed on fallback branch `work` due to branch creation restrictions.)
 - 2025-08-12 – Integration Pass 3: focus visuals, textScale guardrails, reduced-motion fallbacks. (Committed on fallback branch `work` due to branch creation restrictions.)
 - 2025-08-12 – Integration Pass 2: Hero images, FoutaTransitions in Post/Shorts detail flows. (Committed on fallback branch `work` due to branch creation restrictions.)
@@ -35,3 +39,4 @@
 - 2025-08-12 – UI Kit: tokens, motion, skeletons, progressive images.
 - 2025-08-12 – Integration Pass 1: ProgressiveImage + Skeletons + SafeBuilders + AnimatedLike/Bookmark in Feed, Shorts, Marketplace.
 - 2025-08-12 – docs(policy): allow nav bar and feed ranking edits with flags + measurement.
+- 2025-08-12 America/New_York – docs: add App-Origin Trigger Catalog, JSON rules, and UC flow rewrites.
