@@ -14,6 +14,7 @@
 - [Documentation & Logging Guidelines](#documentation--logging-guidelines)
   - [AI Collaboration](#ai-collaboration)
 - [AI Collaboration & Policy](#ai-collaboration--policy)
+- [AI Collaboration & Policy (Nav/Feed)](#ai-collaboration--policy-navfeed)
 - [Development Notes](#development-notes)
 - [Media Pipeline](#media-pipeline)
 - [Stories](#stories)
@@ -558,3 +559,17 @@ The app adopts focus visuals for keyboard users, clamps text scaling to a sensib
 Feed cards and shorts now use Hero images and FoutaTransitions for smoother detail navigation.
 
 
+
+## AI Collaboration & Policy (Nav/Feed)
+
+Nav bar and feed ranking updates are permitted when gated and measurable.
+
+### Nav Bar
+- **Feature flag**: `remoteConfig.nav_variant` or Firestore config.
+- **Metrics**: click-through, dwell time, nav errors.
+- **Rollback**: document how to disable the flag and revert layout.
+
+### Feed Ranking
+- **Feature flag**: `feed_ranking` (e.g., `v2`) selecting a new strategy class.
+- **Metrics**: watch time, completes, shares/DMs, follows-after-view with a 7-day decay.
+- **Rollback**: note previous strategy, disable flag, ensure Firestore queries remain indexable.
