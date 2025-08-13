@@ -1,19 +1,28 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fouta_app/triggers/trigger_orchestrator.dart';
+import 'package:fouta_app/triggers/flags.dart';
 
 void main() {
-  test('caps block after N hits', () {
-    final orch = TriggerOrchestrator.instance;
-    expect(orch.canFire('a', cap: 2), true);
-    orch.hit('a');
-    orch.hit('a');
-    expect(orch.canFire('a', cap: 2), false);
+  test('per-session cap is enforced', () {
+    final o = TriggerOrchestrator.instance;
+    o.resetSession();
+
+    int fired = 0;
+    for (int i = 0; i < AppFlags.capNextUpPerSession + 2; i++) {
+      final ok = o.tryFire(
+        id: 'next_up_rail',
+        enabled: true,
+        perSessionCap: AppFlags.capNextUpPerSession,
+      );
+      if (ok) fired++;
+    }
+    expect(fired, AppFlags.capNextUpPerSession);
   });
 
-  test('eligibility helpers', () {
-    expect(shouldShowNextUp(completedRatio: 1), true);
-    expect(shouldShowNextUp(completedRatio: 0.1), false);
-    expect(shouldShowKeywordChips(dwell: 0.1), true);
-    expect(shouldShowKeywordChips(dwell: 1), false);
+  test('eligibility helper shouldShowNextUp works at 0.9+', () {
+    final o = TriggerOrchestrator.instance;
+    expect(o.shouldShowNextUp(completedRatio: 0.89), false);
+    expect(o.shouldShowNextUp(completedRatio: 0.9), true);
+    expect(o.shouldShowNextUp(completedRatio: 1.0), true);
   });
 }

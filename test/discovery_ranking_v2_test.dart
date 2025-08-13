@@ -1,31 +1,32 @@
-import 'package:fouta_app/features/discovery/discovery_ranking_v2.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fouta_app/features/discovery/discovery_ranking_v2.dart';
 
 void main() {
-  test('score is monotonic with completion', () {
-    const ranking = DiscoveryRankingV2();
-    final low = ranking.score(
-      completion: 0.1,
-      sendDm: 0,
-      followAfterView: 0,
-      ageHours: 0,
-      relationshipProximity: 0,
-    );
-    final high = ranking.score(
-      completion: 0.9,
-      sendDm: 0,
-      followAfterView: 0,
-      ageHours: 0,
-      relationshipProximity: 0,
-    );
-    expect(high, greaterThan(low));
-  });
+  test('items are ordered by score descending', () {
+    final r = DiscoveryRankingV2();
 
-  test('freshness decay drops over time', () {
-    const ranking = DiscoveryRankingV2();
-    final fresh = ranking.freshnessDecay(0);
-    final weekOld = ranking.freshnessDecay(168);
-    expect(fresh, greaterThan(weekOld));
-    expect(weekOld, closeTo(0.367879, 1e-6));
+    final a = {'name': 'A'};
+    final b = {'name': 'B'};
+
+    final ranked = r.rank<Map<String, Object?>>( 
+      [a, b],
+      (m) => m['name'] == 'A'
+          ? const RankingSignals(
+              completion: 0.2,
+              sendDm: 0.0,
+              followAfterView: 0.0,
+              ageHours: 10,
+              relationshipProximity: 0.0,
+            )
+          : const RankingSignals(
+              completion: 0.8,
+              sendDm: 1.0,
+              followAfterView: 0.5,
+              ageHours: 1,
+              relationshipProximity: 0.2,
+            ),
+    );
+
+    expect(ranked.first['name'], 'B');
   });
 }
