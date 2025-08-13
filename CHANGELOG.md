@@ -2,6 +2,8 @@
 
 
 
+
+- 2025-08-12 – Stability: safe stream/future builders, async guards, error reporter stub.
 - 2025-08-12 – Nav transitions & List UX: refresh, paging, empty/error states. (Committed on fallback branch `work` due to branch creation restrictions.)
 - 2025-08-12 – Composer V2: drafts & scheduling (route-only).
 - 2025-08-12 – Link Preview module + demo screen (route-only).
