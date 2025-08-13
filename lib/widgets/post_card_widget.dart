@@ -22,6 +22,10 @@ import 'package:fouta_app/widgets/fouta_card.dart';
 import 'package:fouta_app/utils/overlays.dart';
 import 'package:fouta_app/features/moderation/moderation_service.dart';
 import 'package:fouta_app/utils/json_safety.dart';
+import '../services/post_service.dart';
+import '../services/collections_service.dart';
+import '../features/stories/composer/create_story_screen.dart';
+import '../features/creation/editor/overlays/overlay_models.dart';
 
 class PostCardWidget extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -74,12 +78,17 @@ class _PostCardWidgetState extends State<PostCardWidget> {
     super.dispose();
   }
 
-  Future<void> _editSharedPost(String postId, String currentContent) async {
+  Future<void> _editQuotePost(String postId, String currentContent) async {
     final String? updatedContent = await showFoutaDialog<String>(
       context: context,
       builder: (BuildContext context) {
         return SharePostDialog(
-          originalPostData: widget.post,
+          originalPostData: {
+            'content': widget.post['originContent'],
+            'mediaUrl': widget.post['originMediaUrl'],
+            'mediaType': widget.post['originMediaType'],
+            'authorDisplayName': widget.post['originAuthorDisplayName'],
+          },
           initialContent: currentContent,
         );
       },
@@ -90,7 +99,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
         await FirebaseFirestore.instance
             .collection('artifacts/${widget.appId}/public/data/posts')
             .doc(postId)
-            .update({'content': updatedContent});
+            .update({'quoteText': updatedContent});
         widget.onMessage('Post updated successfully!');
       } on FirebaseException catch (e) {
         widget.onMessage('Failed to update post: ${e.message}');
@@ -98,13 +107,13 @@ class _PostCardWidgetState extends State<PostCardWidget> {
     }
   }
 
-  Future<void> _deleteSharedPost(String postId, String originalPostId) async {
+  Future<void> _deleteQuotePost(String postId, String originPostId) async {
     bool confirmDelete = await showFoutaDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Delete Shared Post'),
-          content: const Text('Are you sure you want to delete this shared post? The original post will not be affected.'),
+          title: const Text('Delete Quote Post'),
+          content: const Text('Are you sure you want to delete this quote post? The original post will not be affected.'),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel'),
@@ -125,7 +134,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
     try {
       final firestore = FirebaseFirestore.instance;
       final sharedPostRef = firestore.collection('artifacts/${widget.appId}/public/data/posts').doc(postId);
-      final originalPostRef = firestore.collection('artifacts/${widget.appId}/public/data/posts').doc(originalPostId);
+      final originalPostRef = firestore.collection('artifacts/${widget.appId}/public/data/posts').doc(originPostId);
 
       await firestore.runTransaction((transaction) async {
         transaction.delete(sharedPostRef);
@@ -134,7 +143,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
 
       widget.onMessage('Shared post deleted successfully!');
     } on FirebaseException catch (e) {
-      widget.onMessage('Failed to delete shared post: ${e.message}');
+      widget.onMessage('Failed to delete quote post: ${e.message}');
     }
   }
 
@@ -323,97 +332,133 @@ class _PostCardWidgetState extends State<PostCardWidget> {
     }
   }
 
-  Future<void> _sharePost(String postId) async {
+  Future<void> _quotePost(String postId) async {
     final user = widget.currentUser;
     if (user == null || user.isAnonymous) {
       widget.onMessage('Please log in to share posts.');
       return;
     }
-
-    try {
-      final originalPostDoc = await FirebaseFirestore.instance
-          .collection('artifacts/${widget.appId}/public/data/posts')
-          .doc(postId)
-          .get();
-
-      if (!originalPostDoc.exists) {
-        widget.onMessage('Original post not found for sharing.');
-        return;
-      }
-      final originalPostData = originalPostDoc.data()!;
-      final originalPostAuthorId = originalPostData['authorId'];
-
-      final sharerDoc = await FirebaseFirestore.instance
-          .collection('artifacts/${widget.appId}/public/data/users')
-          .doc(user.uid)
-          .get();
-      final sharerDisplayName = sharerDoc.data()?['displayName'] ?? 'Anonymous';
-      final sharerProfileImageUrl = sharerDoc.data()?['profileImageUrl'] ?? '';
-
-      final String? sharedContent = await showFoutaDialog<String>(
-        context: context,
-        builder: (BuildContext context) {
-          return SharePostDialog(originalPostData: originalPostData);
-        },
-      );
-
-      if (sharedContent == null) {
-        return; 
-      }
-
-      await FirebaseFirestore.instance
-          .collection('artifacts/${widget.appId}/public/data/posts')
-          .add({
-        'type': 'shared',
-        'originalPostId': postId,
-        'content': sharedContent.isNotEmpty ? sharedContent : null,
-        'originalPostContent': originalPostData['content'],
-        'originalPostMediaUrl': originalPostData['mediaUrl'],
-        'originalPostMediaType': originalPostData['mediaType'],
-        'originalPostAuthorId': originalPostAuthorId,
-        'originalPostAuthorDisplayName': originalPostData['authorDisplayName'],
-        'originalPostAuthorProfileImageUrl': originalPostData['authorProfileImageUrl'],
-        'authorId': user.uid,
-        'authorDisplayName': sharerDisplayName,
-        'authorProfileImageUrl': sharerProfileImageUrl,
-        'timestamp': FieldValue.serverTimestamp(),
-        'likes': [],
-        'shares': 0,
-        'calculatedEngagement': _calculateEngagement(0, 0, 0),
-        'postVisibility': 'everyone',
-      });
-
-      await FirebaseFirestore.instance
-          .collection('artifacts/${widget.appId}/public/data/posts')
-          .doc(postId)
-          .update({
-        'shares': FieldValue.increment(1),
-      });
-
-      if (originalPostAuthorId != user.uid) {
-        await FirebaseFirestore.instance
-            .collection('artifacts/${widget.appId}/public/data/users')
-            .doc(originalPostAuthorId)
-            .collection('notifications')
-            .add({
-              'type': 'share',
-              'fromUserId': user.uid,
-              'fromUserName': sharerDisplayName,
-              'postId': postId,
-              'content': 'shared your post.',
-              'isRead': false,
-              'timestamp': FieldValue.serverTimestamp(),
-            });
-      }
-
-      widget.onMessage('Post shared successfully!');
-      _updateEngagementScore(postId);
-
-    } on FirebaseException catch (e) {
-      widget.onMessage('Failed to share post: ${e.message}');
-    } catch (e) {
-      widget.onMessage('An unexpected error occurred: $e');
+    final originalPostDoc = await FirebaseFirestore.instance
+        .collection('artifacts/${widget.appId}/public/data/posts')
+        .doc(postId)
+        .get();
+    if (!originalPostDoc.exists) {
+      widget.onMessage('Original post not found for sharing.');
+      return;
     }
+    final originalPostData = originalPostDoc.data()!;
+    final String? sharedContent = await showFoutaDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return SharePostDialog(originalPostData: originalPostData);
+      },
+    );
+    if (sharedContent == null) return;
+    await PostService().quotePost(postId, sharedContent);
+    widget.onMessage('Post shared successfully!');
+    _updateEngagementScore(postId);
+  }
+
+  Future<void> _repost(String postId) async {
+    final user = widget.currentUser;
+    if (user == null || user.isAnonymous) {
+      widget.onMessage('Please log in to share posts.');
+      return;
+    }
+    await PostService().repost(postId);
+    widget.onMessage('Post shared successfully!');
+    _updateEngagementScore(postId);
+  }
+
+  Future<void> _saveToCollection() async {
+    final uid = widget.currentUser?.uid;
+    if (uid == null) {
+      widget.onMessage('Please log in to save posts.');
+      return;
+    }
+    final service = CollectionsService();
+    final collectionId = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) {
+        return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: service.streamCollections(uid),
+          builder: (ctx, snapshot) {
+            final docs = snapshot.data?.docs ?? [];
+            return ListView(
+              children: [
+                for (final d in docs)
+                  ListTile(
+                    title: Text(d['name']?.toString() ?? 'Unnamed'),
+                    onTap: () => Navigator.pop(ctx, d.id),
+                  ),
+                ListTile(
+                  leading: const Icon(Icons.add),
+                  title: const Text('New collection'),
+                  onTap: () async {
+                    final controller = TextEditingController();
+                    final name = await showDialog<String>(
+                      context: ctx,
+                      builder: (c) => AlertDialog(
+                        title: const Text('Collection name'),
+                        content: TextField(controller: controller, autofocus: true),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
+                          TextButton(
+                              onPressed: () => Navigator.pop(c, controller.text.trim()),
+                              child: const Text('Create')),
+                        ],
+                      ),
+                    );
+                    if (name != null && name.isNotEmpty) {
+                      final id = await service.createCollection(uid, name);
+                      Navigator.pop(ctx, id);
+                    }
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    if (collectionId != null) {
+      await service.addToCollection(uid, collectionId, widget.postId);
+      widget.onMessage('Saved to collection');
+    }
+  }
+
+  Future<void> _shareToStory() async {
+    final uid = widget.currentUser?.uid;
+    if (uid == null) {
+      widget.onMessage('Please log in to share posts.');
+      return;
+    }
+    final mediaUrl = widget.post['mediaUrl'];
+    final mediaType = widget.post['mediaType'];
+    final authorName = widget.post['authorDisplayName'] ?? 'user';
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CreateStoryScreen(
+          initialImageUrl: mediaType == 'image' ? mediaUrl : null,
+          initialVideoUrl: mediaType == 'video' ? mediaUrl : null,
+          initialOverlays: [
+            TextOverlay(
+              id: 'shared',
+              text: 'Shared from @$authorName',
+              color: Colors.white.value,
+              fontSize: 24,
+              dx: 20,
+              dy: 20,
+              scale: 1,
+              rotation: 0,
+              opacity: 1,
+              z: 0,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _reportPost(String postId, String authorId) async {
@@ -862,10 +907,10 @@ class _PostCardWidgetState extends State<PostCardWidget> {
     final String mediaType = widget.post['mediaType'] ?? 'text';
     final String postType = widget.post['type'] ?? 'original';
 
-    final String originalPostContent = widget.post['originalPostContent'] ?? '';
-    final String originalPostMediaUrl = widget.post['originalPostMediaUrl'] ?? '';
-    final String originalPostMediaType = widget.post['originalPostMediaType'] ?? 'text';
-    final String originalPostAuthorDisplayName = widget.post['originalPostAuthorDisplayName'] ?? 'Original Author';
+    final String originContent = widget.post['originContent'] ?? '';
+    final String originMediaUrl = widget.post['originMediaUrl'] ?? '';
+    final String originMediaType = widget.post['originMediaType'] ?? 'text';
+    final String originAuthorDisplayName = widget.post['originAuthorDisplayName'] ?? 'Original Author';
     
     final double? aspectRatio = widget.post['aspectRatio'] as double?;
     final List<dynamic> attachments = (widget.post['media'] ?? []) as List<dynamic>;
@@ -886,7 +931,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-              if (postType == 'shared')
+              if (postType == 'repost' || postType == 'quote')
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),
                   child: Row(
@@ -961,11 +1006,11 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                   if (isMyPost)
                     PopupMenuButton<String>(
                       onSelected: (value) {
-                        if (postType == 'shared') {
+                        if (postType == 'quote') {
                           if (value == 'edit_shared') {
-                            _editSharedPost(widget.postId, widget.post['content'] ?? '');
+                            _editQuotePost(widget.postId, widget.post['quoteText'] ?? '');
                           } else if (value == 'delete_shared') {
-                            _deleteSharedPost(widget.postId, widget.post['originalPostId']);
+                            _deleteQuotePost(widget.postId, widget.post['originPostId']);
                           }
                         } else {
                           if (value == 'edit_original') {
@@ -986,15 +1031,15 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                         }
                       },
                       itemBuilder: (BuildContext context) {
-                        if (postType == 'shared') {
+                        if (postType == 'quote') {
                           return <PopupMenuEntry<String>>[
                             const PopupMenuItem<String>(
                               value: 'edit_shared',
-                              child: Text('Edit Shared Post'),
+                              child: Text('Edit Quote'),
                             ),
                             const PopupMenuItem<String>(
                               value: 'delete_shared',
-                              child: Text('Delete Shared Post'),
+                              child: Text('Delete Quote'),
                             ),
                           ];
                         } else {
@@ -1031,15 +1076,15 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                 ],
               ),
               const SizedBox(height: 12),
-              if (postType == 'shared' && widget.post['content'] != null && widget.post['content'].isNotEmpty)
+              if (postType == 'quote' && widget.post['quoteText'] != null && widget.post['quoteText'].isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12.0),
                   child: Text(
-                    widget.post['content'],
+                    widget.post['quoteText'],
                     style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
                   ),
                 ),
-              if (postType == 'shared')
+              if (postType == 'repost' || postType == 'quote')
                 Container(
                   margin: const EdgeInsets.only(top: 8.0),
                   padding: const EdgeInsets.all(12.0),
@@ -1054,7 +1099,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Original post by $originalPostAuthorDisplayName',
+                        'Original post by $originAuthorDisplayName',
                         style: TextStyle(
                           fontSize: 13,
 
@@ -1064,17 +1109,17 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      if (originalPostMediaUrl.isNotEmpty)
+                      if (originMediaUrl.isNotEmpty)
                         _buildAttachmentThumbnail([
                           {
-                            'type': originalPostMediaType,
-                            'url': originalPostMediaUrl,
+                            'type': originMediaType,
+                            'url': originMediaUrl,
                           }
                         ]),
-                      if (originalPostMediaUrl.isNotEmpty) const SizedBox(height: 8),
-                      if (originalPostContent.isNotEmpty)
+                      if (originMediaUrl.isNotEmpty) const SizedBox(height: 8),
+                      if (originContent.isNotEmpty)
                         Text(
-                          originalPostContent,
+                          originContent,
                           style: const TextStyle(fontSize: 15),
                         ),
                     ],
@@ -1166,8 +1211,29 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                     ),
                   ),
                   Expanded(
-                    child: GestureDetector(
-                      onTap: () => _sharePost(widget.postId),
+                    child: PopupMenuButton<String>(
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'repost':
+                            _repost(widget.postId);
+                            break;
+                          case 'quote':
+                            _quotePost(widget.postId);
+                            break;
+                          case 'save':
+                            _saveToCollection();
+                            break;
+                          case 'story':
+                            _shareToStory();
+                            break;
+                        }
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(value: 'repost', child: Text('Repost')),
+                        PopupMenuItem(value: 'quote', child: Text('Quote')),
+                        PopupMenuItem(value: 'save', child: Text('Save to Collection')),
+                        PopupMenuItem(value: 'story', child: Text('Share to Story')),
+                      ],
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

@@ -11,12 +11,14 @@ class EditorCanvas extends StatefulWidget {
   final String mediaPath;
   final String mediaType; // 'image' or 'video'
   final Uint8List? bytes;
+  final List<OverlayModel>? initialOverlays;
 
   const EditorCanvas({
     super.key,
     required this.mediaPath,
     required this.mediaType,
     this.bytes,
+    this.initialOverlays,
   });
 
   @override
@@ -34,8 +36,11 @@ class EditorCanvasState extends State<EditorCanvas> {
   @override
   void initState() {
     super.initState();
+    _overlays.addAll(widget.initialOverlays ?? []);
     if (widget.mediaType == 'video') {
-      _video = VideoPlayerController.file(File(widget.mediaPath))
+      _video = widget.mediaPath.startsWith('http')
+          ? VideoPlayerController.network(widget.mediaPath)
+          : VideoPlayerController.file(File(widget.mediaPath))
         ..initialize().then((_) {
           setState(() {});
           _video?.play();

@@ -300,6 +300,9 @@ Stories let people share ephemeral moments.
 ### Seen Tracking
 - Items are marked seen after being visible for at least one second and cached locally for instant tray updates.
 
+## Sharing
+Repost or quote posts to add your voice, save favorites into personal collections, or share a post directly to a story with an automatic "Shared from @user" overlay.
+
 
 ## Profiles & Creator Mode
 Profiles include display names, bios, links, location, and pronouns. Users can pin a post to the top of their profile. Enabling creator mode surfaces a dashboard with follower counts, 7-day post totals, and 7-day engagement.
