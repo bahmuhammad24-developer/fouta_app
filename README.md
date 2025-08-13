@@ -263,11 +263,22 @@ When creating a post, the app waits for this metadata and then stores the progre
 To attach captions to a video, upload a WebVTT file to Storage and set its download URL in the media document's `captionUrl` field. The app will include this subtitle track when available.
 
 ## Stories
+Stories let people share ephemeral moments.
 
-### Gestures
+### Create
+- Capture or pick a photo or video in the story camera.
+- Use the overlay editor to add text, stickers, or simple shapes.
+- Drag, scale, and rotate overlays; delete the selected layer from the toolbar.
+
+### Edit
+- Overlays are stored as metadata and composited at playback time.
+- Videos are not re-encoded; overlays render on top during viewing.
+
+### View
 - Tap right/left to move between items.
 - Long-press to pause or resume.
 - Swipe down to dismiss the viewer.
+- Progress bars at the top show story timing.
 
 ### Accessibility
 - Avatars have 48dp tap targets and semantic labels like

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
-import '../composer/story_review_screen.dart';
+import '../composer/create_story_screen.dart';
 
 class StoryCameraScreen extends StatefulWidget {
   const StoryCameraScreen({super.key});
@@ -77,7 +77,9 @@ class _StoryCameraScreenState extends State<StoryCameraScreen>
       await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => StoryReviewScreen(imagePath: file.path),
+          builder: (_) => CreateStoryScreen(
+            initialImagePath: file.path,
+          ),
         ),
       ).then((result) async {
         if (mounted) Navigator.pop(context, result);
@@ -119,7 +121,9 @@ class _StoryCameraScreenState extends State<StoryCameraScreen>
       await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => StoryReviewScreen(videoPath: file.path),
+          builder: (_) => CreateStoryScreen(
+            initialVideoPath: file.path,
+          ),
         ),
       ).then((result) async {
         if (mounted) Navigator.pop(context, result);
