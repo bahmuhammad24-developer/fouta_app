@@ -290,6 +290,10 @@ Run the test suite with:
 flutter test
 ```
 
+## Environment Keys
+
+- `FCM_SERVER_KEY` – required by Cloud Functions `onNewInteraction` to send push notifications. If unset, the function logs a TODO and exits without sending.
+
 ## Change Log
 
 - 2025-08-13 00:00 UTC – Search, hashtag index, trending chips.
@@ -316,6 +320,7 @@ flutter test
 - 2025-08-12 20:39 UTC – Enabled users to report posts for moderation review.
 - 2025-08-12 20:52 UTC – Added Shorts, Marketplace, and AR Camera stub screens accessible from the navigation drawer.
 - 2025-08-15 00:00 UTC – Introduced ranking service, onboarding flow, AR effects, shorts feed, marketplace, growth and moderation tools, and Firebase Analytics integration.
+- 2025-08-13 01:42 UTC – Messaging v2 (typing/read receipts/media hardening); Notifications v1 (opt-in + Function trigger).
 
 ## Contributing
 - Follow the logging and documentation guidelines outlined above.

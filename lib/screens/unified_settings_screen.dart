@@ -12,6 +12,8 @@ import 'package:fouta_app/theme/theme_controller.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/screens/report_bug_screen.dart';
 import 'package:fouta_app/utils/overlays.dart';
+import 'package:fouta_app/services/push_notification_service.dart';
+import 'package:fouta_app/utils/firestore_paths.dart';
 
 class UnifiedSettingsScreen extends StatefulWidget {
   const UnifiedSettingsScreen({super.key});
@@ -22,6 +24,27 @@ class UnifiedSettingsScreen extends StatefulWidget {
 
 class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   final _newPasswordController = TextEditingController();
+  bool _pushEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPushPref();
+  }
+
+  Future<void> _loadPushPref() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final doc = await FirebaseFirestore.instance
+        .collection(FirestorePaths.users())
+        .doc(uid)
+        .collection('meta')
+        .doc('token')
+        .get();
+    if (mounted) {
+      setState(() => _pushEnabled = doc.exists);
+    }
+  }
 
   @override
   void dispose() {
@@ -220,6 +243,19 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
           ),
           
           _buildSectionHeader('APP'),
+
+          SwitchListTile(
+            title: const Text('Push notifications (opt in)'),
+            value: _pushEnabled,
+            onChanged: (value) async {
+              setState(() => _pushEnabled = value);
+              if (value) {
+                await PushNotificationService.enablePush();
+              } else {
+                await PushNotificationService.disablePush();
+              }
+            },
+          ),
 
           // Theme mode selection using ThemeController.
           Consumer<ThemeController>(

@@ -38,6 +38,7 @@ import 'package:fouta_app/widgets/fouta_card.dart';
 import 'package:fouta_app/widgets/skeletons/feed_skeleton.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/models/story.dart';
+import 'package:fouta_app/services/push_notification_service.dart';
 import 'package:fouta_app/widgets/system/offline_banner.dart';
 import 'package:fouta_app/widgets/post_composer.dart';
 import 'package:fouta_app/screens/bookmarks_screen.dart';
@@ -562,6 +563,7 @@ class _AppDrawer extends StatelessWidget {
             title: const Text('Logout'),
             onTap: () async {
               Navigator.pop(context);
+              await PushNotificationService.disablePush();
               await FirebaseAuth.instance.signOut();
               showMessage('Logged out successfully.');
             },

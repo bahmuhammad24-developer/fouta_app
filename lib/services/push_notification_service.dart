@@ -30,13 +30,17 @@ class PushNotificationService {
       badge: true,
       sound: true,
     );
+  }
 
-    final token = await FirebaseMessaging.instance.getToken();
-    if (token != null) {
-      await _saveToken(token);
-    }
-
+  static Future<void> enablePush() async {
+    await requestPermission();
+    await updateDeviceToken();
     FirebaseMessaging.instance.onTokenRefresh.listen(_saveToken);
+  }
+
+  static Future<void> disablePush() async {
+    await deleteToken();
+    await FirebaseMessaging.instance.deleteToken();
   }
 
   static Future<void> requestPermission() async {
@@ -67,11 +71,26 @@ class PushNotificationService {
       await FirebaseFirestore.instance
           .collection(FirestorePaths.users())
           .doc(user.uid)
-          .update({
-        'fcmTokens': FieldValue.arrayUnion([token]),
-      });
+          .collection('meta')
+          .doc('token')
+          .set({'value': token});
     } catch (e) {
       debugPrint('Error saving FCM token: $e');
+    }
+  }
+
+  static Future<void> deleteToken() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection(FirestorePaths.users())
+          .doc(user.uid)
+          .collection('meta')
+          .doc('token')
+          .delete();
+    } catch (e) {
+      debugPrint('Error deleting FCM token: $e');
     }
   }
 }
