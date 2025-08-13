@@ -540,3 +540,8 @@ ReactionTray(
 
 ## Navigation & List UX Utilities
 
+## Integration Pass 1 adoption notes
+
+- Feed, Shorts, and Marketplace now use ProgressiveImage with skeleton placeholders, SafeBuilders, and animated like/bookmark buttons.
+- To revert, restore prior widgets (CachedNetworkImage, IconButton) and standard Scaffold/StreamBuilder usage.
+

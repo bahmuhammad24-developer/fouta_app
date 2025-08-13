@@ -8,7 +8,12 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:fouta_app/widgets/video_player_widget.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:fouta_app/utils/date_utils.dart';
-import 'package:flutter_blurhash/flutter_blurhash.dart';
+import 'package:fouta_app/widgets/animated_like_button.dart';
+import 'package:fouta_app/widgets/animated_bookmark_button.dart';
+import 'package:fouta_app/widgets/progressive_image.dart';
+import 'package:fouta_app/widgets/reaction_tray.dart';
+import 'package:fouta_app/widgets/skeleton.dart';
+import 'package:fouta_app/utils/haptics.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/screens/create_post_screen.dart';
@@ -178,6 +183,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
       return;
     }
 
+    Haptics.light();
+
     final bool newIsLiked = !_isLiked;
     final int newLikeCount = newIsLiked ? _likeCount + 1 : _likeCount - 1;
 
@@ -237,6 +244,8 @@ class _PostCardWidgetState extends State<PostCardWidget> {
       return;
     }
 
+    Haptics.light();
+
     final bool newIsBookmarked = !_isBookmarked;
     final int newBookmarkCount =
         newIsBookmarked ? _bookmarkCount + 1 : _bookmarkCount - 1;
@@ -267,6 +276,18 @@ class _PostCardWidgetState extends State<PostCardWidget> {
       });
       widget.onMessage('Failed to update bookmark: ${e.message}');
     }
+  }
+
+  void _openReactionTray() {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => ReactionTray(
+        onReactionSelected: (type) {
+          Navigator.pop(context);
+          widget.onMessage('Reacted: ${type.name}');
+        },
+      ),
+    );
   }
 
   Future<void> _addComment(String postId, String commentText) async {
@@ -717,22 +738,16 @@ class _PostCardWidgetState extends State<PostCardWidget> {
       case 'image':
         thumb = ClipRRect(
           borderRadius: BorderRadius.circular(8.0),
-          child: CachedNetworkImage(
-            imageUrl: url,
-            fit: BoxFit.cover,
-            progressIndicatorBuilder: (context, url, progress) =>
-                blurhash.isNotEmpty
-                    ? BlurHash(hash: blurhash, imageFit: BoxFit.cover)
-                    : Container(
-                        color: Theme.of(context).colorScheme.surfaceVariant),
-            errorWidget: (context, url, error) => Container(
-              color: Theme.of(context).colorScheme.surfaceVariant,
-              child: Center(
-                child: Icon(Icons.broken_image,
-                    color: Theme.of(context).colorScheme.outline, size: 50),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              const Skeleton.rect(),
+              ProgressiveImage(
+                imageUrl: url,
+                thumbUrl: first['thumbUrl'] ?? url,
+                fit: BoxFit.cover,
               ),
-            ),
-            width: double.infinity,
+            ],
           ),
         );
         break;
@@ -757,12 +772,11 @@ class _PostCardWidgetState extends State<PostCardWidget> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  CachedNetworkImage(
+                  const Skeleton.rect(),
+                  ProgressiveImage(
                     imageUrl: poster,
+                    thumbUrl: poster,
                     fit: BoxFit.cover,
-                    errorWidget: (context, _, __) => Container(
-                      color: Theme.of(context).colorScheme.surfaceVariant,
-                    ),
                   ),
                   Container(
                       color: Theme.of(context)
@@ -1153,14 +1167,12 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        IconButton(
-                          icon: Icon(
-                            _isLiked ? Icons.favorite : Icons.favorite_border,
-
-                            color: _isLiked ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.outline,
-
+                        GestureDetector(
+                          onLongPress: _openReactionTray,
+                          child: AnimatedLikeButton(
+                            isLiked: _isLiked,
+                            onChanged: (v) => _toggleLike(),
                           ),
-                          onPressed: _toggleLike,
                         ),
                         const SizedBox(width: 4),
                         GestureDetector(
@@ -1250,28 +1262,21 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                     ),
                   ),
                   Expanded(
-                    child: GestureDetector(
-                      onTap: _toggleBookmark,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            _isBookmarked
-                                ? Icons.bookmark
-                                : Icons.bookmark_border,
-                            color: _isBookmarked
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).iconTheme.color,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        AnimatedBookmarkButton(
+                          isSaved: _isBookmarked,
+                          onChanged: (v) => _toggleBookmark(),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$_bookmarkCount',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '$_bookmarkCount',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

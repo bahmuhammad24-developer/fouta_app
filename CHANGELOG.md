@@ -29,3 +29,4 @@
 - 2025-08-12 – Fix compile errors: Shorts route const call; trending chips state; stories type; chat upload progress param; message status helper; non-const constructors in events screens.
 - 2025-08-12 – Fix: remove invalid `const` usage for EventsListScreen in home_screen.dart; adjust const lists if present.
 - 2025-08-12 – UI Kit: tokens, motion, skeletons, progressive images.
+- 2025-08-12 – Integration Pass 1: ProgressiveImage + Skeletons + SafeBuilders + AnimatedLike/Bookmark in Feed, Shorts, Marketplace.
