@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:fouta_app/models/media_item.dart';
+import 'package:cross_file/cross_file.dart';
 
 class ProfileHeader extends StatelessWidget {
   final String userId;
@@ -13,7 +13,7 @@ class ProfileHeader extends StatelessWidget {
   final bool isEditing;
   final TextEditingController bioController;
   final String profileImageUrl;
-  final MediaAttachment? newProfileImage;
+  final XFile? newProfileImage;
   final bool isUploading;
   final double uploadProgress;
   final List<dynamic> followers;
@@ -49,22 +49,24 @@ class ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget avatarChild;
-    if (newProfileImage != null && kIsWeb && newProfileImage!.bytes != null) {
-      avatarChild = Image.memory(
-        newProfileImage!.bytes!,
-        width: 120,
-        height: 120,
-        fit: BoxFit.cover,
-        gaplessPlayback: true,
-      );
-    } else if (newProfileImage != null && !kIsWeb) {
-      avatarChild = Image.file(
-        File(newProfileImage!.file.path),
-        width: 120,
-        height: 120,
-        fit: BoxFit.cover,
-        gaplessPlayback: true,
-      );
+    if (newProfileImage != null) {
+      if (kIsWeb) {
+        avatarChild = Image.network(
+          newProfileImage!.path,
+          width: 120,
+          height: 120,
+          fit: BoxFit.cover,
+          gaplessPlayback: true,
+        );
+      } else {
+        avatarChild = Image.file(
+          File(newProfileImage!.path),
+          width: 120,
+          height: 120,
+          fit: BoxFit.cover,
+          gaplessPlayback: true,
+        );
+      }
     } else if (profileImageUrl.isNotEmpty) {
       avatarChild = Image.network(
         profileImageUrl,

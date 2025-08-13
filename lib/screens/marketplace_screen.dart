@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../features/marketplace/marketplace_service.dart';
 import '../features/marketplace/product_detail_screen.dart';
+import 'package:fouta_app/features/marketplace/product_card.dart';
 import 'marketplace_filters_sheet.dart';
 import 'seller_profile_screen.dart';
 import '../widgets/refresh_scaffold.dart';
@@ -137,7 +138,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             Expanded(
               child: Stack(
                 children: [
-                  const Positioned.fill(child: Skeleton.rect()),
+                  Positioned.fill(child: Skeleton.rect()),
                   if (image != null)
                     Positioned.fill(
                       child: ProgressiveImage(

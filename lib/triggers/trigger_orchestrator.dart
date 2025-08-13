@@ -49,6 +49,23 @@ class TriggerOrchestrator {
     return true;
   }
 
+  /// Alias for [tryFire] to support legacy call sites.
+  bool fire({
+    required String id,
+    required bool enabled,
+    required int perSessionCap,
+    Duration cooldown = Duration.zero,
+    bool eligibility = true,
+  }) {
+    return tryFire(
+      id: id,
+      enabled: enabled,
+      perSessionCap: perSessionCap,
+      cooldown: cooldown,
+      eligibility: eligibility,
+    );
+  }
+
   // ---------------- Eligibility helpers ----------------
 
   /// Show Next-Up rail when user watched most of a short/video.

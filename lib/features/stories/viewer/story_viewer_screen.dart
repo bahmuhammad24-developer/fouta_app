@@ -168,12 +168,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               ),
             ),
             if (TriggerOrchestrator.instance.fire(
-              'story_reply_chip',
-              context: context,
-              cap: 1,
+              id: 'story_reply_chip',
               enabled: AppFlags.storyReplyChipEnabled,
+              perSessionCap: 1,
             ))
-              const StoryInlineReplyChip(onTap: () {}),
+              StoryInlineReplyChip(onTap: () {}),
           ],
         ),
       ),

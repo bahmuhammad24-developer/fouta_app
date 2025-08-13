@@ -9,11 +9,12 @@ class KeywordFilterChips extends StatelessWidget {
 
   const KeywordFilterChips({
     super.key,
-    required this.tags,
+    List<String>? tags,
+    List<String>? keywords, // alias for legacy call sites
     required this.selectedTag,
     required this.onSelected,
     this.padding = const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-  });
+  }) : tags = tags ?? keywords ?? const <String>[];
 
   @override
   Widget build(BuildContext context) {

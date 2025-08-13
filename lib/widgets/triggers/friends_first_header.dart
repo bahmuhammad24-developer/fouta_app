@@ -8,8 +8,11 @@ class FriendsFirstHeader extends StatelessWidget {
   const FriendsFirstHeader({
     super.key,
     required this.newPostsCount,
-    required this.onSeeFriends,
-  });
+    VoidCallback? onSeeFriends,
+    VoidCallback? onTap, // alias
+  }) : onSeeFriends = onSeeFriends ?? onTap ?? _noop;
+
+  static void _noop() {}
 
   @override
   Widget build(BuildContext context) {
