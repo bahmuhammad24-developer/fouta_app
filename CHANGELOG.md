@@ -2,7 +2,9 @@
 
 
 
+
 - 2025-08-12 – Stability: safe stream/future builders, async guards, error reporter stub.
+- 2025-08-12 – Nav transitions & List UX: refresh, paging, empty/error states. (Committed on fallback branch `work` due to branch creation restrictions.)
 - 2025-08-12 – Composer V2: drafts & scheduling (route-only).
 - 2025-08-12 – Link Preview module + demo screen (route-only).
 - 2025-08-12 – i18n scaffolding (EN/FR) with dev sandbox; no app wiring yet.
@@ -25,3 +27,4 @@
 - 2025-08-12 – Safety & Privacy v2: mute words, reply limits, private account, block/mute manager (route-only).
 - 2025-08-12 – Fix compile errors: Shorts route const call; trending chips state; stories type; chat upload progress param; message status helper; non-const constructors in events screens.
 - 2025-08-12 – Fix: remove invalid `const` usage for EventsListScreen in home_screen.dart; adjust const lists if present.
+- 2025-08-12 – UI Kit: tokens, motion, skeletons, progressive images.
