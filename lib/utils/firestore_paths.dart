@@ -16,6 +16,8 @@ class FirestorePaths {
       'artifacts/$appId/public/data/events';
   static String stories([String appId = APP_ID]) =>
       'artifacts/$appId/public/data/stories';
+  static String hashtags([String appId = APP_ID]) =>
+      'artifacts/$appId/public/data/hashtags';
   static String profileImages([String appId = APP_ID]) =>
       'artifacts/$appId/public/data/profile_images';
 }

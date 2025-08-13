@@ -14,6 +14,7 @@ import 'package:fouta_app/services/connectivity_provider.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/utils/overlays.dart';
+import 'package:fouta_app/features/discovery/discovery_service.dart';
 
 import 'package:fouta_app/main.dart'; // Import APP_ID
 import 'package:fouta_app/constants/media_limits.dart'; // Provides kMaxVideoBytes
@@ -284,6 +285,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       debugPrint('Error fetching author display name: $e');
     }
 
+    final content = _postContentController.text.trim();
+    final hashtags = DiscoveryService.extractHashtags(content);
+
     try {
       if (widget.postId == null) {
         // Determine summary media for backward compatibility (first attachment)
@@ -296,7 +300,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           summaryAspect = attachments.first['aspectRatio'] as double?;
         }
         final postData = {
-          'content': _postContentController.text.trim(),
+          'content': content,
+          'contentLower': content.toLowerCase(),
           'media': attachments,
           'mediaUrl': summaryUrl,
           'mediaType': summaryType,
@@ -310,22 +315,37 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           'calculatedEngagement': _calculateEngagement(0, 0, 0),
           'type': 'original',
           'postVisibility': postVisibility,
+          'meta': {'hashtags': hashtags},
           if (summaryType == 'video') 'aspectRatio': summaryAspect,
         };
-        final newPostRef = await FirebaseFirestore.instance
+        final firestore = FirebaseFirestore.instance;
+        final newPostRef = await firestore
             .collection('artifacts/$APP_ID/public/data/posts')
             .add(postData);
+        await DiscoveryService.updateHashtagAggregates(
+            firestore, hashtags);
         _showMessage('Post added successfully!');
         _updateEngagementScore(newPostRef.id);
       } else {
         // For editing, update content and append new attachments while preserving existing ones
-        await FirebaseFirestore.instance
+        final firestore = FirebaseFirestore.instance;
+        final postRef = firestore
             .collection('artifacts/$APP_ID/public/data/posts')
-            .doc(widget.postId)
-            .update({
-          'content': _postContentController.text.trim(),
+            .doc(widget.postId);
+        final prev = await postRef.get();
+        final oldTags = (prev.data()?['meta']?['hashtags'] as List?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [];
+        await postRef.update({
+          'content': content,
+          'contentLower': content.toLowerCase(),
           'media': attachments,
+          'meta.hashtags': hashtags,
         });
+        await DiscoveryService.updateHashtagAggregates(
+            firestore, hashtags,
+            oldTags: oldTags);
         _showMessage('Post updated successfully!');
         _updateEngagementScore(widget.postId!);
       }

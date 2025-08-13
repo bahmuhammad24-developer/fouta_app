@@ -1,7 +1,55 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fouta_app/utils/firestore_paths.dart';
+import 'package:fouta_app/main.dart';
+
 /// Handles content discovery, hashtags, and personalized feed ranking.
 class DiscoveryService {
   final List<String> _posts = [];
   final Map<String, int> _tagCounts = {};
+  static final _tagRegex = RegExp(r'#(\w+)');
+
+  /// Extracts unique hashtag strings without the leading `#`.
+  static List<String> extractHashtags(String content) {
+    return _tagRegex
+        .allMatches(content)
+        .map((m) => m.group(1)!.toLowerCase())
+        .toSet()
+        .toList();
+  }
+
+  /// Update the aggregate hashtag counts under
+  /// `artifacts/$APP_ID/public/data/hashtags/{tag}`.
+  static Future<void> updateHashtagAggregates(
+    FirebaseFirestore firestore,
+    List<String> newTags, {
+    List<String> oldTags = const [],
+  }) async {
+    final hashtagsColl =
+        firestore.collection(FirestorePaths.hashtags(APP_ID));
+    final added = newTags.toSet();
+    final removed = oldTags.where((t) => !added.contains(t)).toSet();
+    final now = FieldValue.serverTimestamp();
+
+    await firestore.runTransaction((tx) async {
+      for (final tag in added) {
+        final ref = hashtagsColl.doc(tag);
+        final snap = await tx.get(ref);
+        final current = (snap.data()?['count'] ?? 0) as int;
+        tx.set(ref, {
+          'count': current + 1,
+          'lastUsedAt': now,
+        }, SetOptions(merge: true));
+      }
+      for (final tag in removed) {
+        final ref = hashtagsColl.doc(tag);
+        final snap = await tx.get(ref);
+        final current = (snap.data()?['count'] ?? 0) as int;
+        tx.set(ref, {
+          'count': current > 0 ? current - 1 : 0,
+        }, SetOptions(merge: true));
+      }
+    });
+  }
 
   /// Index a piece of [content] for search and trending hashtag tracking.
   void indexPost(String content) {
