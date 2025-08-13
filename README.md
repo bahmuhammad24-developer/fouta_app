@@ -445,3 +445,9 @@ Daily rollups stored at `artifacts/$APP_ID/public/data/metrics/daily/{YYYY-MM-DD
 Fouta sends notifications for follows, comments, likes, reposts, mentions, and messages. Users can manage per-type preferences from the unified settings screen.
 Preferences are stored at `artifacts/$APP_ID/public/data/users/{uid}/settings/notifications` with boolean flags for each type.
 In-app notifications live at `artifacts/$APP_ID/public/data/notifications/{uid}/items` and are marked read when opened.
+
+## Link Preview module
+- Demo route: `/_dev/link-preview`
+- `LinkPreviewService` fetches Open Graph data for URLs.
+- Dev Cloud Function endpoint: `https://<region>-<project>.cloudfunctions.net/openGraph?url=`
+  - Returns JSON `{ title, description, imageUrl, siteName }`

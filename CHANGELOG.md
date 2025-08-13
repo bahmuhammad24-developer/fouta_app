@@ -1,5 +1,7 @@
 # Changelog
 
+- 2025-08-12 – Link Preview module + demo screen (route-only).
+
 - 2025-08-12 – Notifications v2: per-type prefs, in-app inbox, batched push.
 
 - 2025-08-12 – Reposts/Quote posts; Saved Collections; Share to Story.
