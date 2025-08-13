@@ -3,19 +3,27 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import '../stories_service.dart';
 import '../../../features/creation/editor/overlays/editor_canvas.dart';
+import '../../../features/creation/editor/overlays/overlay_models.dart';
 
 /// Screen for composing a story with overlay editing.
 class CreateStoryScreen extends StatefulWidget {
   final String? initialImagePath;
   final String? initialVideoPath;
+  final String? initialImageUrl;
+  final String? initialVideoUrl;
+  final List<OverlayModel>? initialOverlays;
 
   const CreateStoryScreen({
     super.key,
     this.initialImagePath,
     this.initialVideoPath,
+    this.initialImageUrl,
+    this.initialVideoUrl,
+    this.initialOverlays,
   });
 
   @override
@@ -26,8 +34,16 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   final _canvasKey = GlobalKey<EditorCanvasState>();
   bool _uploading = false;
 
-  String get _path => widget.initialVideoPath ?? widget.initialImagePath ?? '';
-  String get _type => widget.initialVideoPath != null ? 'video' : 'image';
+  String get _path =>
+      widget.initialVideoPath ??
+      widget.initialImagePath ??
+      widget.initialVideoUrl ??
+      widget.initialImageUrl ??
+      '';
+  String get _type =>
+      (widget.initialVideoPath != null || widget.initialVideoUrl != null)
+          ? 'video'
+          : 'image';
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +53,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
         key: _canvasKey,
         mediaPath: _path,
         mediaType: _type,
+        initialOverlays: widget.initialOverlays,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _uploading ? null : _share,
@@ -56,14 +73,18 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     }
     setState(() => _uploading = true);
     try {
-      final file = File(_path);
       final ext = _type == 'video' ? 'mp4' : 'jpg';
       final ref = FirebaseStorage.instance
           .ref()
           .child('stories/${user.uid}/${DateTime.now().millisecondsSinceEpoch}.$ext');
       final metadata = SettableMetadata(
           contentType: _type == 'video' ? 'video/mp4' : 'image/jpeg');
-      await ref.putFile(file, metadata);
+      if (_path.startsWith('http')) {
+        final resp = await http.get(Uri.parse(_path));
+        await ref.putData(resp.bodyBytes, metadata);
+      } else {
+        await ref.putFile(File(_path), metadata);
+      }
       final url = await ref.getDownloadURL();
 
       final overlays = _canvasKey.currentState?.getSerializedOverlays() ?? [];

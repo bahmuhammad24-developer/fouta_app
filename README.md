@@ -298,6 +298,9 @@ Stories let people share ephemeral moments.
 ### Seen Tracking
 - Items are marked seen after being visible for at least one second and cached locally for instant tray updates.
 
+## Sharing
+Repost or quote posts to add your voice, save favorites into personal collections, or share a post directly to a story with an automatic "Shared from @user" overlay.
+
 
 ## Groups
 Users can create communities and join or leave them.
