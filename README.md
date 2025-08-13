@@ -15,6 +15,7 @@
 - [Development Notes](#development-notes)
 - [Media Pipeline](#media-pipeline)
 - [Stories](#stories)
+- [Profiles & Creator Mode](#profiles--creator-mode)
 - [Monetization](#monetization)
 - [Admin Analytics](#admin-analytics)
 - [Testing](#testing)
@@ -298,6 +299,9 @@ Stories let people share ephemeral moments.
 ### Seen Tracking
 - Items are marked seen after being visible for at least one second and cached locally for instant tray updates.
 
+
+## Profiles & Creator Mode
+Profiles include display names, bios, links, location, and pronouns. Users can pin a post to the top of their profile. Enabling creator mode surfaces a dashboard with follower counts, 7-day post totals, and 7-day engagement.
 
 ## Groups
 Users can create communities and join or leave them.
