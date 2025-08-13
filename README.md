@@ -15,8 +15,10 @@
 - [Development Notes](#development-notes)
 - [Media Pipeline](#media-pipeline)
 - [Stories](#stories)
+- [Profiles & Creator Mode](#profiles--creator-mode)
 - [Monetization](#monetization)
 - [Admin Analytics](#admin-analytics)
+- [Notifications](#notifications)
 - [Testing](#testing)
 - [CI & Status Checks](#ci--status-checks)
 - [Change Log](#change-log)
@@ -302,6 +304,9 @@ Stories let people share ephemeral moments.
 Repost or quote posts to add your voice, save favorites into personal collections, or share a post directly to a story with an automatic "Shared from @user" overlay.
 
 
+## Profiles & Creator Mode
+Profiles include display names, bios, links, location, and pronouns. Users can pin a post to the top of their profile. Enabling creator mode surfaces a dashboard with follower counts, 7-day post totals, and 7-day engagement.
+
 ## Groups
 Users can create communities and join or leave them.
 Firestore: `artifacts/$APP_ID/public/data/groups/{groupId}` with fields:
@@ -430,3 +435,7 @@ Daily rollups stored at `artifacts/$APP_ID/public/data/metrics/daily/{YYYY-MM-DD
 **Safety:** Aggregations run in scheduled functions; ensure admin-only access and monitor Firestore read costs.
 
 
+## Notifications
+Fouta sends notifications for follows, comments, likes, reposts, mentions, and messages. Users can manage per-type preferences from the unified settings screen.
+Preferences are stored at `artifacts/$APP_ID/public/data/users/{uid}/settings/notifications` with boolean flags for each type.
+In-app notifications live at `artifacts/$APP_ID/public/data/notifications/{uid}/items` and are marked read when opened.

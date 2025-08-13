@@ -1,8 +1,9 @@
 # Changelog
 
-
+- 2025-08-12 – Notifications v2: per-type prefs, in-app inbox, batched push.
 
 - 2025-08-12 – Reposts/Quote posts; Saved Collections; Share to Story.
+- 2025-08-12 – Profiles v2: creator analytics, pinned post, richer bios.
 - 2025-08-12 – Stories v2 with overlay editor; viewer pause/seek; 24h expiry; safe parsing.
 - 2025-08-12 – Marketplace v2 (filters/favorites/seller profile), Monetization stubs (tips/subscriptions/purchase intents), Admin analytics dashboard with daily rollups.
 - 2025-08-12 – Groups & Events v1: create, join/leave, RSVP, safe parsing.
