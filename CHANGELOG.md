@@ -1,5 +1,6 @@
 # Changelog
 
+- 2025-08-12 – Groups & Events v1: create, join/leave, RSVP, safe parsing.
 
 - 2025-08-13 – Messaging v2 (typing/read receipts/media hardening); Notifications v1 (opt-in + Function trigger).
 - 2025-08-13 – Search, hashtag index, trending chips.
