@@ -20,7 +20,11 @@
 - [Monetization](#monetization)
 - [Admin Analytics](#admin-analytics)
 - [Notifications](#notifications)
+
 - [Composer V2 (route /composeV2)](#composer-v2-route-composev2)
+
+- [Internationalization (i18n) scaffolding](#internationalization-i18n-scaffolding)
+
 - [Testing](#testing)
 - [CI & Status Checks](#ci--status-checks)
 - [Change Log](#change-log)
@@ -344,6 +348,16 @@ Firestore: `artifacts/$APP_ID/public/data/events/{eventId}` with fields:
 - `products` – documents contain `name`, `price`, `description`, and `imageUrl` for marketplace listings.
 - `purchases` – records `userId`, `productId`, and `timestamp` for digital goods transactions.
 
+## Internationalization (i18n) scaffolding
+
+A basic localization layer exists for English and French. To preview available strings, run the dev sandbox:
+
+```bash
+flutter run lib/devtools/localization_sandbox.dart
+```
+
+Use the buttons to switch languages.
+
 ## Testing
 Run the test suite with:
 ```bash
@@ -447,6 +461,7 @@ Fouta sends notifications for follows, comments, likes, reposts, mentions, and m
 Preferences are stored at `artifacts/$APP_ID/public/data/users/{uid}/settings/notifications` with boolean flags for each type.
 In-app notifications live at `artifacts/$APP_ID/public/data/notifications/{uid}/items` and are marked read when opened.
 
+
 ## Composer V2 (route /composeV2)
 Experimental composer supporting drafts and scheduled posts.
 
@@ -459,3 +474,16 @@ Experimental composer supporting drafts and scheduled posts.
 2. Enter text and optionally attach media.
 3. Use **Save Draft** to persist content or **Schedule** to pick a publish time.
 4. Verify entries appear in the respective Firestore collections.
+
+## Safety & Privacy v2 (route /privacy)
+Route `/privacy` exposes tabs for Privacy, Safety, Muted Words, and Blocked/Muted users.
+
+Data models are stored under `artifacts/\$APP_ID/public/data/users/{uid}/safety` documents:
+- `settings` document fields:
+  - `isPrivate` (`bool`)
+  - `limitReplies` (`everyone`|`followers`|`none`)
+  - `mutedUserIds` (`List<String>`)
+  - `blockedUserIds` (`List<String>`)
+- `muted_words` document field:
+  - `words` (`List<String>`; lowercased)
+

@@ -1,6 +1,10 @@
 # Changelog
 
+
 - 2025-08-12 – Composer V2: drafts & scheduling (route-only).
+
+- 2025-08-12 – i18n scaffolding (EN/FR) with dev sandbox; no app wiring yet.
+
 - 2025-08-12 – Notifications v2: per-type prefs, in-app inbox, batched push.
 
 - 2025-08-12 – Reposts/Quote posts; Saved Collections; Share to Story.
@@ -15,3 +19,5 @@
 - 2025-08-12 – Hardened feed parsing with safe numeric/list handling and added empty-state guards for Shorts and Marketplace screens.
 - 2025-08-12 – Add GitHub Actions CI: analyze, format check, tests with coverage, and web release build.
 - 2025-08-12 – Project policy update: allow branch creation/switching and new dependencies with DEP records. If branch switching was forbidden by runtime, changes were committed directly to `dev` (fallback).
+
+- 2025-08-12 – Safety & Privacy v2: mute words, reply limits, private account, block/mute manager (route-only).

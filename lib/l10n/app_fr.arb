@@ -1,0 +1,13 @@
+{
+  "appName": "Fouta",
+  "settings": "Paramètres",
+  "privacy": "Confidentialité",
+  "save": "Enregistrer",
+  "cancel": "Annuler",
+  "post": "Publier",
+  "comment": "Commenter",
+  "like": "J'aime",
+  "share": "Partager",
+  "follow": "Suivre",
+  "followers": "Abonnés"
+}
