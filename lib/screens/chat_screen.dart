@@ -28,6 +28,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:fouta_app/utils/snackbar.dart';
 import 'package:fouta_app/utils/overlays.dart';
 import 'package:fouta_app/constants/media_limits.dart'; // Provides kMaxVideoBytes
+import 'package:fouta_app/widgets/chat/typing_indicator.dart';
+import 'package:fouta_app/services/chat_utils.dart';
+import 'package:fouta_app/utils/firestore_paths.dart';
 
 class ChatScreen extends StatefulWidget {
   final String? chatId;
@@ -63,6 +66,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   final MediaService _mediaService = MediaService();
 
+  final List<String> _offlineQueue = [];
+  late ConnectivityProvider _connectivity;
+
   // Reaction & reply state
   DocumentSnapshot? _replyingToMessage;
 
@@ -81,6 +87,23 @@ class _ChatScreenState extends State<ChatScreen> {
       _ensureChatDataAndRead();
     }
      _messageController.addListener(_handleTyping);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _connectivity = Provider.of<ConnectivityProvider>(context);
+    _connectivity.addListener(_flushQueue);
+  }
+
+  void _flushQueue() {
+    if (_connectivity.isOnline && _offlineQueue.isNotEmpty) {
+      final queued = List<String>.from(_offlineQueue);
+      _offlineQueue.clear();
+      for (final text in queued) {
+        _sendQueuedMessage(text);
+      }
+    }
   }
 
   Future<void> _findOrCreateChat() async {
@@ -125,13 +148,39 @@ class _ChatScreenState extends State<ChatScreen> {
           currentUser.uid: 0,
           widget.otherUserId!: 0,
         },
-        'typingStatus': {},
         'participantDetails': participantDetails,
       });
     }
     _markChatAsRead();
   }
-  
+
+  Future<void> _sendQueuedMessage(String text) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null || _currentChatId == null) return;
+    final userDoc = await FirebaseFirestore.instance
+        .collection(FirestorePaths.users())
+        .doc(currentUser.uid)
+        .get();
+    final senderName = userDoc.data()?['displayName'] ?? 'Anonymous';
+    await _chatRef!
+        .collection('messages')
+        .add({
+          'senderId': currentUser.uid,
+          'senderName': senderName,
+          'content': text,
+          'mediaUrl': null,
+          'mediaType': '',
+          'timestamp': FieldValue.serverTimestamp(),
+          'readAt': {currentUser.uid: FieldValue.serverTimestamp()},
+          'reactions': {},
+          'isReply': false,
+        });
+    await _chatRef!.update({
+      'lastMessage': text,
+      'lastMessageTimestamp': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> _ensureChatDataAndRead() async {
     if (_currentChatId == null) return;
     _chatRef = FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/chats').doc(_currentChatId!);
@@ -143,7 +192,6 @@ class _ChatScreenState extends State<ChatScreen> {
       Map<String, dynamic> updates = {};
       if (!data.containsKey('isGroupChat')) updates['isGroupChat'] = false;
       if (!data.containsKey('admins')) updates['admins'] = [];
-      if (!data.containsKey('typingStatus')) updates['typingStatus'] = {};
 
       // If participantDetails are missing (legacy chats), populate them
       if (!data.containsKey('participantDetails') && data['isGroupChat'] == false) {
@@ -176,25 +224,41 @@ class _ChatScreenState extends State<ChatScreen> {
     await _chatRef?.update({
       'unreadCounts.${currentUser.uid}': 0,
     });
+
+    final last = await _chatRef!
+        .collection('messages')
+        .orderBy('timestamp', descending: true)
+        .limit(1)
+        .get();
+    if (last.docs.isNotEmpty) {
+      await last.docs.first.reference.update(
+          {'readAt.${currentUser.uid}': FieldValue.serverTimestamp()});
+    }
   }
   
   void _handleTyping() {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null || _chatRef == null) return;
 
-    if (_typingTimer?.isActive ?? false) _typingTimer?.cancel();
+    final typingDoc =
+        _chatRef!.collection('typing').doc(currentUser.uid);
+    typingDoc.set({'ts': FieldValue.serverTimestamp()});
+    _typingTimer?.cancel();
     _typingTimer = Timer(const Duration(seconds: 2), () {
-       _chatRef?.update({'typingStatus.${currentUser.uid}': false});
+      typingDoc.delete();
     });
-    _chatRef?.update({'typingStatus.${currentUser.uid}': true});
   }
 
   @override
   void dispose() {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null && _chatRef != null) {
-      _chatRef!.update({'typingStatus.${currentUser.uid}': false});
+      _chatRef!
+          .collection('typing')
+          .doc(currentUser.uid)
+          .delete();
     }
+    _connectivity.removeListener(_flushQueue);
     _messageController.removeListener(_handleTyping);
     _messageController.dispose();
     _typingTimer?.cancel();
@@ -252,13 +316,19 @@ class _ChatScreenState extends State<ChatScreen> {
     final messageText = _messageController.text.trim();
     if (messageText.isEmpty && _selectedMediaFile == null) return;
 
+    if (!_connectivity.isOnline && _selectedMediaFile == null) {
+      _offlineQueue.add(messageText);
+      _messageController.clear();
+      AppSnackBar.show(context, 'Message queued offline');
+      return;
+    }
+
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null || _currentChatId == null) return;
-    
+
     String? mediaUrl;
     if (_selectedMediaFile != null) {
-      final connectivity = context.read<ConnectivityProvider>();
-      if (!connectivity.isOnline) {
+      if (!_connectivity.isOnline) {
         AppSnackBar.show(
           context,
           'You are offline. Cannot send media in chat.',
@@ -266,7 +336,21 @@ class _ChatScreenState extends State<ChatScreen> {
         );
         return;
       }
-      setState(() => _isUploading = true);
+      if (!kIsWeb) {
+        final size = File(_selectedMediaFile!.path).lengthSync();
+        if (_mediaType == 'image' && size > kMaxImageBytes) {
+          AppSnackBar.show(context, 'Image exceeds 10MB', isError: true);
+          return;
+        }
+        if (_mediaType == 'video' && size > kMaxVideoBytes) {
+          AppSnackBar.show(context, 'Video too large', isError: true);
+          return;
+        }
+      }
+      setState(() {
+        _isUploading = true;
+        _uploadProgress = 0.0;
+      });
       if (_mediaType == 'audio') {
         final ref = FirebaseStorage.instance.ref().child(
             'chat_media/$_currentChatId/${DateTime.now().millisecondsSinceEpoch}.m4a');
@@ -277,7 +361,8 @@ class _ChatScreenState extends State<ChatScreen> {
         uploadTask.snapshotEvents.listen((snapshot) {
           if (mounted) {
             setState(() {
-              _uploadProgress = snapshot.bytesTransferred / snapshot.totalBytes;
+              _uploadProgress =
+                  snapshot.bytesTransferred / snapshot.totalBytes;
             });
           }
         });
@@ -291,13 +376,21 @@ class _ChatScreenState extends State<ChatScreen> {
         final uploaded = await _mediaService.upload(
           attachment,
           pathPrefix: 'chat_media/$_currentChatId',
+          onProgress: (p) {
+            if (mounted) {
+              setState(() => _uploadProgress = p);
+            }
+          },
         );
         mediaUrl = uploaded.url;
       }
       if (mounted) setState(() => _isUploading = false);
     }
 
-    final userDoc = await FirebaseFirestore.instance.collection('artifacts/$APP_ID/public/data/users').doc(currentUser.uid).get();
+    final userDoc = await FirebaseFirestore.instance
+        .collection('artifacts/$APP_ID/public/data/users')
+        .doc(currentUser.uid)
+        .get();
     final senderName = userDoc.data()?['displayName'] ?? 'Anonymous';
 
     await _chatRef!
@@ -309,40 +402,44 @@ class _ChatScreenState extends State<ChatScreen> {
           'mediaUrl': mediaUrl,
           'mediaType': _mediaType,
           'timestamp': FieldValue.serverTimestamp(),
-          'isRead': false, // Kept for simplicity, but new `readBy` is primary
-          'readBy': [currentUser.uid],
+          'readAt': {currentUser.uid: FieldValue.serverTimestamp()},
           'reactions': {},
-          // Reply metadata
           'isReply': _replyingToMessage != null,
-          // If replying, include reference data of the original message
           if (_replyingToMessage != null) ...{
             'replyToMessageId': _replyingToMessage!.id,
             'replyToContent': _replyingToMessage!.data() != null
-                ? (_replyingToMessage!.data()! as Map<String, dynamic>)['content'] ?? ''
+                ? (_replyingToMessage!.data()! as Map<String, dynamic>)
+                        ['content'] ??
+                    ''
                 : '',
             'replyToSenderName': _replyingToMessage!.data() != null
-                ? (_replyingToMessage!.data()! as Map<String, dynamic>)['senderName'] ?? ''
+                ? (_replyingToMessage!.data()! as Map<String, dynamic>)
+                        ['senderName'] ??
+                    ''
                 : '',
           },
         });
 
     await _chatRef!.update({
-          'lastMessage': messageText.isNotEmpty
-              ? messageText
-              : _mediaType == 'audio'
-                  ? 'Sent a voice message'
-                  : 'Sent a $_mediaType',
-          'lastMessageTimestamp': FieldValue.serverTimestamp(),
-          'typingStatus.${currentUser.uid}': false,
-        });
+      'lastMessage': messageText.isNotEmpty
+          ? messageText
+          : _mediaType == 'audio'
+              ? 'Sent a voice message'
+              : 'Sent a $_mediaType',
+      'lastMessageTimestamp': FieldValue.serverTimestamp(),
+    });
+
+    await _chatRef!
+        .collection('typing')
+        .doc(currentUser.uid)
+        .delete();
 
     _messageController.clear();
-    if(mounted) {
+    if (mounted) {
       setState(() {
         _selectedMediaFile = null;
         _selectedMediaBytes = null;
         _mediaType = '';
-        // Clear reply state after sending
         _replyingToMessage = null;
       });
     }
@@ -441,6 +538,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessageBubble(Map<String, dynamic> message, bool isMe, bool isGroupChat) {
     final currentUser = FirebaseAuth.instance.currentUser;
+    final status =
+        statusFromReadAt(message['readAt'] as Map<String, dynamic>?, currentUser!.uid);
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -541,6 +640,37 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
             _buildReactions(message['reactions'] ?? {}),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _formatTimestamp(message['timestamp'] as Timestamp?),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isMe
+                        ? Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withOpacity(0.7)
+                        : Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.7),
+                  ),
+                ),
+                if (isMe) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    status == MessageStatus.read
+                        ? Icons.done_all
+                        : Icons.check,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onPrimary.withOpacity(
+                        status == MessageStatus.read ? 1 : 0.7),
+                  ),
+                ]
+              ],
+            ),
           ],
         ),
       ),
@@ -878,7 +1008,16 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
           ),
-          // Placeholder for Typing Indicator
+          StreamBuilder<QuerySnapshot>(
+            stream: _chatRef?.collection('typing').snapshots(),
+            builder: (context, snapshot) {
+              final typingIds =
+                  snapshot.data?.docs.map((d) => d.id).toList() ?? [];
+              final show = otherUsersTyping(
+                  typingIds, FirebaseAuth.instance.currentUser!.uid);
+              return show ? const TypingIndicator() : const SizedBox.shrink();
+            },
+          ),
           _buildMessageComposer(),
         ],
       ),

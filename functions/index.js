@@ -106,6 +106,60 @@ exports.syncUnreadMessageCountOnRead = onDocumentUpdated(
         }
         return null;
     });
+
+exports.onNewInteraction = onDocumentCreated(
+    "artifacts/fouta-app/public/data/{document=**}",
+    async (event) => {
+        if (!process.env.FCM_SERVER_KEY) {
+            console.log("TODO: provide FCM_SERVER_KEY");
+            return;
+        }
+        const path = event.params.document.split("/");
+        const data = event.data && event.data.data();
+        if (!data) return;
+
+        if (path[0] === "posts" && path.length === 2) {
+            const authorId = data.authorId;
+            const authorDoc = await db.collection("artifacts/fouta-app/public/data/users").doc(authorId).get();
+            const followers = authorDoc.data().followers || [];
+            for (const uid of followers) {
+                const tokenDoc = await db.collection(`artifacts/fouta-app/public/data/users/${uid}/meta`).doc("token").get();
+                if (tokenDoc.exists) {
+                    await admin.messaging().send({
+                        token: tokenDoc.data().value,
+                        notification: {title: "New post", body: data.content || ""},
+                    });
+                }
+            }
+        } else if (path[0] === "posts" && path[2] === "comments") {
+            const postId = path[1];
+            const postDoc = await db.collection("artifacts/fouta-app/public/data/posts").doc(postId).get();
+            const recipient = postDoc.data().authorId;
+            if (recipient && recipient !== data.authorId) {
+                const tokenDoc = await db.collection(`artifacts/fouta-app/public/data/users/${recipient}/meta`).doc("token").get();
+                if (tokenDoc.exists) {
+                    await admin.messaging().send({
+                        token: tokenDoc.data().value,
+                        notification: {title: "New comment", body: data.content || ""},
+                    });
+                }
+            }
+        } else if (path[0] === "chats" && path[2] === "messages") {
+            const chatId = path[1];
+            const chatDoc = await db.collection("artifacts/fouta-app/public/data/chats").doc(chatId).get();
+            const participants = chatDoc.data().participants || [];
+            for (const uid of participants) {
+                if (uid === data.senderId) continue;
+                const tokenDoc = await db.collection(`artifacts/fouta-app/public/data/users/${uid}/meta`).doc("token").get();
+                if (tokenDoc.exists) {
+                    await admin.messaging().send({
+                        token: tokenDoc.data().value,
+                        notification: {title: "New message", body: data.content || "You have a new message."},
+                    });
+                }
+            }
+        }
+    });
 const {onObjectFinalized} = require("firebase-functions/v2/storage");
 const sharp = require("sharp");
 const {encode} = require("blurhash");
