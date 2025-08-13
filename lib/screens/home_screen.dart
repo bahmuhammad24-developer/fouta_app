@@ -293,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ChatsTab(
                             setNavBarVisibility: _setNavBarVisibility,
                             setShowNewChatFab: _setShowNewChatFab)),
-                    _buildTabNavigator(2, const EventsListScreen()),
+                    _buildTabNavigator(2, EventsListScreen()),
                     _buildTabNavigator(3, const PeopleTab()),
                     _buildTabNavigator(
                         4, ProfileScreen(userId: currentUser?.uid ?? '')),
