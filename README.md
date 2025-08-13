@@ -581,3 +581,12 @@ Nav bar and feed ranking updates are permitted when gated and measurable.
 - **Feature flag**: `feed_ranking` (e.g., `v2`) selecting a new strategy class.
 - **Metrics**: watch time, completes, shares/DMs, follows-after-view with a 7-day decay.
 - **Rollback**: note previous strategy, disable flag, ensure Firestore queries remain indexable.
+
+## Ranking V2
+Discovery Ranking V2 weights completion (40%), DM shares (25%), follows-after-view (15%),
+freshness decay (15%) and relationship proximity (5%). Freshness uses `exp(-ageHours/168)`.
+Enable with `AppFlags.feedRanking = 'v2'`.
+
+## NavBar V2
+Preview a five-tab layout (Home, Shorts, Explore, Messages, Profile) at
+`/_dev/navV2`. Feature flag `AppFlags.navVariant` controls rollout.

@@ -2,6 +2,7 @@
 
 
 
+- 2025-08-12 – Discovery Ranking V2 (watch-time/DM shares/follows-after-view + 7d decay) and NavBar V2 scaffold, both flagged.
 - 2025-08-12 – fix(profile): eliminate flicker by caching streams, distinct setState, and gapless image rendering. (Committed on fallback branch `work` due to branch creation restrictions.)
 - 2025-08-12 – Integration Pass 3: focus visuals, textScale guardrails, reduced-motion fallbacks. (Committed on fallback branch `work` due to branch creation restrictions.)
 - 2025-08-12 – Integration Pass 2: Hero images, FoutaTransitions in Post/Shorts detail flows. (Committed on fallback branch `work` due to branch creation restrictions.)
