@@ -17,6 +17,7 @@
 - [Stories](#stories)
 - [Monetization](#monetization)
 - [Admin Analytics](#admin-analytics)
+- [Notifications](#notifications)
 - [Testing](#testing)
 - [CI & Status Checks](#ci--status-checks)
 - [Change Log](#change-log)
@@ -427,3 +428,7 @@ Daily rollups stored at `artifacts/$APP_ID/public/data/metrics/daily/{YYYY-MM-DD
 **Safety:** Aggregations run in scheduled functions; ensure admin-only access and monitor Firestore read costs.
 
 
+## Notifications
+Fouta sends notifications for follows, comments, likes, reposts, mentions, and messages. Users can manage per-type preferences from the unified settings screen.
+Preferences are stored at `artifacts/$APP_ID/public/data/users/{uid}/settings/notifications` with boolean flags for each type.
+In-app notifications live at `artifacts/$APP_ID/public/data/notifications/{uid}/items` and are marked read when opened.

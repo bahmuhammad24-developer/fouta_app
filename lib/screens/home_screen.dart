@@ -9,7 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:fouta_app/screens/events_list_screen.dart';
-import 'package:fouta_app/screens/notifications_screen.dart';
+import 'package:fouta_app/screens/notifications_inbox_screen.dart';
 import 'package:fouta_app/screens/unified_settings_screen.dart';
 import 'package:fouta_app/widgets/stories_tray.dart';
 import 'package:fouta_app/devtools/diagnostics_panel.dart';
@@ -87,13 +87,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void _setupListeners() {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null && !currentUser.isAnonymous) {
-      final userRef = FirebaseFirestore.instance
-          .collection(FirestorePaths.users())
-          .doc(currentUser.uid);
+      final notifRef = FirebaseFirestore.instance
+          .collection('artifacts/$APP_ID/public/data/notifications')
+          .doc(currentUser.uid)
+          .collection('items');
 
-      _unreadNotificationsStream = userRef
-          .collection('notifications')
-          .where('isRead', isEqualTo: false)
+      _unreadNotificationsStream = notifRef
+          .where('read', isEqualTo: false)
           .snapshots()
           .map((snapshot) => snapshot.docs.length);
 
@@ -431,14 +431,14 @@ class _NotificationsButton extends StatelessWidget {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
     final notificationsRef = FirebaseFirestore.instance
-        .collection(FirestorePaths.users())
+        .collection('artifacts/$APP_ID/public/data/notifications')
         .doc(currentUser.uid)
-        .collection('notifications');
-    final unreadSnapshot = await notificationsRef.where('isRead', isEqualTo: false).get();
+        .collection('items');
+    final unreadSnapshot = await notificationsRef.where('read', isEqualTo: false).get();
     if (unreadSnapshot.docs.isEmpty) return;
     final batch = FirebaseFirestore.instance.batch();
     for (final doc in unreadSnapshot.docs) {
-      batch.update(doc.reference, {'isRead': true});
+      batch.update(doc.reference, {'read': true});
     }
     await batch.commit();
   }
@@ -468,7 +468,7 @@ class _NotificationsButton extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const NotificationsScreen(),
+                builder: (context) => const NotificationsInboxScreen(),
               ),
             );
           },
