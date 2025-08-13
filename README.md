@@ -20,6 +20,7 @@
 - [Monetization](#monetization)
 - [Admin Analytics](#admin-analytics)
 - [Notifications](#notifications)
+- [Internationalization (i18n) scaffolding](#internationalization-i18n-scaffolding)
 - [Testing](#testing)
 - [CI & Status Checks](#ci--status-checks)
 - [Change Log](#change-log)
@@ -342,6 +343,16 @@ Firestore: `artifacts/$APP_ID/public/data/events/{eventId}` with fields:
 
 - `products` – documents contain `name`, `price`, `description`, and `imageUrl` for marketplace listings.
 - `purchases` – records `userId`, `productId`, and `timestamp` for digital goods transactions.
+
+## Internationalization (i18n) scaffolding
+
+A basic localization layer exists for English and French. To preview available strings, run the dev sandbox:
+
+```bash
+flutter run lib/devtools/localization_sandbox.dart
+```
+
+Use the buttons to switch languages.
 
 ## Testing
 Run the test suite with:
