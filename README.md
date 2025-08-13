@@ -87,21 +87,27 @@ Dedicated feature modules keep the project competitive with larger platforms. Th
 - `edit_event_screen.dart`
   - Icons: calendar_today, camera_alt, save
   - Colors: grey
-- `event_details_screen.dart`
-  - Icons: access_time, calendar_today, check_circle_outline, edit, event, location_on, person, send
-  - Colors: grey, white
+- `event_detail_screen.dart`
+  - Icons: none
+  - Colors: none
 - `event_invite_screen.dart`
   - Icons: person
   - Colors: white
 - `events_list_screen.dart`
   - Icons: add, event, filter_list, location_on_outlined, people_outline
   - Colors: grey
+- `group_detail_screen.dart`
+  - Icons: none
+  - Colors: none
 - `group_member_selection_screen.dart`
   - Icons: arrow_forward, person
   - Colors: None
 - `group_setup_screen.dart`
   - Icons: group_add
   - Colors: None
+- `groups_list_screen.dart`
+  - Icons: add
+  - Colors: none
 - `home_screen.dart`
   - Icons: archive_outlined, chat_bubble_outline, event_outlined, home_outlined, info_outline, logout, menu, message, notifications_outlined, people_outlined, person, person_outlined, search, settings_outlined, volume_mute_outlined, wifi_off
   - Colors: blue, green, grey, white
@@ -280,6 +286,31 @@ To attach captions to a video, upload a WebVTT file to Storage and set its downl
 - Items are marked seen after being visible for at least one second and cached locally for instant tray updates.
 
 
+## Groups
+Users can create communities and join or leave them.
+Firestore: `artifacts/$APP_ID/public/data/groups/{groupId}` with fields:
+- `name` (`String`)
+- `description` (`String?`)
+- `coverUrl` (`String?`)
+- `ownerId` (`String`)
+- `memberIds` (`List<String>`)
+- `createdAt` (`Timestamp`)
+
+## Events
+Events allow attendees to RSVP.
+Firestore: `artifacts/$APP_ID/public/data/events/{eventId}` with fields:
+- `title` (`String`)
+- `start` (`Timestamp`)
+- `end` (`Timestamp`)
+- `location` (`String?`)
+- `description` (`String?`)
+- `coverUrl` (`String?`)
+- `ownerId` (`String`)
+- `attendingIds` (`List<String>`)
+- `interestedIds` (`List<String>`)
+- `createdAt` (`Timestamp`)
+- `updatedAt` (`Timestamp`)
+
 ## Firestore Collections
 
 - `products` – documents contain `name`, `price`, `description`, and `imageUrl` for marketplace listings.
@@ -358,3 +389,22 @@ To re-run checks, go to Actions and select **Run workflow**.
   - `price` (`double`)
   - `favoriteIds` (`List<String>`)
   - `createdAt` (`Timestamp`)
+- `artifacts/$APP_ID/public/data/groups`
+  - `name` (`String`)
+  - `description` (`String?`)
+  - `coverUrl` (`String?`)
+  - `ownerId` (`String`)
+  - `memberIds` (`List<String>`)
+  - `createdAt` (`Timestamp`)
+- `artifacts/$APP_ID/public/data/events`
+  - `title` (`String`)
+  - `start` (`Timestamp`)
+  - `end` (`Timestamp`)
+  - `location` (`String?`)
+  - `description` (`String?`)
+  - `coverUrl` (`String?`)
+  - `ownerId` (`String`)
+  - `attendingIds` (`List<String>`)
+  - `interestedIds` (`List<String>`)
+  - `createdAt` (`Timestamp`)
+  - `updatedAt` (`Timestamp`)
