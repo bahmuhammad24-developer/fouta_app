@@ -16,6 +16,7 @@
 - [Media Pipeline](#media-pipeline)
 - [Stories](#stories)
 - [Testing](#testing)
+- [CI & Status Checks](#ci--status-checks)
 - [Change Log](#change-log)
 - [Contributing](#contributing)
 
@@ -289,6 +290,14 @@ Run the test suite with:
 ```bash
 flutter test
 ```
+
+## CI & Status Checks
+
+CI runs on pushes to `dev`, `feature/*`, and `fix/*` branches and on pull requests targeting `dev`.
+It runs `flutter analyze`, `dart format --output=none --set-exit-if-changed .`, `flutter test --no-pub --coverage`, and `flutter build web --release`.
+The coverage report is uploaded as `coverage/lcov.info`.
+To re-run checks, go to Actions and select **Run workflow**.
+
 
 ## Environment Keys
 
