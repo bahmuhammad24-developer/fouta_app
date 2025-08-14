@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../screens/chat_screen.dart';
 import 'marketplace_service.dart';
-import '../monetization/monetization_service.dart';
+import 'package:fouta_app/features/monetization/monetization_service.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   const ProductDetailScreen({super.key, required this.product});
