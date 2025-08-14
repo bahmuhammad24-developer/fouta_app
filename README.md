@@ -251,6 +251,8 @@ Refer to [AGENTS.md](AGENTS.md) for the full policy.
 
 ## Development Notes
 
+- Uses `share_plus` to invoke native share sheets for referral codes; no extra setup needed.
+
 ### iOS Build Setup & Firebase Integration
 - **Regenerating the iOS project:** The previous `ios/` directory was removed and `flutter create .` was run to regenerate a clean iOS project, eliminating stale Swift Package references that caused duplicate module errors.
 - **Podfile setup:** The Podfile loads the helper script from the Flutter SDK, uses static frameworks and modular headers, and includes a safe `post_install` hook:

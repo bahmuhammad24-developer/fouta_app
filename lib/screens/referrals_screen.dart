@@ -26,8 +26,10 @@ class _ReferralsScreenState extends State<ReferralsScreen> {
             Text('Your code: $_code'),
             const SizedBox(height: 16),
             Semantics(
-              button: true,
+
               label: 'Share referral code',
+              button: true,
+
               child: ElevatedButton(
                 onPressed: () {
                   Share.share('Join me on Fouta. Code: $_code');
