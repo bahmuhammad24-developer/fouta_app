@@ -1,3 +1,4 @@
+
 import 'package:fouta_app/utils/error_reporter.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -40,5 +41,6 @@ void main() {
     ErrorReporter.crashlyticsEnabledOverride = false;
     ErrorReporter.report('oops');
     expect(fake.error, isNull);
+
   });
 }

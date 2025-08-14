@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "module": "commonjs",
+    "rootDir": ".",
+    "outDir": "lib",
+    "esModuleInterop": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "types": []
+  },
+  "include": [
+    "src/schedulePosts.ts",
+    "src/safetyRules.ts",
+    "src/rollupDailyMetrics.ts",
+    "test/**/*.ts"
+  ]
+}

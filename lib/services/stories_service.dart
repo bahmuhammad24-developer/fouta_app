@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../models/story.dart';
+import 'package:fouta_app/models/story.dart';
 
 /// Abstraction for persisting story views.
 abstract class StoryViewsStore {
