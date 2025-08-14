@@ -13,6 +13,7 @@ jobs:
         with:
           channel: stable
       - run: flutter doctor -v
+      - run: flutter pub get
       - name: Run validation script
         run: |
           chmod +x scripts/validate.sh

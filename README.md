@@ -31,6 +31,7 @@
 
 - [Testing](#testing)
 - [CI & Status Checks](#ci--status-checks)
+- [Lockfile Policy](#lockfile-policy)
 - [Change Process](#change-process)
 - [Change Log](#change-log)
 - [Contributing](#contributing)
@@ -393,6 +394,8 @@ It runs `flutter analyze`, `dart format --output=none --set-exit-if-changed .`, 
 The coverage report is uploaded as `coverage/lcov.info`.
 To re-run checks, go to Actions and select **Run workflow**.
 
+## Lockfile Policy
+We do not commit `pubspec.lock` for the app. If you hit lockfile errors locally, follow the steps in [docs/dev-setup.md](docs/dev-setup.md).
 
 ## Environment Keys
 
