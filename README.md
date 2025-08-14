@@ -239,11 +239,13 @@ For help getting started with Flutter development, view the [online documentatio
 ### AI Collaboration
 - AI agents must document their work, including context, decisions, and timestamps.
 - Append updates to existing documentation and logs rather than overwriting previous entries.
+- The AI you interact with will consider the perspectives of PM, Developer, Tester, Designer, DevOps, Data, Security, Accessibility, and Product in every response. It will call out implementation details, testing requirements, UI/a11y considerations, deployment impacts, data migrations, security/privacy concerns, and policy compliance for each request.
 
 ## AI Collaboration & Policy
-- Agents may create or switch branches other than the protected `main` branch.
-- Agents may add runtime and dev dependencies when a DEP record is created and all CI checks pass.
-- See [AGENTS.md](AGENTS.md) and [DEPENDENCIES.md](DEPENDENCIES.md) for full details.
+- AI-generated prompts must target a feature branch (`feat/*` or `fix/*`). Do not commit directly to `main`.
+- AI-generated prompts may add runtime and dev dependencies only when accompanied by a DEP record and after all CI checks pass.
+- All AI outputs must be structured prompts for codex rather than full file replacements. Prompts must reference the relevant spec ID and include context, file paths, and a rollback plan.
+- See [AGENTS.md](AGENTS.md) for the complete policy and [DEPENDENCIES.md](DEPENDENCIES.md) for dependency details.
 
 ## Development Notes
 
