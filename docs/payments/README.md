@@ -1,15 +1,16 @@
-# Payments Overview
 
-## Security Checklist
-- [ ] Keep provider interfaces free of API keys or card data
-- [ ] Enforce HTTPS for all payment-related network calls
-- [ ] Store intents only in Firestore until PCI-compliant provider is approved
-- [ ] Audit access to monetization collections
+# Payments
 
-## Rollout Plan
-1. Land `PAYMENTS_ENABLED` flag defaulting to `false`
-2. Merge monetization scaffold and verify intents in Firestore only
-3. Gradually enable flag for internal testers
-4. Integrate real provider after security and compliance review
-5. Monitor latency (<800 ms p95) and storage/egress budgets (<20 % MoM)
-6. Roll back by disabling the flag and removing UI if issues arise
+This directory tracks payment integration notes.
+
+## Rollout
+- Disabled by default via `PAYMENTS_ENABLED` flag.
+- Enable with `--dart-define=PAYMENTS_ENABLED=true` after provider review.
+- Monitor error rates and transaction logs during staged rollout.
+- Roll back by redeploying with flag disabled.
+
+## Security
+- No provider keys are bundled while feature is disabled.
+- All intents are marked `pending` and contain no sensitive data.
+- Review provider OAuth scopes and PCI compliance before enabling.
+

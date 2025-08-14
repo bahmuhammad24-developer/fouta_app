@@ -8,16 +8,21 @@ import '../utils/app_flags.dart';
 import 'chat_screen.dart';
 
 class SellerProfileScreen extends StatelessWidget {
-  SellerProfileScreen({super.key, required this.sellerId, MarketplaceService? service})
-      : _service = service ?? MarketplaceService();
+  SellerProfileScreen({
+    super.key,
+    required this.sellerId,
+    MarketplaceService? service,
+    this.createdBy,
+  }) : _service = service ?? MarketplaceService();
 
   final String sellerId;
   final MarketplaceService _service;
+  final String? createdBy;
 
   @override
   Widget build(BuildContext context) {
     final monetization = MonetizationService();
-    final user = FirebaseAuth.instance.currentUser;
+    final userId = createdBy ?? FirebaseAuth.instance.currentUser?.uid ?? 'anon';
     return Scaffold(
       appBar: AppBar(title: Text('Seller $sellerId')),
       body: Column(
@@ -42,38 +47,26 @@ class SellerProfileScreen extends StatelessWidget {
                   onPressed: () async {
                     const amount = 5.0;
                     if (amount <= 0) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Enter an amount greater than zero',
-                              semanticsLabel:
-                                  'Enter an amount greater than zero',
-                            ),
-                          ),
-                        );
-                      }
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Amount must be greater than zero'),
+                        ),
+                      );
                       return;
                     }
-                    if (!AppFlags.paymentsEnabled) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Payments are disabled. Please try again later.',
-                              semanticsLabel:
-                                  'Payments are disabled. Please try again later.',
-                            ),
-                          ),
-                        );
-                      }
+                    if (!PAYMENTS_ENABLED) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Payments disabled')),
+                      );
+
                       return;
                     }
                     final id = await monetization.createTipIntent(
                       amount: amount,
                       currency: 'USD',
                       targetUserId: sellerId,
-                      createdBy: user?.uid ?? 'anon',
+                      createdBy: userId,
                     );
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -123,3 +116,4 @@ class SellerProfileScreen extends StatelessWidget {
     );
   }
 }
+
