@@ -18,6 +18,20 @@
 - Cite changed files and test logs.
 
 ## Repo policy
+### Change Process (Codex Prompts Only)
+All changes to project code or documentation must be initiated and executed via Codex prompts.
+
+Do not push manual edits directly.
+
+Each change should come as a clear, reviewable Codex prompt that:
+
+- Names the branch (e.g., feat/... or fix/...)
+- Lists precise file paths and line-level changes
+- Includes tests and docs updates (if applicable)
+- States acceptance criteria and rollback notes
+
+Rationale: This guarantees deterministic, reviewable updates and consistent multi-role consideration (PM/Dev/Tester/Designer/DevOps/Data/Security).
+
 - **Outputs:** The AI must provide detailed prompts for the codex agent specifying exactly which files to edit, what content to add or modify, and why.  Do not produce partial snippets without context.  Each prompt must include the relevant spec ID, file paths, and a rollback plan.
 - **Branches:** Agents may create/switch branches. If blocked, commit on `dev` and note fallback.
 - **Dependencies:** Allowed when a DEP record is added and CI passes (see DEP policy).

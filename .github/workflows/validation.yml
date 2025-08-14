@@ -13,10 +13,7 @@ jobs:
         with:
           channel: stable
       - run: flutter doctor -v
-      - name: Run duplicate check and pub get
+      - name: Run validation script
         run: |
           chmod +x scripts/validate.sh
-          bash scripts/validate.sh
-      - name: Contrast check
-        run: |
-          dart run tool/contrast_check.dart
+          scripts/validate.sh
