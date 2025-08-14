@@ -18,10 +18,15 @@
 - Cite changed files and test logs.
 
 ## Repo policy
-- **File output:** Full file replacements (no ellipses).
+- **Outputs:** The AI must provide detailed prompts for the codex agent specifying exactly which files to edit, what content to add or modify, and why.  Do not produce partial snippets without context.  Each prompt must include the relevant spec ID, file paths, and a rollback plan.
 - **Branches:** Agents may create/switch branches. If blocked, commit on `dev` and note fallback.
 - **Dependencies:** Allowed when a DEP record is added and CI passes (see DEP policy).
+- **Spec-driven:** No changes may be made without an approved one-page feature spec in `/docs/specs/<ticket>_v<version>.md` covering context, requirements, data contracts, acceptance criteria, runtime flags, metrics, risks, test plan, and rollback steps.
+- **Budgets:** CI must fail if p95 latency exceeds 800 ms or if storage/egress grows more than 20 % month‑over‑month.
 - **Auth screens:** No bottom nav on Login/Signup.
+
+### Multi‑role awareness
+The AI must integrate the perspectives of PM, Developer, Tester, Designer, DevOps, Data, Security, Accessibility, and Product in every response. For each request, it should explicitly address requirements and acceptance criteria (PM), implementation details (Dev), testing needs (Tester), UI/a11y considerations (Designer), deployment and cost impacts (DevOps), data and migrations (Data), security/privacy concerns (Security), and overall policy compliance (Product).
 
 ## Navigation & Feed policy (updated)
 - **Nav bar changes are allowed** when:
@@ -34,3 +39,5 @@
   2) Gated by a **feature flag** (e.g., `feed_ranking='v2'`).
   3) Instrumented for **watch time, completes, shares/DMs, follows-after-view**, with a 7‑day decay.
   4) PR includes a **rollback plan** and index notes (Firestore queries must be indexable).
+
+When generating prompts for codex, document the flag names, the metrics to track, and the rollback plan.
