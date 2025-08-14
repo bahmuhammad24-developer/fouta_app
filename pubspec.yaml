@@ -42,6 +42,7 @@ dependencies:
   visibility_detector: ^0.4.0+2
   permission_handler: ^11.4.0
   device_info_plus: ^10.1.0
+  share_plus: ^7.2.1
   video_thumbnail: ^0.5.3
   # Update to the latest record plugin so its platform implementations,
   # including Linux, align with the current platform interface and expose
