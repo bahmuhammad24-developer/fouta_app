@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../models/story.dart';
+import 'package:fouta_app/models/story.dart';
 import '../utils/firestore_paths.dart';
 import '../main.dart';
 

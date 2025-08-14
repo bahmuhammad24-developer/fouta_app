@@ -12,4 +12,6 @@ class AppFlags {
   /// Global payments toggle. When `false` all monetization UIs are disabled
   /// and intents are marked as `disabled`.
   static bool paymentsEnabled = false;
+  /// Crash reporting toggle. Defaults to `false`.
+  static bool crashlyticsEnabled = false;
 }
