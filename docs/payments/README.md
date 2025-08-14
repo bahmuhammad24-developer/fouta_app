@@ -1,3 +1,4 @@
+
 # Payments
 
 This directory tracks payment integration notes.
@@ -12,3 +13,4 @@ This directory tracks payment integration notes.
 - No provider keys are bundled while feature is disabled.
 - All intents are marked `pending` and contain no sensitive data.
 - Review provider OAuth scopes and PCI compliance before enabling.
+

@@ -1,6 +1,26 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../main.dart';
+import '../../utils/app_flags.dart';
+
+/// Payment provider interface ensures sensitive data stays out of the app.
+abstract class IPaymentProvider {
+  Future<void> fulfillTip(String intentId);
+  Future<void> fulfillSubscription(String intentId);
+  Future<void> fulfillPurchase(String intentId);
+}
+
+/// Default provider used in development; does nothing.
+class DefaultNoopPaymentProvider implements IPaymentProvider {
+  @override
+  Future<void> fulfillTip(String intentId) async {}
+
+  @override
+  Future<void> fulfillSubscription(String intentId) async {}
+
+  @override
+  Future<void> fulfillPurchase(String intentId) async {}
+}
 
 /// Feature flag to toggle payment processing at build time.
 const bool PAYMENTS_ENABLED =
@@ -78,6 +98,7 @@ class NoopPaymentProvider implements IPaymentProvider {
 /// TODO: Wire a verified payment provider after security review to fulfill
 /// intents and securely handle funds.
 class MonetizationService {
+
   MonetizationService({
     FirebaseFirestore? firestore,
     IPaymentProvider? provider,
@@ -91,6 +112,7 @@ class MonetizationService {
   final FirebaseFirestore _firestore;
   final IPaymentProvider _provider;
   final bool _paymentsEnabled;
+
 
   CollectionReference<Map<String, dynamic>> get _intents => _firestore
       .collection('artifacts')
@@ -117,7 +139,7 @@ class MonetizationService {
       if (productId != null) 'productId': productId,
       'createdBy': createdBy,
       'createdAt': FieldValue.serverTimestamp(),
-      'status': 'draft',
+      'status': AppFlags.paymentsEnabled ? 'draft' : 'disabled',
     });
     return doc.id;
   }
@@ -193,6 +215,18 @@ class MonetizationService {
 
   Future<void> markIntentStatus(String intentId, String status) {
     return _intents.doc(intentId).update({'status': status});
+  }
+
+  Future<void> fulfillTipIntent(String intentId) {
+    return _provider.fulfillTip(intentId);
+  }
+
+  Future<void> fulfillSubscriptionIntent(String intentId) {
+    return _provider.fulfillSubscription(intentId);
+  }
+
+  Future<void> fulfillPurchaseIntent(String intentId) {
+    return _provider.fulfillPurchase(intentId);
   }
 }
 

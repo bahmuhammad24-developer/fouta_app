@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../features/marketplace/marketplace_service.dart';
 import '../features/marketplace/product_card.dart';
 import '../features/monetization/monetization_service.dart';
+import '../utils/app_flags.dart';
 import 'chat_screen.dart';
 
 class SellerProfileScreen extends StatelessWidget {
@@ -46,6 +47,7 @@ class SellerProfileScreen extends StatelessWidget {
                   onPressed: () async {
                     const amount = 5.0;
                     if (amount <= 0) {
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Amount must be greater than zero'),
@@ -57,6 +59,7 @@ class SellerProfileScreen extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Payments disabled')),
                       );
+
                       return;
                     }
                     final id = await monetization.createTipIntent(
@@ -67,7 +70,12 @@ class SellerProfileScreen extends StatelessWidget {
                     );
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Support intent: $id')),
+                        SnackBar(
+                          content: Text(
+                            'Support intent: $id',
+                            semanticsLabel: 'Support intent: $id',
+                          ),
+                        ),
                       );
                     }
                     // TODO: connect to payment provider once approved.
