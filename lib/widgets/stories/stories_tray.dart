@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../models/story.dart';
+import 'package:fouta_app/models/story.dart';
 
 const double kStoryOuterSize = 68;
 const double kStoryRingWidth = 3;
