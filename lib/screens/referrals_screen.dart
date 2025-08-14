@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fouta_app/features/growth/growth_service.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ReferralsScreen extends StatefulWidget {
   const ReferralsScreen({super.key, required this.userId});
@@ -24,11 +25,15 @@ class _ReferralsScreenState extends State<ReferralsScreen> {
           children: [
             Text('Your code: $_code'),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                // TODO: integrate share sheet.
-              },
-              child: const Text('Share'),
+            Semantics(
+              button: true,
+              label: 'Share referral code',
+              child: ElevatedButton(
+                onPressed: () {
+                  Share.share('Join me on Fouta. Code: $_code');
+                },
+                child: const Text('Share'),
+              ),
             )
           ],
         ),
