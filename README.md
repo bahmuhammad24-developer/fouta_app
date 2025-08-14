@@ -31,6 +31,7 @@
 
 - [Testing](#testing)
 - [CI & Status Checks](#ci--status-checks)
+- [Change Process](#change-process)
 - [Change Log](#change-log)
 - [Contributing](#contributing)
 
@@ -401,6 +402,20 @@ To re-run checks, go to Actions and select **Run workflow**.
 Documentation lives in [docs/use_cases](docs/use_cases) and [docs/triggers](docs/triggers).
 **Rule:** Every new screen/feature PR must cite a UC-ID and, if applicable, a Trigger `id`.
 All triggers must respect flags, frequency caps, and user controls.
+
+## Change Process
+All changes to project code or documentation must be initiated and executed via Codex prompts.
+
+Do not push manual edits directly.
+
+Each change should come as a clear, reviewable Codex prompt that:
+
+- Names the branch (e.g., feat/... or fix/...)
+- Lists precise file paths and line-level changes
+- Includes tests and docs updates (if applicable)
+- States acceptance criteria and rollback notes
+
+Rationale: This guarantees deterministic, reviewable updates and consistent multi-role consideration (PM/Dev/Tester/Designer/DevOps/Data/Security).
 
 ## Change Log
 

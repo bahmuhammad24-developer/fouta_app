@@ -7,7 +7,9 @@ cd "$ROOT"
 mkdir -p build/validation
 
 echo "== Check pubspec duplicates =="
-if ! dart run tool/check_pubspec_dupes.dart | tee build/validation/pubspec_dupes.txt; then
+if dart run tool/check_pubspec_dupes.dart | tee build/validation/pubspec_dupes.txt; then
+  echo "No duplicate keys detected in pubspec.yaml"
+else
   echo "Duplicate keys found in pubspec.yaml"
   exit 1
 fi
