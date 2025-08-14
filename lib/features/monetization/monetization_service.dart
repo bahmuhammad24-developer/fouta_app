@@ -1,3 +1,7 @@
+// Payments feature flag (compile-time)
+const bool PAYMENTS_ENABLED =
+    bool.fromEnvironment('PAYMENTS_ENABLED', defaultValue: false);
+
 abstract class IPaymentProvider {
   Future<String> createTip({
     required double amount,
@@ -80,5 +84,22 @@ class MonetizationService {
     );
   }
 
-  // Add similar facade methods for subscription or purchase as needed using _provider.
+  Future<String> createPurchaseIntent({
+    required double amount,
+    required String currency,
+    required String productId,
+    required String createdBy,
+  }) {
+    if (amount <= 0) {
+      throw ArgumentError.value(amount, 'amount', 'must be > 0');
+    }
+    return _provider.createPurchase(
+      amount: amount,
+      currency: currency,
+      productId: productId,
+      createdBy: createdBy,
+    );
+  }
+
+  // Add similar facade methods for subscription as needed using _provider.
 }

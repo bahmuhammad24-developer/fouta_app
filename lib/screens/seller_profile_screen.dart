@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../features/marketplace/marketplace_service.dart';
 import '../features/marketplace/product_card.dart';
-import '../features/monetization/monetization_service.dart';
-import '../utils/app_flags.dart';
+import 'package:fouta_app/features/monetization/monetization_service.dart';
 import 'chat_screen.dart';
 
 class SellerProfileScreen extends StatelessWidget {
@@ -57,9 +56,10 @@ class SellerProfileScreen extends StatelessWidget {
                     }
                     if (!PAYMENTS_ENABLED) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Payments disabled')),
+                        const SnackBar(
+                          content: Text('Payments disabled—coming soon'),
+                        ),
                       );
-
                       return;
                     }
                     final id = await monetization.createTipIntent(
