@@ -490,10 +490,11 @@ In-app notifications live at `artifacts/$APP_ID/public/data/notifications/{uid}/
 ## Stability Utilities
 Reusable helpers ensure widgets and async code fail gracefully.
 
-### Error Reporting
-Errors surface through `ErrorReporter.report` for centralized capture. See
-[`docs/ops/error-reporting.md`](docs/ops/error-reporting.md) for the
-`CRASHLYTICS_ENABLED` flag and rollback steps.
+
+### Error Reporting Stub
+Errors surface through `ErrorReporter.report` for centralized capture.
+See [docs/ops/error-reporting.md](docs/ops/error-reporting.md) for Crashlytics setup.
+
 
 ## Composer V2 (route /composeV2)
 Experimental composer supporting drafts and scheduled posts.

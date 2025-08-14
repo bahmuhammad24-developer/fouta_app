@@ -1,15 +1,16 @@
-# Error Reporting
 
-`CRASHLYTICS_ENABLED` controls forwarding of runtime errors to
-`FirebaseCrashlytics`. The flag defaults to `false` to avoid sending reports
-from local or test environments.
+# Error Reporting Ops Guide
 
-## Usage
-1. Set `AppFlags.crashlyticsEnabled = true` at startup for production builds.
-2. Ensure errors are reported through `ErrorReporter.report`.
-3. Crashlytics receives only error strings and stack traces; avoid attaching
-   sensitive user data.
+Integrate Firebase Crashlytics to capture uncaught errors.
+
+## Setup
+1. Add Crashlytics to your Firebase project and configure platform-specific build steps per [FlutterFire docs](https://firebase.flutter.dev/docs/crashlytics/overview).
+2. Provide `--dart-define=CRASHLYTICS_ENABLED=true` when building or testing to enable forwarding.
+3. Ensure Firebase initialization runs before any errors are reported.
+
+## Verification
+- Trigger a test exception in debug builds and confirm it appears in the Crashlytics dashboard.
 
 ## Rollback
-- Disable by setting `AppFlags.crashlyticsEnabled = false`.
-- If issues persist, revert the enabling commit.
+- Rebuild without the `CRASHLYTICS_ENABLED` define or set it to `false`.
+

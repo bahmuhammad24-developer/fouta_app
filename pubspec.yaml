@@ -23,7 +23,9 @@ dependencies:
   firebase_storage: ^11.7.5
   firebase_messaging: ^14.9.0
   firebase_analytics: ^10.10.0 # Existing dependency for analytics events
+
   firebase_crashlytics: ^3.5.6
+
   # State management and connectivity.
   provider: ^6.1.2
   connectivity_plus: ^6.0.3

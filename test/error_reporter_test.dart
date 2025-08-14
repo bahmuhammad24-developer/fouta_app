@@ -1,42 +1,46 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:fouta_app/utils/app_flags.dart';
+
 import 'package:fouta_app/utils/error_reporter.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+class _FakeCrashlytics implements FirebaseCrashlytics {
+  Object? error;
+  StackTrace? stack;
+  @override
+  Future<void> recordError(dynamic exception, StackTrace? stack,
+      {dynamic reason,
+      Iterable<dynamic> information = const [],
+      bool fatal = false}) async {
+    error = exception;
+    this.stack = stack;
+  }
+
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 void main() {
-  late ErrorRecorder originalRecorder;
-
   setUp(() {
-    originalRecorder = errorRecorder;
-    AppFlags.crashlyticsEnabled = false;
+    ErrorReporter.crashlytics = null;
+    ErrorReporter.crashlyticsEnabledOverride = null;
   });
 
-  tearDown(() {
-    errorRecorder = originalRecorder;
-    AppFlags.crashlyticsEnabled = false;
-  });
-
-  test('forwards error to Crashlytics when enabled', () {
-    AppFlags.crashlyticsEnabled = true;
-    Object? seenError;
-    StackTrace? seenStack;
-    errorRecorder = (error, stack) async {
-      seenError = error;
-      seenStack = stack;
-    };
-    final err = Exception('boom');
+  test('forwards to Crashlytics when enabled', () {
+    final fake = _FakeCrashlytics();
+    ErrorReporter.crashlytics = fake;
+    ErrorReporter.crashlyticsEnabledOverride = true;
     final st = StackTrace.current;
-    ErrorReporter.report(err, st);
-    expect(seenError, err);
-    expect(seenStack, st);
+    ErrorReporter.report('boom', st);
+    expect(fake.error, 'boom');
+    expect(fake.stack, st);
   });
 
-  test('no-op when disabled', () {
-    AppFlags.crashlyticsEnabled = false;
-    bool called = false;
-    errorRecorder = (error, stack) async {
-      called = true;
-    };
-    ErrorReporter.report(Exception('boom'));
-    expect(called, false);
+  test('suppresses Crashlytics when disabled', () {
+    final fake = _FakeCrashlytics();
+    ErrorReporter.crashlytics = fake;
+    ErrorReporter.crashlyticsEnabledOverride = false;
+    ErrorReporter.report('oops');
+    expect(fake.error, isNull);
+
   });
 }
