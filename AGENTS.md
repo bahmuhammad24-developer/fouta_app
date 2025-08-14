@@ -23,6 +23,7 @@ All changes to project code or documentation must be initiated and executed via 
 
 Do not push manual edits directly.
 
+- Do not add or commit `pubspec.lock`. Dependency locking is handled at build time by `flutter pub get`.
 Each change should come as a clear, reviewable Codex prompt that:
 
 - Names the branch (e.g., feat/... or fix/...)
