@@ -65,7 +65,7 @@ class StoryItem {
   final DateTime? expiresAt;
   final List<String> viewers;
 
-  const StoryItem({
+  StoryItem({
     String? id,
     required this.media,
     this.overrideDuration,

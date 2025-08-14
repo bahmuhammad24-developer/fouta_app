@@ -3,54 +3,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../main.dart';
 import '../../utils/app_flags.dart';
 
-/// Payment provider interface ensures sensitive data stays out of the app.
+// == Monetization provider interface ==
 abstract class IPaymentProvider {
-  Future<void> fulfillTip(String intentId);
-  Future<void> fulfillSubscription(String intentId);
-  Future<void> fulfillPurchase(String intentId);
-}
-
-/// Default provider used in development; does nothing.
-class DefaultNoopPaymentProvider implements IPaymentProvider {
-  @override
-  Future<void> fulfillTip(String intentId) async {}
-
-  @override
-  Future<void> fulfillSubscription(String intentId) async {}
-
-  @override
-  Future<void> fulfillPurchase(String intentId) async {}
-}
-
-/// Feature flag to toggle payment processing at build time.
-const bool PAYMENTS_ENABLED =
-    bool.fromEnvironment('PAYMENTS_ENABLED', defaultValue: false);
-
-/// Result from a payment provider when creating an intent.
-class PaymentResult {
-  const PaymentResult({required this.id, required this.status});
-
-  final String id;
-  final String status;
-}
-
-/// Interface for payment providers capable of handling different intent types.
-abstract class IPaymentProvider {
-  Future<PaymentResult> tip({
+  Future<String> createTip({
     required double amount,
     required String currency,
     required String targetUserId,
     required String createdBy,
   });
 
-  Future<PaymentResult> subscription({
+  Future<String> createSubscription({
     required double amount,
     required String currency,
     required String targetUserId,
     required String createdBy,
   });
 
-  Future<PaymentResult> purchase({
+  Future<String> createPurchase({
     required double amount,
     required String currency,
     required String productId,
@@ -58,61 +27,53 @@ abstract class IPaymentProvider {
   });
 }
 
-/// Placeholder provider that generates synthetic IDs and pending status.
+// == No-op provider used until real payments are enabled ==
 class NoopPaymentProvider implements IPaymentProvider {
-  String _id() => 'noop-${DateTime.now().millisecondsSinceEpoch}';
+  String _id(String prefix) =>
+      '${prefix}_${DateTime.now().millisecondsSinceEpoch}';
 
   @override
-  Future<PaymentResult> tip({
+  Future<String> createTip({
     required double amount,
     required String currency,
     required String targetUserId,
     required String createdBy,
   }) async {
-    return PaymentResult(id: _id(), status: 'pending');
+    return _id('noop_tip');
   }
 
   @override
-  Future<PaymentResult> subscription({
+  Future<String> createSubscription({
     required double amount,
     required String currency,
     required String targetUserId,
     required String createdBy,
   }) async {
-    return PaymentResult(id: _id(), status: 'pending');
+    return _id('noop_sub');
   }
 
   @override
-  Future<PaymentResult> purchase({
+  Future<String> createPurchase({
     required double amount,
     required String currency,
     required String productId,
     required String createdBy,
   }) async {
-    return PaymentResult(id: _id(), status: 'pending');
+    return _id('noop_purchase');
   }
 }
 
-/// Records monetization intents for tips, subscriptions, and purchases.
-///
-/// TODO: Wire a verified payment provider after security review to fulfill
-/// intents and securely handle funds.
+// == Service ==
 class MonetizationService {
+  final FirebaseFirestore _firestore;
+  final IPaymentProvider _provider;
 
+  // Use DI; default to NoopPaymentProvider so app runs without real keys.
   MonetizationService({
     FirebaseFirestore? firestore,
     IPaymentProvider? provider,
-    bool? paymentsEnabled,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _paymentsEnabled = paymentsEnabled ?? PAYMENTS_ENABLED,
-        _provider = (paymentsEnabled ?? PAYMENTS_ENABLED)
-            ? (provider ?? NoopPaymentProvider())
-            : NoopPaymentProvider();
-
-  final FirebaseFirestore _firestore;
-  final IPaymentProvider _provider;
-  final bool _paymentsEnabled;
-
+        _provider = provider ?? NoopPaymentProvider();
 
   CollectionReference<Map<String, dynamic>> get _intents => _firestore
       .collection('artifacts')
@@ -150,6 +111,9 @@ class MonetizationService {
     required String targetUserId,
     required String createdBy,
   }) async {
+    if (amount <= 0) {
+      throw ArgumentError.value(amount, 'amount', 'must be > 0');
+    }
     final intentId = await _createIntent(
       type: 'tip',
       amount: amount,
@@ -157,13 +121,12 @@ class MonetizationService {
       targetUserId: targetUserId,
       createdBy: createdBy,
     );
-    final result = await _provider.tip(
+    await _provider.createTip(
       amount: amount,
       currency: currency,
       targetUserId: targetUserId,
       createdBy: createdBy,
     );
-    await markIntentStatus(intentId, result.status);
     return intentId;
   }
 
@@ -180,13 +143,12 @@ class MonetizationService {
       targetUserId: targetUserId,
       createdBy: createdBy,
     );
-    final result = await _provider.subscription(
+    await _provider.createSubscription(
       amount: amount,
       currency: currency,
       targetUserId: targetUserId,
       createdBy: createdBy,
     );
-    await markIntentStatus(intentId, result.status);
     return intentId;
   }
 
@@ -203,30 +165,17 @@ class MonetizationService {
       productId: productId,
       createdBy: createdBy,
     );
-    final result = await _provider.purchase(
+    await _provider.createPurchase(
       amount: amount,
       currency: currency,
       productId: productId,
       createdBy: createdBy,
     );
-    await markIntentStatus(intentId, result.status);
     return intentId;
   }
 
   Future<void> markIntentStatus(String intentId, String status) {
     return _intents.doc(intentId).update({'status': status});
-  }
-
-  Future<void> fulfillTipIntent(String intentId) {
-    return _provider.fulfillTip(intentId);
-  }
-
-  Future<void> fulfillSubscriptionIntent(String intentId) {
-    return _provider.fulfillSubscription(intentId);
-  }
-
-  Future<void> fulfillPurchaseIntent(String intentId) {
-    return _provider.fulfillPurchase(intentId);
   }
 }
 
