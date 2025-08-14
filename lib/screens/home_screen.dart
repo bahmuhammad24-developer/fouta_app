@@ -719,6 +719,8 @@ class _FeedTabState extends State<FeedTab> with AutomaticKeepAliveClientMixin {
         owners.add(Story(
           id: doc.id,
           authorId: doc.id,
+          userName: doc['userName'] as String?,
+          userImageUrl: doc['userImageUrl'] as String?,
           postedAt: (doc['updatedAt'] as Timestamp?)?.toDate() ?? now,
           expiresAt: now.add(const Duration(hours: 24)),
           items: slides,
