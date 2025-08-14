@@ -72,7 +72,6 @@
 - message.dart
 - post_model.dart
 - story.dart *(defines `Story` & `StoryItem`)*
-- story_model.dart *(alternative `Story`/`StorySlide`)*
 
 ## Routes & Feature Wiring
 - Bottom navigation index → tab mapping handled in `HomeScreen` via `_buildOffstageNavigator`:
@@ -89,7 +88,7 @@
 - **Viewer:** `features/stories/viewer/story_viewer_screen.dart`
 - **Tray Widget:** `widgets/stories/stories_tray.dart`
 - **Repository:** `features/stories/data/story_repository.dart`
-- **Models:** `models/story.dart`, `models/story_model.dart`
+- **Models:** `models/story.dart`
 - **Firestore path:** `utils/firestore_paths.dart` → `stories()`【F:lib/utils/firestore_paths.dart†L17-L18】
 - **Storage path:** `features/stories/composer/create_story_screen.dart` writes to `stories/{uid}/{timestamp}` in Firebase Storage【F:lib/features/stories/composer/create_story_screen.dart†L139-L166】
 - **Security rules:** `firebase/storage.rules` allow read/write for `/stories` and legacy `/stories_media` paths【F:firebase/storage.rules†L39-L47】
@@ -108,7 +107,6 @@
 - Project-level `firebase.json` ties Firestore and Storage rules to files in `/firebase` directory.
 
 ## Duplicate Classes & Overlapping Rules
-- `Story` class defined in both `models/story.dart` and `models/story_model.dart` with differing shapes【F:lib/models/story.dart†L4-L27】【F:lib/models/story_model.dart†L1-L24】
 - Export wrappers duplicate file names for `stories_tray.dart`, `chat_message_bubble.dart`
 - Storage rules include overlapping story paths `/stories` and legacy `/stories_media`【F:firebase/storage.rules†L39-L47】
 
