@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../features/marketplace/marketplace_service.dart';
 import '../features/marketplace/product_card.dart';
 import '../features/monetization/monetization_service.dart';
+import '../utils/app_flags.dart';
 import 'chat_screen.dart';
 
 class SellerProfileScreen extends StatelessWidget {
@@ -39,15 +40,49 @@ class SellerProfileScreen extends StatelessWidget {
                 const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: () async {
+                    const amount = 5.0;
+                    if (amount <= 0) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Enter an amount greater than zero',
+                              semanticsLabel:
+                                  'Enter an amount greater than zero',
+                            ),
+                          ),
+                        );
+                      }
+                      return;
+                    }
+                    if (!AppFlags.paymentsEnabled) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Payments are disabled. Please try again later.',
+                              semanticsLabel:
+                                  'Payments are disabled. Please try again later.',
+                            ),
+                          ),
+                        );
+                      }
+                      return;
+                    }
                     final id = await monetization.createTipIntent(
-                      amount: 0,
+                      amount: amount,
                       currency: 'USD',
                       targetUserId: sellerId,
                       createdBy: user?.uid ?? 'anon',
                     );
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Support intent: $id')),
+                        SnackBar(
+                          content: Text(
+                            'Support intent: $id',
+                            semanticsLabel: 'Support intent: $id',
+                          ),
+                        ),
                       );
                     }
                     // TODO: connect to payment provider once approved.

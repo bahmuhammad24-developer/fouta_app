@@ -1,3 +1,4 @@
+
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {publishDueScheduledPosts, schedulePosts} from '../src/schedulePosts';
@@ -126,4 +127,5 @@ test('flag off does nothing', async () => {
   assert.equal(posts.length, 0);
   assert.equal(moderation.length, 0);
   assert.equal(deletions.length, 0);
+
 });

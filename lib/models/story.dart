@@ -8,6 +8,8 @@ typedef StorySlide = StoryItem;
 class Story {
   final String id;
   final String authorId;
+  final String? userName;
+  final String? userImageUrl;
   final DateTime postedAt;
   final DateTime expiresAt;
   final List<StoryItem> items;
@@ -17,6 +19,8 @@ class Story {
   const Story({
     required this.id,
     required this.authorId,
+    this.userName,
+    this.userImageUrl,
     required this.postedAt,
     required this.expiresAt,
     this.items = const [],
@@ -27,6 +31,7 @@ class Story {
 
 /// A single item within a story.
 class StoryItem {
+  final String id;
   final MediaItem media;
   final Duration? overrideDuration;
   final String? caption;
@@ -35,13 +40,14 @@ class StoryItem {
   final List<String> viewers;
 
   const StoryItem({
+    String? id,
     required this.media,
     this.overrideDuration,
     this.caption,
     this.createdAt,
     this.expiresAt,
     this.viewers = const [],
-  });
+  }) : id = id ?? media.id;
 
   /// The duration the item should be displayed.
   Duration get displayDuration =>

@@ -11,8 +11,8 @@ import 'package:video_player/video_player.dart';
 
 import '../../../devtools/diagnostics_panel.dart';
 
-import '../../../models/story.dart';
-import '../../../models/media_item.dart';
+import 'package:fouta_app/models/story.dart';
+import 'package:fouta_app/models/media_item.dart';
 import '../../../utils/firestore_paths.dart';
 
 /// Minimal Firestore backed repository for story operations.
@@ -121,6 +121,8 @@ class StoryRepository {
       return Story(
         id: d.id,
         authorId: d['userId'] ?? d.id,
+        userName: d['userName'] as String?,
+        userImageUrl: d['userImageUrl'] as String?,
         postedAt: (d['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
         expiresAt:
             DateTime.now().add(const Duration(hours: 24)), // naive placeholder

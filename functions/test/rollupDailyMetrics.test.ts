@@ -1,3 +1,4 @@
+
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {paginatedCount} from '../src/rollupDailyMetrics';
@@ -15,4 +16,5 @@ test('counts documents across pages', async () => {
   }
   const total = await paginatedCount(new StubQuery(pages) as any, 2);
   assert.equal(total, 5);
+
 });

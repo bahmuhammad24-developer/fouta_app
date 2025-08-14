@@ -4,14 +4,17 @@ import {checkSafetyRules} from './safetyRules';
 
 const APP_ID = process.env.APP_ID || 'fouta-app';
 
+
 export async function publishDueScheduledPosts(
   db: FirebaseFirestore.Firestore,
   now: FirebaseFirestore.Timestamp,
 ): Promise<void> {
+
   const usersCol = db.collection(`artifacts/${APP_ID}/public/data/users`);
   const users = await usersCol.listDocuments();
   for (const user of users) {
     const schedCol = user.collection('scheduled');
+
     const snap = await schedCol.where('publishAt', '<=', now).get();
     for (const doc of snap.docs) {
       const payload = doc.data().payload || {};
@@ -34,6 +37,7 @@ export async function publishDueScheduledPosts(
           });
       }
       await doc.ref.delete();
+
     }
   }
 }
@@ -45,6 +49,8 @@ export const schedulePosts = functions.pubsub
       return null;
     }
     const now = admin.firestore.Timestamp.now();
+
     await publishDueScheduledPosts(admin.firestore(), now);
+
     return null;
   });

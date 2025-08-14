@@ -1,3 +1,4 @@
+
 export interface SafetyResult {
   ok: boolean;
   reason?: string;
@@ -26,4 +27,5 @@ export function checkSafetyRules(data: any): SafetyResult {
     }
   }
   return { ok: true };
+
 }
