@@ -21,6 +21,7 @@ void main() {
       name: 'Test',
       ownerId: 'owner',
       memberIds: [],
+      roles: {'owner': 'owner'},
       description: null,
       coverUrl: null,
       createdAt: null,
