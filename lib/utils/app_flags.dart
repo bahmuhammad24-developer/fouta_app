@@ -8,4 +8,7 @@ class AppFlags {
 
   /// Navigation variant flag. Defaults to 'v1'.
   static String navVariant = 'v1';
+
+  /// Crash reporting toggle. Defaults to `false`.
+  static bool crashlyticsEnabled = false;
 }
