@@ -4,33 +4,40 @@ import {checkSafetyRules} from './safetyRules';
 
 const APP_ID = process.env.APP_ID || 'fouta-app';
 
-export async function publishDuePosts(db: FirebaseFirestore.Firestore, now: FirebaseFirestore.Timestamp) {
+
+export async function publishDueScheduledPosts(
+  db: FirebaseFirestore.Firestore,
+  now: FirebaseFirestore.Timestamp,
+): Promise<void> {
+
   const usersCol = db.collection(`artifacts/${APP_ID}/public/data/users`);
   const users = await usersCol.listDocuments();
   for (const user of users) {
     const schedCol = user.collection('scheduled');
-    const snap = await schedCol
-      .where('publishAt', '<=', now)
-      .where('processedAt', '==', null)
-      .get();
+
+    const snap = await schedCol.where('publishAt', '<=', now).get();
     for (const doc of snap.docs) {
-      const data = doc.data();
-      const payload = data.payload || {};
-      const violations = checkSafetyRules(payload);
-      if (violations.length === 0) {
+      const payload = doc.data().payload || {};
+      const result = checkSafetyRules(payload);
+      if (result.ok) {
         await db.collection(`artifacts/${APP_ID}/public/data/posts`).add({
-          ...payload,
-          userId: user.id,
-          createdAt: now,
+          content: payload.content,
+          media: payload.media,
+          createdBy: user.id,
+          visibility: payload.visibility,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
       } else {
-        await user.collection('moderation').add({
-          payload,
-          reasons: violations,
-          createdAt: now,
-        });
+        await db
+          .collection(`artifacts/${APP_ID}/public/data/moderation/scheduled`)
+          .doc(doc.id)
+          .set({
+            reason: result.reason,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
       }
-      await doc.ref.update({processedAt: now});
+      await doc.ref.delete();
+
     }
   }
 }
@@ -42,6 +49,8 @@ export const schedulePosts = functions.pubsub
       return null;
     }
     const now = admin.firestore.Timestamp.now();
-    await publishDuePosts(admin.firestore(), now);
+
+    await publishDueScheduledPosts(admin.firestore(), now);
+
     return null;
   });

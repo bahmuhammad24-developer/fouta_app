@@ -1,101 +1,131 @@
-import {describe, it, expect, beforeEach} from 'vitest';
-import {publishDuePosts} from '../src/schedulePosts';
 
-class FakeScheduledDoc {
-  private _data: any;
-  constructor(data: any) {
-    this._data = data;
-    this.ref = this;
-  }
-  ref: any;
-  data() { return this._data; }
-  async update(obj: any) { Object.assign(this._data, obj); }
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {publishDueScheduledPosts, schedulePosts} from '../src/schedulePosts';
+import * as admin from 'firebase-admin';
+
+function createStubs() {
+  const posts: any[] = [];
+  const moderation: any[] = [];
+  const deletions: any[] = [];
+  const userDoc = {
+    id: 'user1',
+    collection: (name: string) => ({
+      where: () => ({
+        get: async () => ({
+          docs: [
+            {
+              id: 'sched1',
+              data: () => ({
+                payload: {content: 'hello', media: ['https://x'], visibility: 'public'},
+                publishAt: new Date(),
+              }),
+              ref: {delete: async () => deletions.push(true)},
+            },
+          ],
+        }),
+      }),
+    }),
+  };
+  const badUserDoc = {
+    id: 'user1',
+    collection: (name: string) => ({
+      where: () => ({
+        get: async () => ({
+          docs: [
+            {
+              id: 'sched1',
+              data: () => ({
+                payload: {content: 'spam', media: ['https://x'], visibility: 'public'},
+                publishAt: new Date(),
+              }),
+              ref: {delete: async () => deletions.push(true)},
+            },
+          ],
+        }),
+      }),
+    }),
+  };
+  const db = {
+    collection: (path: string) => {
+      if (path.endsWith('/users')) {
+        return {listDocuments: async () => [userDoc]};
+      }
+      if (path.endsWith('/posts')) {
+        return {add: async (data: any) => posts.push(data)};
+      }
+      if (path.endsWith('/moderation/scheduled')) {
+        return {
+          doc: (id: string) => ({set: async (data: any) => moderation.push({id, ...data})}),
+        };
+      }
+      return {listDocuments: async () => [badUserDoc]};
+    },
+  };
+  return {db: db as any, posts, moderation, deletions};
 }
 
-class FakeUserDoc {
-  id: string;
-  scheduled: FakeScheduledDoc[];
-  moderation: any[] = [];
-  constructor(id: string, scheduled: any[]) {
-    this.id = id;
-    this.scheduled = scheduled.map(d => new FakeScheduledDoc(d));
-  }
-  collection(name: string) {
-    if (name === 'scheduled') {
-      const self = this;
-      return {
-        filters: [] as any[],
-        where(field: string, op: string, value: any) {
-          this.filters.push({field, op, value});
-          return this;
-        },
-        async get() {
-          let docs = self.scheduled;
-          for (const f of this.filters) {
-            if (f.field === 'publishAt' && f.op === '<=') {
-              docs = docs.filter(d => d.data()[f.field] <= f.value);
-            } else if (f.field === 'processedAt' && f.op === '==') {
-              docs = docs.filter(d => d.data()[f.field] === f.value);
-            }
-          }
-          return {docs};
-        },
-      };
-    }
-    if (name === 'moderation') {
-      const arr = this.moderation;
-      return {
-        add: async (data: any) => { arr.push(data); },
-      };
-    }
-    return {};
-  }
-}
+test('publishes due posts', async () => {
+  const {db, posts, moderation, deletions} = createStubs();
+  const ts = { } as any; // timestamp not used in stub
+  const original = admin.firestore.FieldValue.serverTimestamp;
+  (admin.firestore.FieldValue as any).serverTimestamp = () => new Date();
+  await publishDueScheduledPosts(db, ts);
+  (admin.firestore.FieldValue as any).serverTimestamp = original;
+  assert.equal(posts.length, 1);
+  assert.equal(moderation.length, 0);
+  assert.equal(deletions.length, 1);
+});
 
-class FakeFirestore {
-  users: FakeUserDoc[] = [];
-  posts: any[] = [];
-  addUser(id: string, scheduled: any[]) {
-    const u = new FakeUserDoc(id, scheduled);
-    this.users.push(u);
-    return u;
-  }
-  collection(path: string) {
+test('rejects unsafe posts', async () => {
+  const {db, posts, moderation, deletions} = createStubs();
+  // replace users with bad payload
+  (db.collection as any) = (path: string) => {
     if (path.endsWith('/users')) {
-      return {
-        listDocuments: async () => this.users,
-      };
+      return {listDocuments: async () => [
+        {
+          id: 'user1',
+          collection: () => ({
+            where: () => ({
+              get: async () => ({
+                docs: [
+                  {
+                    id: 'sched1',
+                    data: () => ({payload: {content: 'spam', media: ['https://x'], visibility: 'public'}}),
+                    ref: {delete: async () => deletions.push(true)},
+                  },
+                ],
+              }),
+            }),
+          }),
+        },
+      ]};
     }
-    if (path.endsWith('/posts')) {
-      const arr = this.posts;
-      return {
-        add: async (data: any) => { arr.push(data); },
-      };
+    if (path.endsWith('/posts')) return {add: async (data: any) => posts.push(data)};
+    if (path.endsWith('/moderation/scheduled')) {
+      return {doc: (id: string) => ({set: async (data: any) => moderation.push({id, ...data})})};
     }
-    return {};
-  }
-}
+    return {listDocuments: async () => []};
+  };
+  const ts = {} as any;
+  const original = admin.firestore.FieldValue.serverTimestamp;
+  (admin.firestore.FieldValue as any).serverTimestamp = () => new Date();
+  await publishDueScheduledPosts(db, ts);
+  (admin.firestore.FieldValue as any).serverTimestamp = original;
+  assert.equal(posts.length, 0);
+  assert.equal(moderation.length, 1);
+  assert.equal(deletions.length, 1);
+});
 
-describe('publishDuePosts', () => {
-  let db: FakeFirestore;
-  const now = 0 as any;
-  beforeEach(() => {
-    db = new FakeFirestore();
-  });
+test('flag off does nothing', async () => {
+  process.env.SCHEDULED_POSTS_ENABLED = 'false';
+  const {db, posts, moderation, deletions} = createStubs();
+  const origFirestore = admin.firestore;
+  (admin as any).firestore = () => db;
+  await schedulePosts();
+  (admin as any).firestore = origFirestore;
+  assert.equal(posts.length, 0);
+  assert.equal(moderation.length, 0);
+  assert.equal(deletions.length, 0);
 
-  it('publishes approved posts', async () => {
-    const user = db.addUser('u1', [{publishAt: -1, processedAt: null, payload: {text: 'hi'}}]);
-    await publishDuePosts(db as any, now);
-    expect(db.posts.length).toBe(1);
-    expect(user.moderation.length).toBe(0);
-    expect(user.scheduled[0].data().processedAt).toBe(now);
-  });
-
-  it('stores rejected posts', async () => {
-    const user = db.addUser('u1', [{publishAt: -1, processedAt: null, payload: {text: 'forbidden word'}}]);
-    await publishDuePosts(db as any, now);
-    expect(db.posts.length).toBe(0);
-    expect(user.moderation.length).toBe(1);
-    expect(user.scheduled[0].data().processedAt).toBe(now);
-  });
 });

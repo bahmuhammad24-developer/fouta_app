@@ -1,25 +1,20 @@
-import {describe, it, expect} from 'vitest';
-import {paginatedCount, PAGE_SIZE} from '../src/rollupDailyMetrics';
 
-class FakeQuery {
-  pages: any[][];
-  index = 0;
-  constructor(pages: any[][]) {
-    this.pages = pages;
-  }
-  limit() { return this; }
-  startAfter() { return this; }
-  async get() {
-    const docs = this.pages[this.index] || [];
-    this.index++;
-    return {size: docs.length, docs};
-  }
-}
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {paginatedCount} from '../src/rollupDailyMetrics';
 
-describe('paginatedCount', () => {
-  it('counts across multiple pages', async () => {
-    const q = new FakeQuery([Array(PAGE_SIZE).fill({}), Array(5).fill({})]);
-    const total = await paginatedCount(q as any);
-    expect(total).toBe(PAGE_SIZE + 5);
-  });
+test('counts documents across pages', async () => {
+  const pages = [[{}, {}], [{}, {}], [{}]];
+  class StubQuery {
+    constructor(private pages: any[][], private index = 0) {}
+    orderBy() { return this; }
+    limit() { return this; }
+    async get() {
+      return {size: this.pages[this.index].length, docs: this.pages[this.index]};
+    }
+    startAfter() { return new StubQuery(this.pages, this.index + 1); }
+  }
+  const total = await paginatedCount(new StubQuery(pages) as any, 2);
+  assert.equal(total, 5);
+
 });
