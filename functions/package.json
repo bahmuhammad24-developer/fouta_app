@@ -6,7 +6,8 @@
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "test": "tsc src/rollupDailyMetrics.ts --module commonjs --target ES2020 --outDir lib && node test/rollupDailyMetrics.test.js && rm -rf lib"
   },
   "engines": {
     "node": "20"
