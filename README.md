@@ -253,8 +253,8 @@ Refer to [AGENTS.md](AGENTS.md) for the full policy.
 
 ## Development Notes
 
-- Uses `share_plus` to invoke native share sheets for referral codes; no extra setup needed.
 - See [docs/dev-notes-monetization.md](docs/dev-notes-monetization.md) for provider structure; duplicates will break the build.
+- Uses `share_plus` to invoke native share sheets for referral codes; no extra setup needed.
 
 ### iOS Build Setup & Firebase Integration
 - **Regenerating the iOS project:** The previous `ios/` directory was removed and `flutter create .` was run to regenerate a clean iOS project, eliminating stale Swift Package references that caused duplicate module errors.
