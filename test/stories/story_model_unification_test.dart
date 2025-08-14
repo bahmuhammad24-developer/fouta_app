@@ -1,6 +1,6 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:fouta_app/models/story.dart';
 
 void main() {
@@ -65,6 +65,7 @@ void main() {
         'url': 'https://example.com/5.jpg',
       },
     })!;
+
     expect(defaultItem.displayDuration, const Duration(seconds: 6));
   });
 }

@@ -72,7 +72,9 @@
 - message.dart
 - post_model.dart
 - story.dart *(defines `Story` & `StoryItem`)*
+
 // story_model.dart removed – `models/story.dart` is canonical
+
 
 ## Routes & Feature Wiring
 - Bottom navigation index → tab mapping handled in `HomeScreen` via `_buildOffstageNavigator`:
@@ -108,6 +110,7 @@
 - Project-level `firebase.json` ties Firestore and Storage rules to files in `/firebase` directory.
 
 ## Duplicate Classes & Overlapping Rules
+
 - `Story` class previously duplicated in `models/story_model.dart`; now unified into `models/story.dart`【F:lib/models/story.dart†L1-L87】
 - Export wrappers duplicate file names for `stories_tray.dart`, `chat_message_bubble.dart`
 - Storage rules include overlapping story paths `/stories` and legacy `/stories_media`【F:firebase/storage.rules†L39-L47】
