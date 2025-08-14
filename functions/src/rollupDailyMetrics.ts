@@ -34,6 +34,28 @@ export async function paginatedCount(
   return total;
 }
 
+export async function countPaged(
+  query: FirebaseFirestore.Query,
+  pageSize = 500,
+): Promise<number> {
+  let count = 0;
+  let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | undefined;
+  while (true) {
+    let q = query;
+    if (lastDoc) {
+      q = q.startAfter(lastDoc);
+    }
+    q = q.limit(pageSize);
+    const snap = await q.get();
+    count += snap.size;
+    if (snap.size < pageSize) {
+      break;
+    }
+    lastDoc = snap.docs[snap.docs.length - 1];
+  }
+  return count;
+}
+
 // Aggregates daily metrics for the previous UTC day.
 export const rollupDailyMetrics = onSchedule('0 0 * * *', async () => {
   const now = new Date();
@@ -44,6 +66,7 @@ export const rollupDailyMetrics = onSchedule('0 0 * * *', async () => {
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
   );
   const key = start.toISOString().slice(0, 10);
+
 
   async function count(path: string) {
 
@@ -61,6 +84,7 @@ export const rollupDailyMetrics = onSchedule('0 0 * * *', async () => {
   const purchaseIntents = await count(
     `artifacts/${APP_ID}/public/data/monetization/intents`,
   );
+
 
   await db
     .collection(`artifacts/${APP_ID}/public/data/metrics/daily`)

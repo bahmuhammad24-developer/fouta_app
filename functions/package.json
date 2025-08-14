@@ -8,6 +8,7 @@
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
 
+
     "build": "tsc",
     "test": "npm run build || true && node --test lib/test/**/*.js"
 
