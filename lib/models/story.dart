@@ -1,8 +1,19 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../utils/json_safety.dart';
 import 'media_item.dart';
 
 /// Alias types aligning with story terminology.
 typedef UserStories = Story;
 typedef StorySlide = StoryItem;
+
+DateTime? _dateTime(dynamic v) {
+  if (v is Timestamp) return v.toDate();
+  if (v is DateTime) return v;
+  if (v is int) return DateTime.fromMillisecondsSinceEpoch(v);
+  if (v is String) return DateTime.tryParse(v);
+  return null;
+}
 
 /// A collection of story items posted by a single author.
 class Story {
@@ -27,6 +38,21 @@ class Story {
     this.seen = false,
     this.viewedBy = const [],
   });
+
+  factory Story.fromMap(String id, Map<String, dynamic> data) {
+    final items =
+        asListOf<Map<String, dynamic>>(data['items']).map(StoryItem.fromMap).
+            whereType<StoryItem>().toList();
+    return Story(
+      id: id,
+      authorId: data['authorId']?.toString() ?? '',
+      postedAt: _dateTime(data['postedAt']) ?? DateTime.fromMillisecondsSinceEpoch(0),
+      expiresAt: _dateTime(data['expiresAt']) ?? DateTime.fromMillisecondsSinceEpoch(0),
+      items: items,
+      seen: data['seen'] == true,
+      viewedBy: asStringList(data['viewedBy']),
+    );
+  }
 }
 
 /// A single item within a story.
@@ -48,6 +74,31 @@ class StoryItem {
     this.expiresAt,
     this.viewers = const [],
   }) : id = id ?? media.id;
+
+  static StoryItem? fromMap(Map<String, dynamic>? map) {
+    if (map == null) return null;
+    final media = MediaItem.fromMap(map['media'] as Map<String, dynamic>?) ??
+        MediaItem.fromMap(map);
+    if (media == null) return null;
+
+    Duration? override;
+    final od = map['displayDurationMs'];
+    if (od is int) {
+      override = Duration(milliseconds: od);
+    } else if (od is String) {
+      final ms = int.tryParse(od);
+      if (ms != null) override = Duration(milliseconds: ms);
+    }
+
+    return StoryItem(
+      media: media,
+      overrideDuration: override,
+      caption: map['caption']?.toString(),
+      createdAt: _dateTime(map['createdAt']),
+      expiresAt: _dateTime(map['expiresAt']),
+      viewers: asStringList(map['viewers']),
+    );
+  }
 
   /// The duration the item should be displayed.
   Duration get displayDuration =>
