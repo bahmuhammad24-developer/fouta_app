@@ -65,6 +65,7 @@ class StoryItem {
   final DateTime? expiresAt;
   final List<String> viewers;
 
+  // Not const because id defaults to [media.id] at runtime.
   StoryItem({
     String? id,
     required this.media,
