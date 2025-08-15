@@ -7,6 +7,9 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -18,3 +21,14 @@ jobs:
         run: |
           chmod +x scripts/validate.sh
           scripts/validate.sh
+      - name: Run Flutter tests
+        run: |
+          mkdir -p build/test-results
+          flutter test --no-pub -r expanded --coverage --machine \
+            | tee build/test-results/test_output.log
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-test-results
+          path: build/test-results/
