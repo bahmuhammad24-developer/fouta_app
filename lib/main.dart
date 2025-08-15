@@ -21,6 +21,7 @@ import 'firebase_options.dart';
 import 'utils/log_buffer.dart';
 import 'utils/bug_reporter.dart';
 import 'dev/panic_dismiss.dart';
+import 'routes.dart';
 
 // Define a global constant for the app ID.
 const String APP_ID = 'fouta-app';
@@ -71,6 +72,7 @@ class MyApp extends StatelessWidget {
             darkTheme: AppTheme.dark(),
             themeMode: controller.themeMode,
             navigatorObservers: [PlaybackRouteObserver()],
+            routes: appRoutes(),
 
             builder: (context, child) => PanicDismiss(
               child: RepaintBoundary(
