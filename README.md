@@ -32,6 +32,7 @@
 
 - [Testing](#testing)
 - [CI & Status Checks](#ci--status-checks)
+- [Release](#release)
 - [Lockfile Policy](#lockfile-policy)
 - [Change Process](#change-process)
 - [Change Log](#change-log)
@@ -392,12 +393,16 @@ Run the test suite with:
 flutter test
 ```
 
+
 ## CI & Status Checks
 
 CI runs on pushes to `dev`, `feature/*`, and `fix/*` branches and on pull requests targeting `dev`.
 It runs `flutter analyze`, `dart format --output=none --set-exit-if-changed .`, `flutter test --no-pub --coverage`, and `flutter build web --release`.
 The coverage report is uploaded as `coverage/lcov.info`.
 To re-run checks, go to Actions and select **Run workflow**.
+
+## Release
+Final shipping gates and a pre-ship checklist live in [docs/release/criteria.md](docs/release/criteria.md) and [docs/release/checklist.md](docs/release/checklist.md).
 
 ## Lockfile Policy
 We do not commit `pubspec.lock` for the app. If you hit lockfile errors locally, follow the steps in [docs/dev-setup.md](docs/dev-setup.md).
