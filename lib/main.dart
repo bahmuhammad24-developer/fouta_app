@@ -21,7 +21,10 @@ import 'firebase_options.dart';
 import 'utils/log_buffer.dart';
 import 'utils/bug_reporter.dart';
 import 'dev/panic_dismiss.dart';
-import 'routes.dart';
+import 'package:fouta_app/config/feature_flags.dart';
+import 'package:fouta_app/features/challenges/challenges_feed_screen.dart'
+    show ChallengesFeedScreen;
+import 'routes.dart' show appRoutes, challengesRoute;
 
 // Define a global constant for the app ID.
 const String APP_ID = 'fouta-app';
@@ -72,7 +75,11 @@ class MyApp extends StatelessWidget {
             darkTheme: AppTheme.dark(),
             themeMode: controller.themeMode,
             navigatorObservers: [PlaybackRouteObserver()],
-            routes: appRoutes(),
+            routes: {
+              ...appRoutes(),
+              if (CHALLENGES_ENABLED)
+                challengesRoute: (_) => const ChallengesFeedScreen(),
+            },
 
             builder: (context, child) => PanicDismiss(
               child: RepaintBoundary(

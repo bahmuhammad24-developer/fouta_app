@@ -57,6 +57,8 @@ import 'package:fouta_app/screens/search_screen.dart';
 import 'package:fouta_app/widgets/safe_stream_builder.dart';
 import 'package:fouta_app/widgets/safe_future_builder.dart';
 import 'package:fouta_app/utils/error_reporter.dart';
+import 'package:fouta_app/config/feature_flags.dart';
+import 'package:fouta_app/features/challenges/challenges_feed_screen.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -79,6 +81,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     GlobalKey<NavigatorState>(),
     GlobalKey<NavigatorState>(),
     GlobalKey<NavigatorState>(),
+    if (CHALLENGES_ENABLED) GlobalKey<NavigatorState>(),
   ];
 
   @override
@@ -268,6 +271,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 selectedIcon: const _GradientSelectedIcon(Icons.person),
                 label: 'Profile',
               ),
+              if (CHALLENGES_ENABLED)
+                NavigationDestination(
+                  icon: const Icon(Icons.outlined_flag),
+                  selectedIcon: const _GradientSelectedIcon(Icons.flag),
+                  label: 'Challenges',
+                ),
             ],
           ),
           body: Consumer<ConnectivityProvider>(
@@ -329,6 +338,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     _buildTabNavigator(3, const PeopleTab()),
                     _buildTabNavigator(
                         4, ProfileScreen(userId: currentUser?.uid ?? '')),
+                    if (CHALLENGES_ENABLED)
+                      _buildTabNavigator(
+                          5, const ChallengesFeedScreen()),
                   ],
                 ),
               );
@@ -367,6 +379,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           selectedIcon: Icon(Icons.person),
                           label: Text('Profile'),
                         ),
+                        if (CHALLENGES_ENABLED)
+                          NavigationRailDestination(
+                            icon: Icon(Icons.outlined_flag),
+                            selectedIcon: Icon(Icons.flag),
+                            label: Text('Challenges'),
+                          ),
                       ],
                     ),
                     const VerticalDivider(width: 1),
