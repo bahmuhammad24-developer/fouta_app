@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../screens/chat_screen.dart';
 import 'package:fouta_app/features/marketplace/marketplace_service.dart';
 import 'package:fouta_app/features/monetization/monetization_service.dart';
-import '../../widgets/fouta_button.dart';
+import 'package:fouta_app/widgets/fouta_button.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   const ProductDetailScreen({super.key, required this.product});
@@ -50,6 +50,7 @@ class ProductDetailScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 FoutaButton(
                   label: 'Buy',
+                  primary: true,
                   onPressed: () async {
                     final id = await monetization.createPurchaseIntent(
                       amount: product.priceAmount,
