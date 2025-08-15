@@ -33,6 +33,7 @@ export async function publishDueScheduledPosts(
           .doc(doc.id)
           .set({
             reason: result.reason,
+            createdBy: user.id,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
           });
       }
@@ -46,6 +47,7 @@ export const schedulePosts = functions.pubsub
   .schedule('every 5 minutes')
   .onRun(async () => {
     if (process.env.SCHEDULED_POSTS_ENABLED !== 'true') {
+      functions.logger.info('scheduled posts disabled');
       return null;
     }
     const now = admin.firestore.Timestamp.now();

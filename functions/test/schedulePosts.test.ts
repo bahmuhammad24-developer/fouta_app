@@ -67,7 +67,7 @@ function createStubs() {
 
 test('publishes due posts', async () => {
   const {db, posts, moderation, deletions} = createStubs();
-  const ts = { } as any; // timestamp not used in stub
+  const ts = {} as any; // timestamp not used in stub
   const original = admin.firestore.FieldValue.serverTimestamp;
   (admin.firestore.FieldValue as any).serverTimestamp = () => new Date();
   await publishDueScheduledPosts(db, ts);
@@ -82,24 +82,26 @@ test('rejects unsafe posts', async () => {
   // replace users with bad payload
   (db.collection as any) = (path: string) => {
     if (path.endsWith('/users')) {
-      return {listDocuments: async () => [
-        {
-          id: 'user1',
-          collection: () => ({
-            where: () => ({
-              get: async () => ({
-                docs: [
-                  {
-                    id: 'sched1',
-                    data: () => ({payload: {content: 'spam', media: ['https://x'], visibility: 'public'}}),
-                    ref: {delete: async () => deletions.push(true)},
-                  },
-                ],
+      return {
+        listDocuments: async () => [
+          {
+            id: 'user1',
+            collection: () => ({
+              where: () => ({
+                get: async () => ({
+                  docs: [
+                    {
+                      id: 'sched1',
+                      data: () => ({payload: {content: 'hateword1', media: ['https://x'], visibility: 'public'}}),
+                      ref: {delete: async () => deletions.push(true)},
+                    },
+                  ],
+                }),
               }),
             }),
-          }),
-        },
-      ]};
+          },
+        ],
+      };
     }
     if (path.endsWith('/posts')) return {add: async (data: any) => posts.push(data)};
     if (path.endsWith('/moderation/scheduled')) {
@@ -114,6 +116,8 @@ test('rejects unsafe posts', async () => {
   (admin.firestore.FieldValue as any).serverTimestamp = original;
   assert.equal(posts.length, 0);
   assert.equal(moderation.length, 1);
+  assert.equal(moderation[0].reason, 'forbidden_terms');
+  assert.equal(moderation[0].createdBy, 'user1');
   assert.equal(deletions.length, 1);
 });
 
