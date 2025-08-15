@@ -51,6 +51,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       ),
       body: SafeStreamBuilder<List<Product>>(
         stream: _service.streamProducts(
+          limit: 20,
           category: _filters.category,
           minPrice: _filters.minPrice,
           maxPrice: _filters.maxPrice,
@@ -61,16 +62,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           final hasListings = products.any((p) => p.sellerId == userId);
           Widget content;
           if (products.isEmpty) {
-            content = RefreshScaffold(
-              onRefresh: () async {},
-              slivers: const [],
-              empty: const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Text('No listings yet'),
-                ),
-              ),
-            );
+            content = const Center(child: Text('No products'));
           } else {
             content = LayoutBuilder(
               builder: (context, constraints) {
