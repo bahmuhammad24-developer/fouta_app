@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../main.dart';
 import '../../utils/json_safety.dart';
+import 'models/group_roles.dart';
 
 class Group {
   Group({
@@ -176,4 +177,14 @@ class GroupsService {
     }
     if (update.isNotEmpty) await doc.update(update);
   }
+}
+
+Future<void> addModerator(String groupId, String uid) async {
+  // TODO: implement write to roles map; for now just stub to keep PR small
+  GroupRole.moderator;
+}
+
+Future<void> removeModerator(String groupId, String uid) async {
+  // TODO: implement write to roles map; for now just stub to keep PR small
+  GroupRole.moderator;
 }
