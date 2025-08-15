@@ -525,7 +525,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   if (!_isUploading)
                     Align(
                       alignment: Alignment.centerRight,
-                      child: TextButton.icon(
+                      child: FoutaButton(
+                        label: 'Clear Media',
                         onPressed: () {
                           setState(() {
                             _selectedMediaFiles.clear();
@@ -536,8 +537,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                             _message = 'Media cleared.';
                           });
                         },
-                        icon: const Icon(Icons.clear, size: 18),
-                        label: const Text('Clear Media'),
+                        primary: false,
                       ),
                     ),
                 ],
@@ -551,15 +551,25 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                ElevatedButton.icon(
-                  onPressed: () => _pickMedia(ImageSource.gallery, isVideo: false),
+                IconButton(
                   icon: const Icon(Icons.image),
-                  label: const Text('Image'),
+                  tooltip: 'Add image',
+                  onPressed: () =>
+                      _pickMedia(ImageSource.gallery, isVideo: false),
+                  style: IconButton.styleFrom(
+                    foregroundColor:
+                        Theme.of(context).colorScheme.primary,
+                  ),
                 ),
-                ElevatedButton.icon(
-                  onPressed: () => _pickMedia(ImageSource.gallery, isVideo: true),
+                IconButton(
                   icon: const Icon(Icons.videocam),
-                  label: const Text('Video'),
+                  tooltip: 'Add video',
+                  onPressed: () =>
+                      _pickMedia(ImageSource.gallery, isVideo: true),
+                  style: IconButton.styleFrom(
+                    foregroundColor:
+                        Theme.of(context).colorScheme.primary,
+                  ),
                 ),
               ],
             ),
@@ -575,13 +585,15 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
+            SizedBox(
+              width: double.infinity,
+              child: FoutaButton(
+                label: 'Cancel',
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                child: const Text('Cancel'),
+                primary: false,
+                expanded: true,
               ),
             ),
           ],

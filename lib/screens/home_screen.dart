@@ -292,6 +292,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       actions: [
                         IconButton(
                           icon: const Icon(Icons.search),
+                          tooltip: 'Search',
                           onPressed: () {
                             Navigator.push(
                               context,
@@ -305,6 +306,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         Builder(
                           builder: (context) => IconButton(
                             icon: const Icon(Icons.menu),
+                            tooltip: 'Menu',
                             onPressed: () =>
                                 Scaffold.of(context).openEndDrawer(),
                           ),
@@ -1764,13 +1766,11 @@ class _PeopleTabState extends State<PeopleTab> with AutomaticKeepAliveClientMixi
             ),
             title: Text(userData['displayName'] ?? 'Unknown'),
             subtitle: Text(userData['bio'] ?? '', maxLines: 1),
-            trailing: ElevatedButton(
-              onPressed: () => _toggleFollow(currentUser.uid, userDoc.id, isFollowing),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isFollowing ? Theme.of(context).colorScheme.outline : Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              ),
-              child: Text(isFollowing ? 'Unfollow' : 'Follow'),
+            trailing: FoutaButton(
+              label: isFollowing ? 'Unfollow' : 'Follow',
+              onPressed: () =>
+                  _toggleFollow(currentUser.uid, userDoc.id, isFollowing),
+              primary: !isFollowing,
             ),
             onTap: () => Navigator.push(
                 context, MaterialPageRoute(builder: (context) => ProfileScreen(userId: userDoc.id))),

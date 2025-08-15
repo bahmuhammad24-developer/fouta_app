@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import '../stories_service.dart';
 import '../../../features/creation/editor/overlays/editor_canvas.dart';
 import '../../../features/creation/editor/overlays/overlay_models.dart';
+import 'package:fouta_app/widgets/fouta_button.dart';
 
 /// Screen for composing a story with overlay editing.
 class CreateStoryScreen extends StatefulWidget {
@@ -55,11 +56,26 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
         mediaType: _type,
         initialOverlays: widget.initialOverlays,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _uploading ? null : _share,
-        child: _uploading
-            ? const CircularProgressIndicator()
-            : const Icon(Icons.send),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FoutaButton(
+              label: _uploading ? 'Sharing...' : 'Share Story',
+              onPressed: _uploading ? () {} : _share,
+              primary: true,
+              expanded: true,
+            ),
+            const SizedBox(height: 8),
+            FoutaButton(
+              label: 'Cancel',
+              onPressed: _uploading ? () {} : () => Navigator.pop(context),
+              primary: false,
+              expanded: true,
+            ),
+          ],
+        ),
       ),
     );
   }
