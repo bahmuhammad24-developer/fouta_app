@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../features/marketplace/marketplace_service.dart';
 import '../features/marketplace/product_detail_screen.dart';
 import 'package:fouta_app/features/marketplace/product_card.dart';
+import 'package:fouta_app/features/marketplace/create_product_nav.dart';
 import 'marketplace_filters_sheet.dart';
 import 'seller_profile_screen.dart';
 import '../widgets/refresh_scaffold.dart';
@@ -129,11 +130,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       leading: const Icon(Icons.add_business),
                       title: const Text('Start selling on Marketplace'),
                       subtitle: const Text('List your first product to reach buyers.'),
-                      onTap: () {
-                        // TODO: Navigate to create product screen once implemented
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Listing creation coming soon')),
-                        );
+                      onTap: () async {
+                        await navigateToCreateProduct(context);
                       },
                     ),
                   ),
