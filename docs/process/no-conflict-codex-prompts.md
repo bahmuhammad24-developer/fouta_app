@@ -22,3 +22,5 @@ Prompts must:
 - [ ] Imports unchanged unless necessary.
 - [ ] Copyright and license headers intact.
 - [ ] PR description lists acceptance criteria and rollback plan.
+
+Runtime changes must be scoped and additive; avoid multi-file refactors in one PR; do not touch files with open PRs.

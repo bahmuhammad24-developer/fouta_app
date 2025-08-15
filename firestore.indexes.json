@@ -1,6 +1,7 @@
 {
   "indexes": [
     {
+
       "collectionGroup": "chats",
       "queryScope": "COLLECTION",
       "fields": [
@@ -44,6 +45,29 @@
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "timestamp", "order": "DESCENDING" },
         { "fieldPath": "__name__", "order": "ASCENDING" }
+
+      "collectionGroup": "posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "visibility", "op": "EQUAL" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "products",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sellerId", "op": "EQUAL" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "messages",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "threadId", "op": "EQUAL" },
+        { "fieldPath": "sentAt", "order": "ASCENDING" }
+
       ]
     }
   ],
