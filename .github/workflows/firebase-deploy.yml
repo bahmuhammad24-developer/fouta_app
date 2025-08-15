@@ -5,8 +5,8 @@ on:
     branches: [ dev ]
     paths:
       - "firestore.rules"
-      - "storage.rules"
       - "firestore.indexes.json"
+      - "storage.rules"
       - "functions/**"
       - "firebase.json"
       - ".firebaserc"
@@ -15,39 +15,45 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # required by google-github-actions/auth
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
       - name: Install Firebase CLI
         run: npm i -g firebase-tools
 
-      - name: Auth with service account
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/sa.json
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          echo "$FIREBASE_SERVICE_ACCOUNT" > sa.json
-          firebase use default --project fouta-app
+      - name: Select project
+        run: firebase use ${{ secrets.FIREBASE_PROJECT_ID }} --project ${{ secrets.FIREBASE_PROJECT_ID }}
 
-      - name: Validate rules + indexes
+      - name: Validate rules + indexes (best-effort)
         run: |
-          firebase firestore:rules:test --project fouta-app || true
-          firebase emulators:exec --project fouta-app --only firestore "echo OK" || true
+          firebase emulators:exec --project ${{ secrets.FIREBASE_PROJECT_ID }} --only firestore "echo OK" || true
 
       - name: Deploy rules & indexes
         run: |
-          firebase deploy --only firestore:rules,firestore:indexes,storage:rules --project fouta-app
+          firebase deploy --non-interactive \
+            --only firestore:rules,firestore:indexes,storage:rules \
+            --project ${{ secrets.FIREBASE_PROJECT_ID }}
 
-      - name: Deploy functions (safe)
+      - name: Deploy functions (if present)
         run: |
           if [ -d "functions" ]; then
             npm --prefix functions ci
-            firebase deploy --only functions --project fouta-app
+            firebase deploy --non-interactive --only functions --project ${{ secrets.FIREBASE_PROJECT_ID }}
           else
-            echo "No functions folder—skipping."
+            echo "No functions dir; skipping"
           fi
+

@@ -1,0 +1,37 @@
+name: iOS CI (Xcode)
+
+on:
+  pull_request:
+    branches: [ dev ]
+    paths:
+      - "lib/**"
+      - "ios/**"
+      - "pubspec.yaml"
+      - ".github/workflows/ios-ci.yml"
+  workflow_dispatch:
+
+jobs:
+  build-ipa:
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'    # optionally set flutter-version: '3.22.3' if your project pins a version
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Install CocoaPods
+        run: |
+          sudo gem install cocoapods -N
+          cd ios
+          pod repo update
+          pod install
+
+      - name: Build iOS (debug)
+        run: flutter build ios --no-codesign --debug
+

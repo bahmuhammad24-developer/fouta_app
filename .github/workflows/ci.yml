@@ -9,8 +9,7 @@ on:
   pull_request:
     branches:
       - dev
-
-
+  
 jobs:
   flutter:
     name: Flutter analyze, tests, and web build
