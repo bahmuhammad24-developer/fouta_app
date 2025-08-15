@@ -550,6 +550,10 @@ Data models are stored under `artifacts/\$APP_ID/public/data/users/{uid}/safety`
 - `muted_words` document field:
   - `words` (`List<String>`; lowercased)
 
+Additional documentation lives under `docs/safety`:
+- [Moderation pipeline](docs/safety/moderation-pipeline.md)
+- [Privacy controls](docs/safety/privacy-controls.md)
+
 ## Troubleshooting
 
 If constructors use non-const initializers (e.g., FirebaseAuth, service instances), remove const from widget constructors.
