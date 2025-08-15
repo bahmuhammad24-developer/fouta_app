@@ -1,63 +1,8 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    function isAuth() { return request.auth != null; }
-    function isOwner(path) {
-      // Expect paths like profile_images/{uid}/*, chat_media/{chatId}/{uid}/*
-      return isAuth() && request.auth.uid in path.split('/');
-    }
-    function isImage() {
-      return request.resource.contentType.matches('image/.*');
-    }
-    function isVideo() {
-      return request.resource.contentType.matches('video/.*');
-    }
-
-    // Public images (read), owner-controlled writes
-    match /images/{allPaths=**} {
-      allow read: if true;
-      allow write: if isAuth() && (isImage() || isVideo());
-    }
-
-    // User avatars
-    match /profile_images/{uid}/{file} {
-      allow read: if true;
-      allow write: if isAuth() && request.auth.uid == uid && isImage();
-    }
-
-    // Stories (separate folder per your console)
-    match /stories_media/{uid}/{file} {
-      allow read: if true;
-      allow write: if isAuth() && request.auth.uid == uid && (isImage() || isVideo());
-    }
-
-    // Stories main asset folder (older path)
-    match /stories/{uid}/{file} {
-      allow read: if true;
-      allow write: if isAuth() && request.auth.uid == uid && (isImage() || isVideo());
-    }
-
-    // Chat attachments
-    match /chat_media/{chatId}/{uid}/{file} {
-      allow read: if isAuth(); // participants-only reads could be tightened later with Firestore check
-      allow write: if isAuth() && request.auth.uid == uid && (isImage() || isVideo());
-    }
-
-    // Event headers
-    match /event_headers/{uid}/{file} {
-      allow read: if true;
-      allow write: if isAuth() && request.auth.uid == uid && isImage();
-    }
-
-    // Videos (general)
-    match /videos/{allPaths=**} {
-      allow read: if true;
-      allow write: if isAuth() && isVideo();
-    }
-
-    // Default deny
-    match /{path=**} {
-      allow read, write: if false;
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }
