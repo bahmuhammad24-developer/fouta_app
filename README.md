@@ -213,6 +213,7 @@ The UI kit provides reusable building blocks:
 - **Motion System** – duration and curve tokens plus `animateOnTap` and `animatedVisibility` helpers in `lib/theme/motion.dart`.
 - **Skeleton Loaders** – `Skeleton.line`, `Skeleton.rect`, and `Skeleton.avatar` with optional shimmer are in `lib/widgets/skeleton.dart`.
 - **Progressive Images** – `ProgressiveImage` fades from a low-res thumbnail to the final image with error handling in `lib/widgets/progressive_image.dart`.
+- **Tiered Structure** – see [docs/design/system/tiered-structure.md](docs/design/system/tiered-structure.md) for how tokens assemble into components and screens.
 
 To adopt, import the relevant file and swap hard‑coded styles for the provided tokens or widgets.
 
