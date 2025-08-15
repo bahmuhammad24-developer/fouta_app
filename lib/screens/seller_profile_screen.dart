@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../features/marketplace/marketplace_service.dart';
 import '../features/marketplace/product_card.dart';
 import 'package:fouta_app/features/monetization/monetization_service.dart';
+import 'package:fouta_app/widgets/fouta_button.dart';
 import 'chat_screen.dart';
 
 class SellerProfileScreen extends StatelessWidget {
@@ -28,9 +29,11 @@ class SellerProfileScreen extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ElevatedButton(
+                FoutaButton(
+                  label: 'Message seller',
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -39,14 +42,15 @@ class SellerProfileScreen extends StatelessWidget {
                       ),
                     );
                   },
-                  child: const Text('Message seller'),
+                  primary: false,
+                  expanded: true,
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
+                const SizedBox(height: 8),
+                FoutaButton(
+                  label: 'Support Creator',
                   onPressed: () async {
                     const amount = 5.0;
                     if (amount <= 0) {
-
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Amount must be greater than zero'),
@@ -80,7 +84,7 @@ class SellerProfileScreen extends StatelessWidget {
                     }
                     // TODO: connect to payment provider once approved.
                   },
-                  child: const Text('Support Creator'),
+                  expanded: true,
                 ),
               ],
             ),

@@ -17,6 +17,7 @@ import 'package:fouta_app/models/media_item.dart';
 import 'package:fouta_app/widgets/post_card_widget.dart';
 import 'package:fouta_app/widgets/fouta_button.dart';
 import 'package:fouta_app/screens/create_post_screen.dart';
+import 'package:fouta_app/screens/unified_settings_screen.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fouta_app/utils/firestore_paths.dart';
 import 'package:fouta_app/widgets/skeletons/profile_skeleton.dart';
@@ -680,46 +681,70 @@ class _ProfileScreenState extends State<ProfileScreen>
     final Widget actionButtons = isMyProfile
         ? Padding(
             padding: const EdgeInsets.only(bottom: 20),
-            child: ElevatedButton(
-              onPressed: () {
-                if (_userData != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => EditProfileScreen(
-                        uid: widget.userId,
-                        initialData: _userData!,
+            child: Column(
+              children: [
+                FoutaButton(
+                  label: 'Edit Profile',
+                  onPressed: () {
+                    if (_userData != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditProfileScreen(
+                            uid: widget.userId,
+                            initialData: _userData!,
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  expanded: true,
+                ),
+                const SizedBox(height: 8),
+                FoutaButton(
+                  label: 'Settings',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const UnifiedSettingsScreen(),
                       ),
-                    ),
-                  );
-                }
-              },
-              child: const Text('Edit Profile'),
+                    );
+                  },
+                  primary: false,
+                  expanded: true,
+                ),
+              ],
             ),
           )
         : (currentUser != null && !currentUser.isAnonymous)
             ? Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  ElevatedButton(
-                    onPressed: () => _toggleFollow(
-                        currentUser.uid, widget.userId, isFollowing),
-                    child: Text(isFollowing ? 'Unfollow' : 'Follow'),
+                  Expanded(
+                    child: FoutaButton(
+                      label: isFollowing ? 'Unfollow' : 'Follow',
+                      onPressed: () => _toggleFollow(
+                          currentUser.uid, widget.userId, isFollowing),
+                    ),
                   ),
                   const SizedBox(width: 10),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ChatScreen(
-                            otherUserId: widget.userId,
-                            otherUserName: displayName,
+                  Expanded(
+                    child: FoutaButton(
+                      label: 'Message',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChatScreen(
+                              otherUserId: widget.userId,
+                              otherUserName: displayName,
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                    child: const Text('Message'),
+                        );
+                      },
+                      primary: false,
+                    ),
                   ),
                 ],
               )
@@ -921,7 +946,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             }),
           ),
           const SizedBox(height: 20),
-          ElevatedButton(onPressed: _save, child: const Text('Save')),
+          FoutaButton(label: 'Save', onPressed: _save, expanded: true),
         ],
       ),
     );
