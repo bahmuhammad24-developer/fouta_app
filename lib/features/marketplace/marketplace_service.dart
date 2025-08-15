@@ -7,11 +7,12 @@ import '../../utils/json_safety.dart';
 class Product {
   final String id;
   final String title;
-  final double priceAmount; // required by product_detail_screen
-  final String priceCurrency; // required by product_detail_screen
+  final double priceAmount;       // canonical
+  final String priceCurrency;     // canonical
   final String? description;
-  final List<Uri> imageUris;
+  final List<Uri> imageUris;      // canonical
   final String sellerId;
+  final List<String> favoriteUserIds; // optional favorites
 
   Product({
     required this.id,
@@ -21,23 +22,35 @@ class Product {
     required this.sellerId,
     this.description,
     List<Uri>? imageUris,
-  }) : imageUris = imageUris ?? const [];
+    List<String>? favoriteUserIds,
+  })  : imageUris = imageUris ?? const [],
+        favoriteUserIds = favoriteUserIds ?? const [];
+
+  // Backward-compatible aliases expected by UI
+  double get price => priceAmount;
+  String get currency => priceCurrency;
+  List<String> get urls => imageUris.map((u) => u.toString()).toList();
 
   factory Product.fromMap(String id, Map<String, dynamic> map) {
+    final rawUrls = (map['imageUris'] ?? map['urls'] ?? []) as List?;
+    final parsedUris = (rawUrls ?? [])
+        .map((e) => Uri.tryParse(e.toString()))
+        .whereType<Uri>()
+        .toList();
+
     return Product(
       id: id,
       title: (map['title'] ?? '').toString(),
       priceAmount: (map['priceAmount'] is num)
           ? (map['priceAmount'] as num).toDouble()
           : double.tryParse('${map['priceAmount']}') ?? 0.0,
-      priceCurrency: (map['priceCurrency'] ?? 'USD').toString(),
+      priceCurrency: (map['priceCurrency'] ?? map['currency'] ?? 'USD').toString(),
       description: (map['description'] as String?)?.trim(),
-      imageUris: (map['imageUris'] as List?)
-              ?.map((e) => Uri.tryParse(e.toString()))
-              .whereType<Uri>()
-              .toList() ??
-          const [],
+      imageUris: parsedUris,
       sellerId: (map['sellerId'] ?? '').toString(),
+      favoriteUserIds: ((map['favoriteUserIds'] as List?) ?? const [])
+          .map((e) => e.toString())
+          .toList(),
     );
   }
 
@@ -48,6 +61,7 @@ class Product {
         'description': description,
         'imageUris': imageUris.map((u) => u.toString()).toList(),
         'sellerId': sellerId,
+        'favoriteUserIds': favoriteUserIds,
       };
 }
 
@@ -68,13 +82,15 @@ class MarketplaceService {
   Future<String> createProduct({
     required String title,
     required double priceAmount,
-    required String priceCurrency,
+    required String currency,
     String? description,
     List<Uri>? imageUris,
     required String createdBy,
   }) async {
     // Simulate latency and return a synthetic ID
     await Future.delayed(const Duration(milliseconds: 300));
+    // ignore: unused_local_variable
+    final priceCurrency = currency; // preserve compatibility
     return 'stub_prod_${DateTime.now().millisecondsSinceEpoch}';
   }
 
@@ -102,6 +118,7 @@ extension MarketplaceQueries on MarketplaceService {
       description: 'A great demo item.',
       imageUris: const [],
       sellerId: 'demo-user',
+      favoriteUserIds: const ['demo-user'],
     );
   }
 
@@ -117,8 +134,23 @@ extension MarketplaceQueries on MarketplaceService {
         description: 'Item number $i',
         imageUris: const [],
         sellerId: 'demo-user',
+        favoriteUserIds: i.isEven ? const ['demo-user'] : const [],
       );
     });
+  }
+
+  /// Stream products for list UIs (stub).
+  Stream<List<Product>> streamProducts({
+    String? category,
+    double? minPrice,
+    double? maxPrice,
+    String? query,
+    int limit = 20,
+  }) async* {
+    yield await listProducts(limit: limit);
+    await for (final _ in Stream<void>.periodic(const Duration(seconds: 10))) {
+      yield await listProducts(limit: limit);
+    }
   }
 }
 

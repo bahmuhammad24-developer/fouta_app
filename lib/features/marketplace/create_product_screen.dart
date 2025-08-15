@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'marketplace_service.dart';
+import 'package:fouta_app/features/marketplace/marketplace_service.dart';
 
 class CreateProductScreen extends StatefulWidget {
   const CreateProductScreen({super.key});
