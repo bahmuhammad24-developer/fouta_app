@@ -95,7 +95,19 @@ class MarketplaceService {
     return ref.snapshots().map((s) => s.docs.map(Product.fromDoc).toList());
   }
 
-  Future<void> createProduct(Product product) => _collection.add(product.toMap());
+  /// Stubbed create product. Replace with Firestore write in a future PR.
+  Future<String> createProduct({
+    required String title,
+    required double priceAmount,
+    required String currency,
+    String? description,
+    List<Uri>? imageUris,
+    required String createdBy,
+  }) async {
+    // Simulate latency and return a synthetic ID
+    await Future.delayed(const Duration(milliseconds: 300));
+    return 'stub_prod_${DateTime.now().millisecondsSinceEpoch}';
+  }
 
   Future<void> toggleFavorite(String productId, String userId) async {
     final doc = _collection.doc(productId);

@@ -45,6 +45,9 @@ Rationale: This guarantees deterministic, reviewable updates and consistent mult
 - One ticket → one branch → one small PR
 - Avoid touching files already edited by open PRs
 - Prefer additive edits; do not mass-reformat
+- Prefer adding new files and tiny call-site adapters over large refactors.
+- When wiring navigation, use a small helper (e.g., create_product_nav.dart) and minimally touch one caller.
+- Avoid editing files touched by open PRs; if uncertain, prefer AppBar action additions or separate entry-points.
 
 ### Multi‑role awareness
 The AI must integrate the perspectives of PM, Developer, Tester, Designer, DevOps, Data, Security, Accessibility, and Product in every response. For each request, it should explicitly address requirements and acceptance criteria (PM), implementation details (Dev), testing needs (Tester), UI/a11y considerations (Designer), deployment and cost impacts (DevOps), data and migrations (Data), security/privacy concerns (Security), and overall policy compliance (Product).
