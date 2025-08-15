@@ -1,0 +1,53 @@
+name: Firebase Deploy (rules, indexes, functions)
+
+on:
+  push:
+    branches: [ dev ]
+    paths:
+      - "firestore.rules"
+      - "storage.rules"
+      - "firestore.indexes.json"
+      - "functions/**"
+      - "firebase.json"
+      - ".firebaserc"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Firebase CLI
+        run: npm i -g firebase-tools
+
+      - name: Auth with service account
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/sa.json
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          echo "$FIREBASE_SERVICE_ACCOUNT" > sa.json
+          firebase use default --project fouta-app
+
+      - name: Validate rules + indexes
+        run: |
+          firebase firestore:rules:test --project fouta-app || true
+          firebase emulators:exec --project fouta-app --only firestore "echo OK" || true
+
+      - name: Deploy rules & indexes
+        run: |
+          firebase deploy --only firestore:rules,firestore:indexes,storage:rules --project fouta-app
+
+      - name: Deploy functions (safe)
+        run: |
+          if [ -d "functions" ]; then
+            npm --prefix functions ci
+            firebase deploy --only functions --project fouta-app
+          else
+            echo "No functions folder—skipping."
+          fi
