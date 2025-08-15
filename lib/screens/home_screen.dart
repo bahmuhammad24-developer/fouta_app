@@ -520,17 +520,19 @@ class _AppDrawer extends StatelessWidget {
               );
             },
           ),
-          ListTile(
-            leading: const Icon(Icons.auto_awesome_outlined),
-            title: const Text('AR Camera'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ArCameraScreen()),
-              );
-            },
-          ),
+          // TODO: Re-enable AR Camera once integrated into marketplace furniture placement
+          if (const bool.fromEnvironment('AR_EXPERIMENTAL'))
+            ListTile(
+              leading: const Icon(Icons.auto_awesome_outlined),
+              title: const Text('AR Camera'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ArCameraScreen()),
+                );
+              },
+            ),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.info_outline),
