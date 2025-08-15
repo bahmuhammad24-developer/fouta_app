@@ -49,6 +49,8 @@ See [docs/vision.md](docs/vision.md) for the broader roadmap.
 ## Roadmap & UX
 See [docs/roadmap/README.md](docs/roadmap/README.md) and [docs/design/ux-principles.md](docs/design/ux-principles.md) for product phases and UX guidelines.
 
+- [Challenges feed](docs/features/challenges/README.md)
+
 ## Architecture & Competitive Alignment
 Dedicated feature modules keep the project competitive with larger platforms. The roadmap for discovery, moderation, growth, analytics, and monetization lives in [docs/architecture.md](docs/architecture.md).
 
