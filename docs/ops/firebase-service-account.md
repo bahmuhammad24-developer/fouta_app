@@ -46,7 +46,7 @@ As of 2025-08-15, CI deploys **Cloud Storage rules** alongside Firestore rules a
   - Tighten/relax rules by editing `storage.rules`; CI will deploy on merge.
   - For multi-bucket setups, add Storage targets in `firebase.json` and corresponding rules files; include those targets via `--only storage:<name>`.
 
-### 10) Storage deploy flag (important)
+### 10) Storage deploy flag (targets vs rules file)
 
 Use:
 
@@ -54,12 +54,12 @@ Use:
 firebase deploy --only firestore:rules,firestore:indexes,storage
 ```
 
-Do not use `storage:rules`. In the Firebase CLI, `storage:<name>` refers to a Storage target named `<name>` (configured via `firebase target:apply storage <name> <bucket>`).
+Do not use `storage:rules`. In the Firebase CLI, `storage:<name>` refers to a Storage target named `<name>` (created via `firebase target:apply storage <name> <bucket>`).
 
-When `firebase.json` has:
+Our repo uses a rules file wired in `firebase.json`:
 
 ```json
 "storage": { "rules": "storage.rules" }
 ```
 
-you deploy those rules with `--only storage`.
+so the correct filter is simply `--only storage`.
