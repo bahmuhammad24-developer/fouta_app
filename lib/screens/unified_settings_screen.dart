@@ -281,7 +281,20 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const DataSaverScreen()));
             },
           ),
-          
+
+          // TODO: Re-enable AR Camera once integrated into marketplace furniture placement
+          // if (const bool.fromEnvironment('AR_EXPERIMENTAL'))
+          //   ListTile(
+          //     leading: const Icon(Icons.auto_awesome_outlined),
+          //     title: const Text('AR Camera'),
+          //     onTap: () {
+          //       Navigator.push(
+          //         context,
+          //         MaterialPageRoute(builder: (_) => const ArCameraScreen()),
+          //       );
+          //     },
+          //   ),
+
           _buildSectionHeader('APP'),
 
           SwitchListTile(

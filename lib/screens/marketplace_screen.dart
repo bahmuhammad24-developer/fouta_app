@@ -37,7 +37,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final user = FirebaseAuth.instance.currentUser;
+    final userId = user?.uid ?? '';
     return Scaffold(
       appBar: AppBar(
         title: const Text('Marketplace'),
@@ -54,8 +55,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         ),
         builder: (context, snapshot) {
           final products = snapshot.data ?? [];
+          final hasListings = products.any((p) => p.sellerId == userId);
+          Widget content;
           if (products.isEmpty) {
-            return RefreshScaffold(
+            content = RefreshScaffold(
               onRefresh: () async {},
               slivers: const [],
               empty: const Card(
@@ -65,54 +68,78 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 ),
               ),
             );
-          }
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
+          } else {
+            content = LayoutBuilder(
+              builder: (context, constraints) {
+                final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
 
-              return FocusTraversalGroup(
-                policy: OrderedTraversalPolicy(),
-                child: GridView.builder(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    childAspectRatio: 3 / 4,
+                return FocusTraversalGroup(
+                  policy: OrderedTraversalPolicy(),
+                  child: GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: 3 / 4,
+                    ),
+                    itemCount: products.length,
+                    itemBuilder: (context, index) {
+                      final product = products[index];
+                      try {
+                        return ProductCard(
+                          product: product,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ProductDetailScreen(product: product),
+                              ),
+                            );
+                          },
+                          onFavorite: () => _service.toggleFavorite(product.id, userId),
+                          isFavorited: product.favoriteUserIds.contains(userId),
+                          onSellerTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SellerProfileScreen(sellerId: product.sellerId),
+                              ),
+                            );
+                          },
+                        );
+                      } catch (e) {
+                        if (kDebugMode) {
+                          print('Error rendering product ${product.id}: $e');
+                        }
+                        return const SizedBox.shrink();
+                      }
+                    },
                   ),
-                  itemCount: products.length,
-                  itemBuilder: (context, index) {
-                  final product = products[index];
-                  try {
-                    return ProductCard(
-                      product: product,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ProductDetailScreen(product: product),
-                          ),
-                        );
-                      },
-                      onFavorite: () => _service.toggleFavorite(product.id, userId),
-                      isFavorited: product.favoriteUserIds.contains(userId),
-                      onSellerTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => SellerProfileScreen(sellerId: product.sellerId),
-                          ),
-                        );
-                      },
-                    );
-                  } catch (e) {
-                    if (kDebugMode) {
-                      print('Error rendering product ${product.id}: $e');
-                    }
-                    return const SizedBox.shrink();
-                  }
-                  },
-                ),
+                );
+              },
+            );
+          }
 
-              );
-            },
+          return Column(
+            children: [
+              if (user != null && !hasListings)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Card(
+                    color: Theme.of(context).colorScheme.secondaryContainer,
+                    child: ListTile(
+                      leading: const Icon(Icons.add_business),
+                      title: const Text('Start selling on Marketplace'),
+                      subtitle: const Text('List your first product to reach buyers.'),
+                      onTap: () {
+                        // TODO: Navigate to create product screen once implemented
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Listing creation coming soon')),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              Expanded(child: content),
+            ],
           );
         },
       ),
