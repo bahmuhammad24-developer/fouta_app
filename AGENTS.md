@@ -66,3 +66,5 @@ The AI must integrate the perspectives of PM, Developer, Tester, Designer, DevOp
   4) PR includes a **rollback plan** and index notes (Firestore queries must be indexable).
 
 When generating prompts for codex, document the flag names, the metrics to track, and the rollback plan.
+
+**Shared prompts MUST NOT cause merge conflicts. Prefer new files or single-file, additive diffs.**
