@@ -410,7 +410,8 @@ All triggers must respect flags, frequency caps, and user controls.
 ## Change Process
 All changes to project code or documentation must be initiated and executed via Codex prompts.
 
-Do not push manual edits directly.
+- All changes use conflict-safe Codex prompts (see [docs/process/no-conflict-codex-prompts.md](docs/process/no-conflict-codex-prompts.md)).
+- Do not push manual edits directly.
 
 Each change should come as a clear, reviewable Codex prompt that:
 

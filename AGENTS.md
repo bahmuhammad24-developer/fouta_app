@@ -40,6 +40,12 @@ Rationale: This guarantees deterministic, reviewable updates and consistent mult
 - **Budgets:** CI must fail if p95 latency exceeds 800 ms or if storage/egress grows more than 20 % month‑over‑month.
 - **Auth screens:** No bottom nav on Login/Signup.
 
+### No-Conflict Codex Prompts
+- See [docs/process/no-conflict-codex-prompts.md](docs/process/no-conflict-codex-prompts.md)
+- One ticket → one branch → one small PR
+- Avoid touching files already edited by open PRs
+- Prefer additive edits; do not mass-reformat
+
 ### Multi‑role awareness
 The AI must integrate the perspectives of PM, Developer, Tester, Designer, DevOps, Data, Security, Accessibility, and Product in every response. For each request, it should explicitly address requirements and acceptance criteria (PM), implementation details (Dev), testing needs (Tester), UI/a11y considerations (Designer), deployment and cost impacts (DevOps), data and migrations (Data), security/privacy concerns (Security), and overall policy compliance (Product).
 
