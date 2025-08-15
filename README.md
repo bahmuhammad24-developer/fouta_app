@@ -47,7 +47,7 @@ Fouta centers the global majority. The platform avoids suppressing discussions o
 See [docs/vision.md](docs/vision.md) for the broader roadmap.
 
 ## Roadmap & UX
-See [docs/roadmap/README.md](docs/roadmap/README.md) and [docs/design/ux-principles.md](docs/design/ux-principles.md) for product phases and UX guidelines.
+See [docs/roadmap/README.md](docs/roadmap/README.md) and [docs/design/ux-principles.md](docs/design/ux-principles.md) for product phases and UX guidelines. Track feature progress in [docs/roadmap/tracker.md](docs/roadmap/tracker.md).
 
 - [Challenges feed](docs/features/challenges/README.md)
 
