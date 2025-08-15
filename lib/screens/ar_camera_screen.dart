@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:fouta_app/config/feature_flags.dart';
 
 /// Displays a basic camera preview with simple AR-style overlays.
 class ArCameraScreen extends StatefulWidget {
@@ -14,18 +15,33 @@ class ArCameraScreen extends StatefulWidget {
 class _ArCameraScreenState extends State<ArCameraScreen> {
   CameraController? _controller;
   Future<void>? _initFuture;
+  bool _initFailed = false;
 
   @override
   void initState() {
     super.initState();
-    _initFuture = _init();
+    if (AR_EXPERIMENTAL) {
+      _initFuture = _init();
+    }
   }
 
   Future<void> _init() async {
-    final cameras = await availableCameras();
-    _controller = CameraController(cameras.first, ResolutionPreset.medium);
-    await _controller!.initialize();
-    setState(() {});
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        setState(() {
+          _initFailed = true;
+        });
+        return;
+      }
+      _controller = CameraController(cameras.first, ResolutionPreset.medium);
+      await _controller!.initialize();
+      setState(() {});
+    } on CameraException {
+      setState(() {
+        _initFailed = true;
+      });
+    }
   }
 
   @override
@@ -36,6 +52,14 @@ class _ArCameraScreenState extends State<ArCameraScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!AR_EXPERIMENTAL) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('AR Camera')),
+        body: const Center(
+          child: Text('AR is experimental—enable flag to try it.'),
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('AR Camera')),
       body: FutureBuilder<void>(
@@ -44,8 +68,8 @@ class _ArCameraScreenState extends State<ArCameraScreen> {
           if (snap.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (!(_controller?.value.isInitialized ?? false)) {
-            return const Center(child: Text('Camera unavailable'));
+          if (_initFailed || !(_controller?.value.isInitialized ?? false)) {
+            return const _Fallback();
           }
           return Stack(
             fit: StackFit.expand,
@@ -71,6 +95,17 @@ class _ArCameraScreenState extends State<ArCameraScreen> {
           );
         },
       ),
+    );
+  }
+}
+
+class _Fallback extends StatelessWidget {
+  const _Fallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('Camera unavailable. AR requires camera access.'),
     );
   }
 }
