@@ -457,14 +457,15 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             ),
           ),
           actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
+            FoutaButton(
+              label: 'Cancel',
+              primary: false,
               onPressed: () {
                 Navigator.of(context).pop(false);
               },
             ),
-            ElevatedButton(
-              child: const Text('Post'),
+            FoutaButton(
+              label: 'Post',
               onPressed: () {
                 Navigator.of(context).pop(true);
               },

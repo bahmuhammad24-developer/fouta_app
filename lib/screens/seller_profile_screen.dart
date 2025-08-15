@@ -48,6 +48,7 @@ class SellerProfileScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 FoutaButton(
                   label: 'Support Creator',
+                  primary: true,
                   onPressed: () async {
                     const amount = 5.0;
                     if (amount <= 0) {
