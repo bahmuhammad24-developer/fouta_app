@@ -1,31 +1,16 @@
-
-export interface SafetyResult {
-  ok: boolean;
-  reason?: string;
-}
-
-const FORBIDDEN_WORDS = ['spam', 'scam', 'fake'];
-
-export function checkSafetyRules(data: any): SafetyResult {
-  const content = (data?.content || '').trim();
-  if (!content) {
-    return { ok: false, reason: 'empty-content' };
-  }
-  if (content.length > 5000) {
-    return { ok: false, reason: 'too-long' };
-  }
-  const lower = content.toLowerCase();
-  if (FORBIDDEN_WORDS.some((w) => lower.includes(w))) {
-    return { ok: false, reason: 'forbidden-content' };
+export function checkSafetyRules(data: any): { ok: boolean; reason?: string } {
+  const text = (data?.content ?? '').toString().trim();
+  if (!text) return { ok: false, reason: 'empty_content' };
+  if (text.length > 5000) return { ok: false, reason: 'content_too_long' };
+  const forbidden = ['hateword1', 'slur1']; // placeholder list
+  const lower = text.toLowerCase();
+  if (forbidden.some(w => lower.includes(w))) {
+    return { ok: false, reason: 'forbidden_terms' };
   }
   const media = data?.media;
-  if (Array.isArray(media)) {
-    for (const url of media) {
-      if (typeof url !== 'string' || !url.startsWith('https://')) {
-        return { ok: false, reason: 'insecure-media-url' };
-      }
-    }
+  const urls: string[] = Array.isArray(media) ? media : (media?.urls ?? []);
+  if (urls.some(u => !/^https:\/\//i.test(String(u)))) {
+    return { ok: false, reason: 'insecure_media_url' };
   }
   return { ok: true };
-
 }
