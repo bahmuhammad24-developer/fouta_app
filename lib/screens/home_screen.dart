@@ -167,7 +167,23 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       },
     );
   }
-  
+
+  Widget _buildCreatePostFab(BuildContext context) {
+    return FloatingActionButton(
+      heroTag: 'createPostFab',
+      onPressed: () async {
+        _setNavBarVisibility(false);
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CreatePostScreen()),
+        );
+        _setNavBarVisibility(true);
+      },
+      child: const Icon(Icons.add),
+      tooltip: 'Create Post',
+    );
+  }
+
   Widget _buildNewChatFab(BuildContext context) {
     return FloatingActionButton(
       heroTag: 'newChatFab',
@@ -181,6 +197,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: const Icon(Icons.message),
       tooltip: 'Start New Chat',
     );
+  }
+
+  Widget? _buildFab(BuildContext context) {
+    if (_selectedIndex == 0) {
+      return _buildCreatePostFab(context);
+    }
+    if (_selectedIndex == 1 && _showNewChatFab) {
+      return _buildNewChatFab(context);
+    }
+    return null;
   }
 
   @override
@@ -205,10 +231,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       },
       child: Scaffold(
           endDrawer: _AppDrawer(showMessage: _showMessage),
-          // Show the New Chat FAB only on the chats list screen
-          floatingActionButton: (_selectedIndex == 1 && _showNewChatFab)
-              ? _buildNewChatFab(context)
-              : null,
+          floatingActionButton: _buildFab(context),
 
           bottomNavigationBar: NavigationBar(
             selectedIndex: _selectedIndex,
