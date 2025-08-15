@@ -26,6 +26,7 @@ import 'media/post_media.dart';
 import 'package:fouta_app/widgets/share_post_dialog.dart';
 import 'package:fouta_app/widgets/fouta_card.dart';
 import 'package:fouta_app/utils/overlays.dart';
+import 'package:fouta_app/widgets/fouta_button.dart';
 import 'package:fouta_app/features/moderation/moderation_service.dart';
 import 'package:fouta_app/utils/json_safety.dart';
 import '../services/post_service.dart';
@@ -125,14 +126,15 @@ class _PostCardWidgetState extends State<PostCardWidget> {
           title: const Text('Delete Quote Post'),
           content: const Text('Are you sure you want to delete this quote post? The original post will not be affected.'),
           actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
+            FoutaButton(
+              label: 'Cancel',
               onPressed: () => Navigator.of(context).pop(false),
+              primary: false,
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
-              child: const Text('Delete'),
+            FoutaButton(
+              label: 'Delete',
               onPressed: () => Navigator.of(context).pop(true),
+              primary: true,
             ),
           ],
         );
@@ -428,10 +430,17 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                         title: const Text('Collection name'),
                         content: TextField(controller: controller, autofocus: true),
                         actions: [
-                          TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
-                          TextButton(
-                              onPressed: () => Navigator.pop(c, controller.text.trim()),
-                              child: const Text('Create')),
+                          FoutaButton(
+                            label: 'Cancel',
+                            onPressed: () => Navigator.pop(c),
+                            primary: false,
+                          ),
+                          FoutaButton(
+                            label: 'Create',
+                            onPressed: () =>
+                                Navigator.pop(c, controller.text.trim()),
+                            primary: true,
+                          ),
                         ],
                       ),
                     );
@@ -505,14 +514,15 @@ class _PostCardWidgetState extends State<PostCardWidget> {
             maxLines: 3,
           ),
           actions: [
-            TextButton(
+            FoutaButton(
+              label: 'Cancel',
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              primary: false,
             ),
-            TextButton(
-              onPressed: () =>
-                  Navigator.pop(context, reasonController.text.trim()),
-              child: const Text('Submit'),
+            FoutaButton(
+              label: 'Submit',
+              onPressed: () => Navigator.pop(context, reasonController.text.trim()),
+              primary: true,
             ),
           ],
         );
@@ -546,14 +556,15 @@ class _PostCardWidgetState extends State<PostCardWidget> {
           title: const Text('Delete Post'),
           content: const Text('Are you sure you want to delete this post? This action cannot be undone.'),
           actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
+            FoutaButton(
+              label: 'Cancel',
               onPressed: () => Navigator.of(context).pop(false),
+              primary: false,
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
-              child: const Text('Delete'),
+            FoutaButton(
+              label: 'Delete',
               onPressed: () => Navigator.of(context).pop(true),
+              primary: true,
             ),
           ],
         );
@@ -613,14 +624,15 @@ class _PostCardWidgetState extends State<PostCardWidget> {
           title: const Text('Delete Comment'),
           content: const Text('Are you sure you want to delete this comment?'),
           actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
+            FoutaButton(
+              label: 'Cancel',
               onPressed: () => Navigator.of(context).pop(false),
+              primary: false,
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
-              child: const Text('Delete'),
+            FoutaButton(
+              label: 'Delete',
               onPressed: () => Navigator.of(context).pop(true),
+              primary: true,
             ),
           ],
         );
@@ -678,12 +690,13 @@ class _PostCardWidgetState extends State<PostCardWidget> {
             textCapitalization: TextCapitalization.sentences,
           ),
           actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
+            FoutaButton(
+              label: 'Cancel',
               onPressed: () => Navigator.of(context).pop(false),
+              primary: false,
             ),
-            ElevatedButton(
-              child: const Text('Save'),
+            FoutaButton(
+              label: 'Save',
               onPressed: () {
                 if (editController.text.trim().isEmpty) {
                   widget.onMessage('Comment cannot be empty.');
@@ -691,6 +704,7 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                 }
                 Navigator.of(context).pop(true);
               },
+              primary: true,
             ),
           ],
         );
@@ -905,11 +919,12 @@ class _PostCardWidgetState extends State<PostCardWidget> {
             ),
           ),
           actions: <Widget>[
-            TextButton(
-              child: const Text('Close'),
+            FoutaButton(
+              label: 'Close',
               onPressed: () {
                 Navigator.of(context).pop();
               },
+              primary: false,
             ),
           ],
         );
@@ -1182,11 +1197,15 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        GestureDetector(
-                          onLongPress: _openReactionTray,
-                          child: AnimatedLikeButton(
-                            isLiked: _isLiked,
-                            onChanged: (v) => _toggleLike(),
+                        Semantics(
+                          label: _isLiked ? 'Unlike post' : 'Like post',
+                          button: true,
+                          child: GestureDetector(
+                            onLongPress: _openReactionTray,
+                            child: AnimatedLikeButton(
+                              isLiked: _isLiked,
+                              onChanged: (v) => _toggleLike(),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -1204,43 +1223,47 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                     ),
                   ),
                   Expanded(
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          _showComments = !_showComments;
-                        });
-                      },
-                      focusColor: AppColors.primary.withOpacity(0.3),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.comment, color: Theme.of(context).iconTheme.color),
-                          const SizedBox(width: 4),
-                          StreamBuilder<QuerySnapshot>(
-                            stream: FirebaseFirestore.instance
-                                .collection('artifacts/${widget.appId}/public/data/posts')
-                                .doc(widget.postId)
-                                .collection('comments')
-                                .snapshots(),
-                            builder: (context, commentSnapshot) {
-                              if (commentSnapshot.connectionState == ConnectionState.waiting) {
-                                return const Text('...');
-                              }
-                              final int commentCount = commentSnapshot.data?.docs.length ?? 0;
-                              return Text(
-                                '$commentCount',
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                ),
-                              );
-                            },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.comment),
+                          tooltip: 'Comments',
+                          onPressed: () {
+                            setState(() {
+                              _showComments = !_showComments;
+                            });
+                          },
+                          style: IconButton.styleFrom(
+                            foregroundColor: Theme.of(context).iconTheme.color,
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 4),
+                        StreamBuilder<QuerySnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('artifacts/${widget.appId}/public/data/posts')
+                              .doc(widget.postId)
+                              .collection('comments')
+                              .snapshots(),
+                          builder: (context, commentSnapshot) {
+                            if (commentSnapshot.connectionState == ConnectionState.waiting) {
+                              return const Text('...');
+                            }
+                            final int commentCount = commentSnapshot.data?.docs.length ?? 0;
+                            return Text(
+                              '$commentCount',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   ),
                   Expanded(
                     child: PopupMenuButton<String>(
+                      tooltip: 'Share',
                       onSelected: (value) {
                         switch (value) {
                           case 'repost':
@@ -1278,32 +1301,36 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                       ),
                     ),
                   ),
-                    Expanded(
-                      child: InkWell(
-                        onTap: _toggleBookmark,
-                        focusColor: AppColors.primary.withOpacity(0.3),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              _isBookmarked
-                                  ? Icons.bookmark
-                                  : Icons.bookmark_border,
-                              color: _isBookmarked
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context).iconTheme.color,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '$_bookmarkCount',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                          ],
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            _isBookmarked
+                                ? Icons.bookmark
+                                : Icons.bookmark_border,
+                          ),
+                          tooltip: _isBookmarked
+                              ? 'Remove bookmark'
+                              : 'Bookmark',
+                          onPressed: _toggleBookmark,
+                          style: IconButton.styleFrom(
+                            foregroundColor: _isBookmarked
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).iconTheme.color,
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$_bookmarkCount',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
                   ],
                 ),
               if (_showComments) ...[
@@ -1410,9 +1437,12 @@ class _PostCardWidgetState extends State<PostCardWidget> {
                           decoration: InputDecoration(
                             hintText: 'Add a comment...',
                             suffixIcon: IconButton(
-                              icon: Icon(Icons.send, color: Theme.of(context).colorScheme.primary),
+                              icon: Icon(Icons.send,
+                                  color: Theme.of(context).colorScheme.primary),
+                              tooltip: 'Send comment',
                               onPressed: () {
-                                _addComment(widget.postId, _commentInputController.text);
+                                _addComment(widget.postId,
+                                    _commentInputController.text);
                               },
                             ),
                           ),
