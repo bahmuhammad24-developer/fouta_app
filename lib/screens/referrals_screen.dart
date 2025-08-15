@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:fouta_app/features/growth/growth_service.dart';
 import 'package:share_plus/share_plus.dart';
 
+typedef ShareInvoker = Future<void> Function(String);
+ShareInvoker shareInvoker = (msg) => Share.share(msg);
+
 class ReferralsScreen extends StatefulWidget {
   const ReferralsScreen({super.key, required this.userId});
 
@@ -32,7 +35,7 @@ class _ReferralsScreenState extends State<ReferralsScreen> {
 
               child: ElevatedButton(
                 onPressed: () {
-                  Share.share('Join me on Fouta. Code: $_code');
+                  shareInvoker('Join me on Fouta. Code: $_code');
                 },
                 child: const Text('Share'),
               ),
