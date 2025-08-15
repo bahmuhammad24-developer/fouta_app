@@ -12,6 +12,7 @@ import '../widgets/refresh_scaffold.dart';
 import '../widgets/safe_stream_builder.dart';
 import '../widgets/progressive_image.dart';
 import '../widgets/skeleton.dart';
+import '../widgets/fouta_button.dart';
 
 // TODO(IA): Align screen layout with docs/design/information-architecture.md after DS v1 adoption
 class MarketplaceScreen extends StatefulWidget {
@@ -122,19 +123,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
 
           return Column(
             children: [
-              if (user != null && !hasListings)
+              if (user != null)
                 Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Card(
-                    color: Theme.of(context).colorScheme.secondaryContainer,
-                    child: ListTile(
-                      leading: const Icon(Icons.add_business),
-                      title: const Text('Start selling on Marketplace'),
-                      subtitle: const Text('List your first product to reach buyers.'),
-                      onTap: () async {
-                        await navigateToCreateProduct(context);
-                      },
-                    ),
+                  child: FoutaButton(
+                    label: hasListings ? 'Sell' : 'Start Selling',
+                    onPressed: () async {
+                      await navigateToCreateProduct(context);
+                    },
+                    expanded: true,
                   ),
                 ),
               Expanded(child: content),
