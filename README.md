@@ -585,6 +585,11 @@ ReactionTray(
 
 ## Accessibility & Motion
 
+Guidelines:
+
+- [Accessibility baseline](docs/design/accessibility.md)
+- [Motion guidelines](docs/design/motion.md)
+
 The app adopts focus visuals for keyboard users, clamps text scaling to a sensible maximum, and shortens or skips animations when the operating system requests reduced motion. Adjust text size or motion preferences in your device's accessibility settings to toggle these features.
 
 ## Integration Pass 1 adoption notes
