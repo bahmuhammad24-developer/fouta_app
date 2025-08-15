@@ -40,6 +40,36 @@ service cloud.firestore {
             || resource.data.authorId == request.auth.uid);
     }
 
+    // challenges (stubbed)
+    match /challenges/{challengeId} {
+      allow read: if true;
+      // TODO: validate allowed fields for challenge create
+      allow create: if request.auth != null
+        && request.resource.data.authorId == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && resource.data.authorId == request.auth.uid;
+
+      // comments (per-challenge)
+      match /comments/{commentId} {
+        allow read: if true;
+        // TODO: enforce comment length limits
+        allow create: if request.auth != null
+          && request.resource.data.authorId == request.auth.uid;
+        allow update, delete: if request.auth != null
+          && resource.data.authorId == request.auth.uid;
+      }
+
+      // votes (one per user)
+      match /votes/{uid} {
+        allow read: if true;
+        allow create: if request.auth != null
+          && request.auth.uid == uid
+          && request.resource.data.createdAt == request.time;
+        allow update, delete: if request.auth != null
+          && request.auth.uid == uid;
+      }
+    }
+
     // users (profile docs)
     match /users/{uid} {
       allow read: if true;
