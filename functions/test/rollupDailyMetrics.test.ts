@@ -1,20 +1,33 @@
-
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {paginatedCount} from '../src/rollupDailyMetrics';
+import * as admin from 'firebase-admin';
+import {countPaged} from '../src/rollupDailyMetrics';
 
-test('counts documents across pages', async () => {
-  const pages = [[{}, {}], [{}, {}], [{}]];
-  class StubQuery {
-    constructor(private pages: any[][], private index = 0) {}
-    orderBy() { return this; }
-    limit() { return this; }
-    async get() {
-      return {size: this.pages[this.index].length, docs: this.pages[this.index]};
-    }
-    startAfter() { return new StubQuery(this.pages, this.index + 1); }
+const PROJECT = 'demo-rollup';
+
+function init() {
+  try {
+    return admin.app();
+  } catch {
+    return admin.initializeApp({projectId: PROJECT}, `app-${Date.now()}`);
   }
-  const total = await paginatedCount(new StubQuery(pages) as any, 2);
-  assert.equal(total, 5);
+}
 
+test('counts >1000 documents from emulator', async (t) => {
+  if (!process.env.FIRESTORE_EMULATOR_HOST) {
+    t.skip('FIRESTORE_EMULATOR_HOST not set');
+    return;
+  }
+  const app = init();
+  const db = app.firestore();
+  const col = db.collection('rollup-test');
+  const writes: Promise<FirebaseFirestore.DocumentReference>[] = [];
+  const now = new Date();
+  for (let i = 0; i < 1100; i++) {
+    writes.push(col.add({createdAt: now}));
+  }
+  await Promise.all(writes);
+  const total = await countPaged(col.orderBy('createdAt'));
+  assert.equal(total, 1100);
+  await app.delete();
 });
