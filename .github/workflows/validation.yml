@@ -18,3 +18,5 @@ jobs:
         run: |
           chmod +x scripts/validate.sh
           scripts/validate.sh
+      - name: Run Flutter tests
+        run: flutter test --no-pub
