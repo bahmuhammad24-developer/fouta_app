@@ -13,6 +13,7 @@ import '../widgets/safe_stream_builder.dart';
 import '../widgets/progressive_image.dart';
 import '../widgets/skeleton.dart';
 
+// TODO(IA): Align screen layout with docs/design/information-architecture.md after DS v1 adoption
 class MarketplaceScreen extends StatefulWidget {
   const MarketplaceScreen({super.key});
 
