@@ -39,7 +39,7 @@ class ProductDetailScreen extends StatelessWidget {
               children: [
                 Text(product.title, style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8),
-                Text('${product.currency}${product.price.toStringAsFixed(2)}'),
+                Text('${product.priceCurrency}${product.priceAmount.toStringAsFixed(2)}'),
                 const SizedBox(height: 8),
                 Text('Seller: ${product.sellerId}'),
                 if (product.description != null) ...[
@@ -50,8 +50,8 @@ class ProductDetailScreen extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () async {
                     final id = await monetization.createPurchaseIntent(
-                      amount: product.price,
-                      currency: product.currency,
+                      amount: product.priceAmount,
+                      currency: product.priceCurrency,
                       productId: product.id,
                       createdBy: user?.uid ?? 'anon',
                     );
