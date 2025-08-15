@@ -10,24 +10,24 @@ test('accepts valid content', () => {
 test('rejects empty content', () => {
   const res = checkSafetyRules({content: ''});
   assert.equal(res.ok, false);
-  assert.equal(res.reason, 'empty-content');
+  assert.equal(res.reason, 'empty_content');
 });
 
 test('rejects too long content', () => {
   const long = 'a'.repeat(5001);
   const res = checkSafetyRules({content: long});
   assert.equal(res.ok, false);
-  assert.equal(res.reason, 'too-long');
+  assert.equal(res.reason, 'content_too_long');
 });
 
 test('rejects insecure media', () => {
   const res = checkSafetyRules({content: 'ok', media: ['http://a']});
   assert.equal(res.ok, false);
-  assert.equal(res.reason, 'insecure-media-url');
+  assert.equal(res.reason, 'insecure_media_url');
 });
 
 test('rejects forbidden words', () => {
-  const res = checkSafetyRules({content: 'this is spam'});
+  const res = checkSafetyRules({content: 'contains hateword1'});
   assert.equal(res.ok, false);
-  assert.equal(res.reason, 'forbidden-content');
+  assert.equal(res.reason, 'forbidden_terms');
 });
