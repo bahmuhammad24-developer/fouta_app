@@ -7,9 +7,9 @@ on:
       - "firestore.rules"
       - "firestore.indexes.json"
       - "storage.rules"
-      - "functions/**"
       - "firebase.json"
       - ".firebaserc"
+      - "functions/**"
   workflow_dispatch:
 
 jobs:
@@ -19,40 +19,60 @@ jobs:
       contents: read
       id-token: write   # required by google-github-actions/auth
 
+    env:
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Authenticate to Google Cloud
+      - name: Install Firebase CLI
+        run: npm i -g firebase-tools
+
+      # Auth to Google using the service account JSON in FIREBASE_SERVICE_ACCOUNT
+      - name: Authenticate to Google Cloud (workload identity)
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
-      - name: Install Firebase CLI
-        run: npm i -g firebase-tools
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
 
-      - name: Select project
-        run: firebase use ${{ secrets.FIREBASE_PROJECT_ID }} --project ${{ secrets.FIREBASE_PROJECT_ID }}
+      - name: Mint access token for Firebase CLI
+        id: token
+        run: |
+          echo "token=$(gcloud auth print-access-token)" >> $GITHUB_OUTPUT
+
+      - name: Print Firebase CLI version
+        run: firebase --version
 
       - name: Validate rules + indexes (best-effort)
         run: |
-          firebase emulators:exec --project ${{ secrets.FIREBASE_PROJECT_ID }} --only firestore "echo OK" || true
+          firebase emulators:exec \
+            --project "$FIREBASE_PROJECT_ID" \
+            --only firestore \
+            --token "${{ steps.token.outputs.token }}" \
+            "echo OK" || true
 
       - name: Deploy rules & indexes
         run: |
           firebase deploy --non-interactive \
+            --project "$FIREBASE_PROJECT_ID" \
             --only firestore:rules,firestore:indexes,storage:rules \
-            --project ${{ secrets.FIREBASE_PROJECT_ID }}
+            --token "${{ steps.token.outputs.token }}"
 
       - name: Deploy functions (if present)
         run: |
-          if [ -d "functions" ]; then
+          if [ -d "functions" ] && [ -f "functions/package.json" ]; then
             npm --prefix functions ci
-            firebase deploy --non-interactive --only functions --project ${{ secrets.FIREBASE_PROJECT_ID }}
+            firebase deploy --non-interactive \
+              --project "$FIREBASE_PROJECT_ID" \
+              --only functions \
+              --token "${{ steps.token.outputs.token }}"
           else
             echo "No functions dir; skipping"
           fi
