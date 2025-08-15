@@ -20,6 +20,7 @@
 - Referrals: share code → invite landing → attribution.
 
 ## Design System Scope
+- All components are organized into a four-tier structure — see [system/tiered-structure.md](system/tiered-structure.md) for definitions and usage.
 - **Tokens:** color, typography, spacing, radius, elevation, motion.
 - **Components:** AppBar, BottomNav, Tabs, Card, ListTile, Sheet, Dialog, Tooltip, Badge, Chip, Button set, TextFields, Dropdowns, Switch/Checkbox/Radio, Steppers, Toast/SnackBar, Skeleton, Empty-state templates.
 - **Layouts:** 4-column (mobile), 8-column (tablet) grids; gutters; safe-area rules.
