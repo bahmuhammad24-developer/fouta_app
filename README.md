@@ -3,6 +3,7 @@
 ## Table of Contents
 - [Overview](#overview)
 - [Vision](#vision)
+- [Roadmap & UX](#roadmap--ux)
 - [Architecture & Competitive Alignment](#architecture--competitive-alignment)
 - [App Structure](#app-structure)
   - [Directory Structure](#directory-structure)
@@ -43,6 +44,9 @@ Fouta App is a cross-platform Flutter application that integrates Firebase servi
 Fouta centers the global majority. The platform avoids suppressing discussions on topics that impact vulnerable communities while equipping users with tools to report abuse and curate their experience. This balance aims to foster open, respectful conversations.
 
 See [docs/vision.md](docs/vision.md) for the broader roadmap.
+
+## Roadmap & UX
+See [docs/roadmap/README.md](docs/roadmap/README.md) and [docs/design/ux-principles.md](docs/design/ux-principles.md) for product phases and UX guidelines.
 
 ## Architecture & Competitive Alignment
 Dedicated feature modules keep the project competitive with larger platforms. The roadmap for discovery, moderation, growth, analytics, and monetization lives in [docs/architecture.md](docs/architecture.md).
