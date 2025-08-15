@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../screens/chat_screen.dart';
-import 'marketplace_service.dart';
+import 'package:fouta_app/features/marketplace/marketplace_service.dart';
 import 'package:fouta_app/features/monetization/monetization_service.dart';
 import '../../widgets/fouta_button.dart';
 
@@ -13,7 +13,7 @@ class ProductDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final images = product.urls;
+    final images = product.imageUris.map((u) => u.toString()).toList();
     final user = FirebaseAuth.instance.currentUser;
     final monetization = MonetizationService();
     return Scaffold(
@@ -40,7 +40,7 @@ class ProductDetailScreen extends StatelessWidget {
               children: [
                 Text(product.title, style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8),
-                Text('${product.priceCurrency}${product.priceAmount.toStringAsFixed(2)}'),
+                Text('${product.priceCurrency} ${product.priceAmount.toStringAsFixed(2)}'),
                 const SizedBox(height: 8),
                 Text('Seller: ${product.sellerId}'),
                 if (product.description != null) ...[

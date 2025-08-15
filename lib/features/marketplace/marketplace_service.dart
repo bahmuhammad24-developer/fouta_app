@@ -3,57 +3,51 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../main.dart';
 import '../../utils/json_safety.dart';
 
+/// Marketplace product domain model.
 class Product {
+  final String id;
+  final String title;
+  final double priceAmount; // required by product_detail_screen
+  final String priceCurrency; // required by product_detail_screen
+  final String? description;
+  final List<Uri> imageUris;
+  final String sellerId;
+
   Product({
     required this.id,
-    required this.sellerId,
-    required this.urls,
     required this.title,
-    required this.category,
-    required this.price,
-    required this.currency,
+    required this.priceAmount,
+    required this.priceCurrency,
+    required this.sellerId,
     this.description,
-    required this.favoriteUserIds,
-    this.createdAt,
-  });
+    List<Uri>? imageUris,
+  }) : imageUris = imageUris ?? const [];
 
-  final String id;
-  final String sellerId;
-  final List<String> urls;
-  final String title;
-  final String category;
-  final double price;
-  final String currency;
-  final String? description;
-  final List<String> favoriteUserIds;
-  final DateTime? createdAt;
-
-  factory Product.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data() ?? {};
+  factory Product.fromMap(String id, Map<String, dynamic> map) {
     return Product(
-      id: doc.id,
-      sellerId: data['sellerId']?.toString() ?? '',
-      urls: asStringList(data['urls']),
-      title: data['title']?.toString() ?? '',
-      category: data['category']?.toString() ?? '',
-      price: asDoubleOrNull(data['price']) ?? 0.0,
-      currency: data['currency']?.toString() ?? 'USD',
-      description: data['description']?.toString(),
-      favoriteUserIds: asStringList(data['favoriteUserIds']),
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      id: id,
+      title: (map['title'] ?? '').toString(),
+      priceAmount: (map['priceAmount'] is num)
+          ? (map['priceAmount'] as num).toDouble()
+          : double.tryParse('${map['priceAmount']}') ?? 0.0,
+      priceCurrency: (map['priceCurrency'] ?? 'USD').toString(),
+      description: (map['description'] as String?)?.trim(),
+      imageUris: (map['imageUris'] as List?)
+              ?.map((e) => Uri.tryParse(e.toString()))
+              .whereType<Uri>()
+              .toList() ??
+          const [],
+      sellerId: (map['sellerId'] ?? '').toString(),
     );
   }
 
   Map<String, dynamic> toMap() => {
-        'sellerId': sellerId,
-        'urls': urls,
         'title': title,
-        'category': category,
-        'price': price,
-        'currency': currency,
-        if (description != null) 'description': description,
-        'favoriteUserIds': favoriteUserIds,
-        'createdAt': FieldValue.serverTimestamp(),
+        'priceAmount': priceAmount,
+        'priceCurrency': priceCurrency,
+        'description': description,
+        'imageUris': imageUris.map((u) => u.toString()).toList(),
+        'sellerId': sellerId,
       };
 }
 
@@ -70,36 +64,11 @@ class MarketplaceService {
       .doc('data')
       .collection('products');
 
-  Stream<List<Product>> streamProducts({
-    String? category,
-    double? minPrice,
-    double? maxPrice,
-    String? query,
-  }) {
-    Query<Map<String, dynamic>> ref =
-        _collection.orderBy('createdAt', descending: true);
-    if (category != null && category.isNotEmpty) {
-      ref = ref.where('category', isEqualTo: category);
-    }
-    if (minPrice != null) {
-      ref = ref.where('price', isGreaterThanOrEqualTo: minPrice);
-    }
-    if (maxPrice != null) {
-      ref = ref.where('price', isLessThanOrEqualTo: maxPrice);
-    }
-    if (query != null && query.isNotEmpty) {
-      ref = ref
-          .where('title', isGreaterThanOrEqualTo: query)
-          .where('title', isLessThan: '$query\uf8ff');
-    }
-    return ref.snapshots().map((s) => s.docs.map(Product.fromDoc).toList());
-  }
-
   /// Stubbed create product. Replace with Firestore write in a future PR.
   Future<String> createProduct({
     required String title,
     required double priceAmount,
-    required String currency,
+    required String priceCurrency,
     String? description,
     List<Uri>? imageUris,
     required String createdBy,
@@ -119,3 +88,37 @@ class MarketplaceService {
     await doc.update({'favoriteUserIds': value});
   }
 }
+
+extension MarketplaceQueries on MarketplaceService {
+  /// TEMP: return a demo product for UI testing until real backend is wired.
+  Future<Product> getProductById(String id) async {
+    // Replace with Firestore in a later PR
+    await Future.delayed(const Duration(milliseconds: 100));
+    return Product(
+      id: id,
+      title: 'Demo Product',
+      priceAmount: 49.99,
+      priceCurrency: 'USD',
+      description: 'A great demo item.',
+      imageUris: const [],
+      sellerId: 'demo-user',
+    );
+  }
+
+  /// TEMP: return small list for screens that expect listings.
+  Future<List<Product>> listProducts({int limit = 10}) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return List<Product>.generate(limit, (i) {
+      return Product(
+        id: 'demo_$i',
+        title: 'Demo Item #$i',
+        priceAmount: 10.0 + i,
+        priceCurrency: 'USD',
+        description: 'Item number $i',
+        imageUris: const [],
+        sellerId: 'demo-user',
+      );
+    });
+  }
+}
+
