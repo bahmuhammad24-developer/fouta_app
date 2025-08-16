@@ -1,38 +1,30 @@
-# Firestore Indexes
+# Firestore Indexes: Source of Truth = firestore.indexes.json
 
-The project seeds composite indexes via [`firestore.indexes.json`](../../firestore.indexes.json).
+We treat `firestore.indexes.json` as the single source of truth. CI enforces this by
+deploying Firestore indexes with `--force`:
 
-## Adding or updating an index
+- `--force` tells Firebase to reconcile server state to match the file:
+  - Create any indexes in the file that don’t exist remotely.
+  - Delete any remote indexes that are not in the file (including those created in the Console in the past).
+- This prevents CI failures like:
+  `HTTP Error: 409, index already exists`
+  which appears when a remote index conflicts with a "new" index in the file.
 
-1. Run your query. If Firestore returns `FAILED_PRECONDITION: The query requires an index`,
-   open the URL provided in the error message. It leads directly to the Firebase console
-   with the fields prefilled.
-2. Create the index in the console. Wait for it to build.
-3. Back in the repo, export the definitions to `firestore.indexes.json`:
-   ```bash
-   firebase firestore:indexes
-   ```
-4. Commit the updated file so all environments provision the same index.
+### When is `--force` safe?
+- Safe if the file is accurate and complete for the app’s queries.
+- We include all composite indexes we rely on in `firestore.indexes.json` and version them in Git.
 
-Include the console URL in your PR description for reviewers.
+### If you need to keep a Console-only index
+- Export the remote index to the repo:  
+  `firebase firestore:indexes > firestore.indexes.json`
+- Review the diff (make sure we aren’t re-introducing duplicate/invalid definitions).
+- Commit, then CI will reconcile.
 
-## Field Rule and Decision Guide
+### Validating the file
+CI runs schema validation before deploy. If you add or change indexes, ensure:
+- Exactly one of `order`, `arrayConfig`, or `vectorConfig` per field.
+- No duplicate composite definition for a given `collectionGroup` + ordered field list.
 
-When defining fields inside `firestore.indexes.json` → `indexes[].fields[]`, **each field object must contain exactly one of**:
-- `"order"`: `"ASCENDING"` or `"DESCENDING"` — for sorting and equality/range queries.
-- `"arrayConfig"`: `"CONTAINS"` — for `array-contains` / `array-contains-any` queries.
-- `"vectorConfig"`: `{...}` — for vector search.
-
-Common patterns:
-- Equality / range / order-by queries on a scalar field → `order: "ASCENDING"` (or `"DESCENDING"` depending on your query).
-- `array-contains` / `array-contains-any` → `arrayConfig: "CONTAINS"`.
-- Vector search → `vectorConfig` per Firestore vector schema.
-
-**CI Guardrail**
-- We added `scripts/validate-firestore-indexes.mjs` and a CI step `npm run check:indexes` to block deploys if a field is missing the required property.
-- If you see an error like:
-  > Must contain exactly one of "order,arrayConfig,vectorConfig"
-  open `firestore.indexes.json` and fix the problematic field(s).
-
-**Default we apply automatically**
-- If a field lacks all three, we normalize it to `order: "ASCENDING"`; this unblocks deploys. Adjust later to `DESCENDING` or `arrayConfig` if your query needs it.
+### Why a browser GET to the Admin API shows 401
+Admin endpoints require OAuth. Opening the raw REST URL in a browser is unauthenticated and will return 401.
+CI uses the service account to authenticate; no action is required.
