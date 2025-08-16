@@ -1,4 +1,10 @@
 name: Firebase Deploy (rules, indexes, functions)
+# ------------------------------------------------------------------------------
+# CI Auth Policy:
+# - Use Google ADC via google-github-actions/auth@v2 (Workload Identity or SA JSON)
+# - Do NOT use Firebase CLI tokens; do NOT pass --token
+# - Functions deploys require iam.serviceAccountUser on the runtime SA
+# ------------------------------------------------------------------------------
 
 on:
   push:
@@ -38,14 +44,10 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          create_credentials_file: true
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
-
-      - name: Mint access token for Firebase CLI
-        id: token
-        run: |
-          echo "token=$(gcloud auth print-access-token)" >> $GITHUB_OUTPUT
 
       - name: Print Firebase CLI version
         run: firebase --version
@@ -58,7 +60,6 @@ jobs:
           firebase emulators:exec \
             --project "$FIREBASE_PROJECT_ID" \
             --only firestore \
-            --token "${{ steps.token.outputs.token }}" \
             "echo OK" || true
 
       - name: Deploy Firestore/Storage rules
@@ -66,8 +67,7 @@ jobs:
           firebase deploy --non-interactive \
             --project "$FIREBASE_PROJECT_ID" \
             --only firestore:rules,storage \
-            --force \
-            --token "${{ steps.token.outputs.token }}"
+            --force
 
       - name: Deploy Firestore indexes (ignore 409 already-exists)
         shell: bash
@@ -76,8 +76,7 @@ jobs:
           LOG=$(mktemp)
           if firebase deploy --only firestore:indexes --non-interactive \
               --project "$FIREBASE_PROJECT_ID" \
-              --force \
-              --token "${{ steps.token.outputs.token }}" 2>&1 | tee "$LOG"; then
+              --force 2>&1 | tee "$LOG"; then
             echo "Indexes deployed."
           else
             if grep -qiE "409.*index already exists|ALREADY_EXISTS|already exists" "$LOG"; then
@@ -93,7 +92,6 @@ jobs:
         if: ${{ hashFiles('functions/package.json') != '' }}
         working-directory: functions
         env:
-          FIREBASE_TOKEN: ${{ steps.token.outputs.token }}
           FIREBASE_PROJECT_ID: ${{ env.FIREBASE_PROJECT_ID }}
         run: |
           set -euo pipefail
@@ -113,6 +111,5 @@ jobs:
           echo "🚀 Deploying functions…"
           firebase deploy --non-interactive \
             --project "$FIREBASE_PROJECT_ID" \
-            --only functions \
-            --token "$FIREBASE_TOKEN"
+            --only functions
 
