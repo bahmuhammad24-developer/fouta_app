@@ -54,7 +54,7 @@ Use:
 firebase deploy --only firestore:rules,firestore:indexes,storage
 ```
 
-Do not use `storage:rules`. In the Firebase CLI, `storage:<name>` refers to a Storage target named `<name>` (created via `firebase target:apply storage <name> <bucket>`).
+Do not use a filter like `storage:<name>` for the rules deploy; for example, targeting a bucket named `rules` will fail. In the Firebase CLI, `storage:<name>` refers to a Storage target named `<name>` (created via `firebase target:apply storage <name> <bucket>`).
 
 Our repo uses a rules file wired in `firebase.json`:
 
