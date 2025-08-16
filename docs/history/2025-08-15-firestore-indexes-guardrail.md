@@ -1,0 +1,3 @@
+- Fixed deploy failures caused by index fields missing required property (`order | arrayConfig | vectorConfig`), seen on fields like `sellerId` and `visibility`.
+- Sanitized all missing entries to `order: "ASCENDING"`.
+- Added `scripts/validate-firestore-indexes.mjs` and CI step `npm run check:indexes` to prevent regressions.

@@ -1,0 +1,7 @@
+{
+  "name": "fouta_app",
+  "private": true,
+  "scripts": {
+    "check:indexes": "node scripts/validate-firestore-indexes.mjs"
+  }
+}
