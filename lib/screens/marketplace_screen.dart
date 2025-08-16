@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -7,6 +9,12 @@ import '../features/marketplace/marketplace_service.dart';
 import '../features/marketplace/product_detail_screen.dart';
 import 'package:fouta_app/features/marketplace/product_card.dart';
 import 'package:fouta_app/features/marketplace/create_product_nav.dart';
+import '../features/marketplace/filters/marketplace_filters.dart';
+import '../features/marketplace/filters/filter_drawer.dart';
+import '../features/marketplace/skeletons.dart';
+import 'seller_profile_screen.dart';
+import '../widgets/refresh_scaffold.dart';
+import '../widgets/safe_stream_builder.dart';
 import 'package:fouta_app/features/marketplace/onboarding/seller_onboarding_nav.dart';
 import 'marketplace_filters_sheet.dart';
 import 'seller_profile_screen.dart';
@@ -30,24 +38,34 @@ class MarketplaceScreen extends StatefulWidget {
 
 class _MarketplaceScreenState extends State<MarketplaceScreen> {
   final MarketplaceService _service = MarketplaceService();
-  MarketplaceFilters _filters = MarketplaceFilters();
-  final List<String> _categories = const [
-    'All',
-    'Electronics',
-    'Clothing',
-    'Books',
-  ];
 
-  void _openFilters() {
+  final MarketplaceFiltersRepository _repo = MarketplaceFiltersRepository();
+  MarketplaceFilters _filters = const MarketplaceFilters();
+  StreamSubscription<MarketplaceFilters>? _sub;
+
+
+  void _openFilters(String uid) {
     showModalBottomSheet(
       context: context,
-      builder: (_) => MarketplaceFiltersSheet(
-        initial: _filters,
-        onApply: (f) {
-          setState(() => _filters = f);
-        },
-      ),
+      builder: (_) => MarketplaceFilterDrawer(repository: _repo, uid: uid),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      _sub = _repo.watch(uid).listen((f) {
+        setState(() => _filters = f);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
   }
 
   @override
@@ -58,23 +76,23 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       appBar: AppBar(
         title: const Text('Marketplace'),
         actions: [
-          IconButton(onPressed: _openFilters, icon: const Icon(Icons.filter_list)),
+          IconButton(
+            onPressed: () => _openFilters(userId),
+            icon: const Icon(Icons.filter_list),
+          ),
         ],
       ),
       body: SafeStreamBuilder<List<Product>>(
-        stream: _service.streamProducts(
-          limit: 20,
-          category: _filters.category,
-          minPrice: _filters.minPrice,
-          maxPrice: _filters.maxPrice,
-          query: _filters.query,
-        ),
+        stream: _service.streamProducts(filters: _filters, limit: 20),
         builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const MarketplaceListSkeleton();
+          }
           final products = snapshot.data ?? [];
           final hasListings = products.any((p) => p.sellerId == userId);
           Widget content;
           if (products.isEmpty) {
-            content = const Center(child: Text('No products'));
+            content = const Center(child: Text('No products match your filters'));
           } else {
             content = LayoutBuilder(
               builder: (context, constraints) {
@@ -90,35 +108,28 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     itemCount: products.length,
                     itemBuilder: (context, index) {
                       final product = products[index];
-                      try {
-                        return ProductCard(
-                          product: product,
-                          viewerId: userId,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ProductDetailScreen(product: product),
-                              ),
-                            );
-                          },
-                          onFavorite: () => _service.toggleFavorite(product.id, userId),
-                          isFavorited: product.favoriteUserIds.contains(userId),
-                          onSellerTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => SellerProfileScreen(sellerId: product.sellerId),
-                              ),
-                            );
-                          },
-                        );
-                      } catch (e) {
-                        if (kDebugMode) {
-                          print('Error rendering product ${product.id}: $e');
-                        }
-                        return const SizedBox.shrink();
-                      }
+                      return ProductCard(
+                        product: product,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ProductDetailScreen(product: product),
+                            ),
+                          );
+                        },
+                        onFavorite: () => _service.toggleFavorite(product.id, userId),
+                        isFavorited: product.favoriteUserIds.contains(userId),
+                        onSellerTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SellerProfileScreen(sellerId: product.sellerId),
+                            ),
+                          );
+                        },
+                      );
+
                     },
                   ),
                 );

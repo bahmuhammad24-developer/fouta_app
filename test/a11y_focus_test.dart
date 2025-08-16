@@ -7,11 +7,14 @@ void main() {
   testWidgets('focused product card shows focus highlight', (tester) async {
     final product = Product(
       id: '1',
-      title: 'Test',
-      priceAmount: 1,
-      priceCurrency: 'USD',
+
       sellerId: 'seller',
       imageUris: const [],
+      title: 'Test',
+      category: 'c',
+      priceAmount: 1,
+      priceCurrency: 'USD',
+
       favoriteUserIds: const [],
     );
 

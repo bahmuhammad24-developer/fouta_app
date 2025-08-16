@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../main.dart';
 import '../../utils/json_safety.dart';
+import 'filters/marketplace_filters.dart';
 
 /// Marketplace product domain model.
 class Product {
@@ -14,6 +15,7 @@ class Product {
   final List<Uri> imageUris;      // canonical
   final String sellerId;
   final List<String> favoriteUserIds; // optional favorites
+  final String? category;
   final String status;
 
   Product({
@@ -25,6 +27,7 @@ class Product {
     this.description,
     List<Uri>? imageUris,
     List<String>? favoriteUserIds,
+    this.category,
     this.status = 'published',
   })  : imageUris = imageUris ?? const [],
         favoriteUserIds = favoriteUserIds ?? const [];
@@ -54,7 +57,10 @@ class Product {
       favoriteUserIds: ((map['favoriteUserIds'] as List?) ?? const [])
           .map((e) => e.toString())
           .toList(),
+
+      category: (map['category'] as String?)?.trim(),
       status: (map['status'] ?? 'published').toString(),
+
     );
   }
 
@@ -66,6 +72,7 @@ class Product {
         'imageUris': imageUris.map((u) => u.toString()).toList(),
         'sellerId': sellerId,
         'favoriteUserIds': favoriteUserIds,
+        if (category != null) 'category': category,
         'status': status,
       };
 }
@@ -166,6 +173,7 @@ extension MarketplaceQueries on MarketplaceService {
   /// TEMP: return small list for screens that expect listings.
   Future<List<Product>> listProducts({int limit = 10}) async {
     await Future.delayed(const Duration(milliseconds: 100));
+    const cats = ['Electronics', 'Home', 'Other'];
     return List<Product>.generate(limit, (i) {
       return Product(
         id: 'demo_$i',
@@ -176,22 +184,82 @@ extension MarketplaceQueries on MarketplaceService {
         imageUris: const [],
         sellerId: 'demo-user',
         favoriteUserIds: i.isEven ? const ['demo-user'] : const [],
+        category: cats[i % cats.length],
       );
     });
   }
 
-  /// Stream products for list UIs (stub).
+  /// Stream products for list UIs (stub) that applies [filters] and [sort].
   Stream<List<Product>> streamProducts({
-    String? category,
-    double? minPrice,
-    double? maxPrice,
-    String? query,
+    MarketplaceFilters? filters,
     int limit = 20,
   }) async* {
-    yield await listProducts(limit: limit);
+    filters ??= const MarketplaceFilters();
+    var items = await listProducts(limit: limit);
+    items = _applyFilters(items, filters);
+    items = _applySort(items, filters.sort);
+    yield items;
     await for (final _ in Stream<void>.periodic(const Duration(seconds: 10))) {
-      yield await listProducts(limit: limit);
+      var refreshed = await listProducts(limit: limit);
+      refreshed = _applyFilters(refreshed, filters!);
+      refreshed = _applySort(refreshed, filters.sort);
+      yield refreshed;
     }
+  }
+
+  List<Product> _applyFilters(List<Product> items, MarketplaceFilters filters) {
+    return items.where((p) {
+      final matchesCategory = filters.category == null || p.category == filters.category;
+      final matchesMin = filters.minPrice == null || p.priceAmount >= filters.minPrice!;
+      final matchesMax = filters.maxPrice == null || p.priceAmount <= filters.maxPrice!;
+      return matchesCategory && matchesMin && matchesMax;
+    }).toList();
+  }
+
+  List<Product> _applySort(List<Product> items, MarketplaceSort sort) {
+    switch (sort) {
+      case MarketplaceSort.priceAsc:
+        items.sort((a, b) => a.priceAmount.compareTo(b.priceAmount));
+        break;
+      case MarketplaceSort.priceDesc:
+        items.sort((a, b) => b.priceAmount.compareTo(a.priceAmount));
+        break;
+      case MarketplaceSort.newest:
+      default:
+        items.sort((a, b) => b.id.compareTo(a.id));
+    }
+    return items;
+  }
+
+  /// Build a Firestore query for products applying [filters] and [limit].
+  /// Keeping orderBy on the same field as range filters avoids extra indexes.
+  Query<Map<String, dynamic>> buildQuery({
+    MarketplaceFilters? filters,
+    int limit = 20,
+  }) {
+    filters ??= const MarketplaceFilters();
+    Query<Map<String, dynamic>> q = _collection.limit(limit);
+    if (filters.category != null) {
+      q = q.where('category', isEqualTo: filters.category);
+    }
+    if (filters.minPrice != null) {
+      q = q.where('priceAmount', isGreaterThanOrEqualTo: filters.minPrice);
+    }
+    if (filters.maxPrice != null) {
+      q = q.where('priceAmount', isLessThanOrEqualTo: filters.maxPrice);
+    }
+    switch (filters.sort) {
+      case MarketplaceSort.priceAsc:
+        q = q.orderBy('priceAmount');
+        break;
+      case MarketplaceSort.priceDesc:
+        q = q.orderBy('priceAmount', descending: true);
+        break;
+      case MarketplaceSort.newest:
+      default:
+        q = q.orderBy('createdAt', descending: true);
+    }
+    return q;
   }
 }
 
