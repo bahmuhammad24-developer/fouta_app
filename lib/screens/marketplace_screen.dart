@@ -12,7 +12,13 @@ import 'marketplace_filters_sheet.dart';
 import 'seller_profile_screen.dart';
 import '../widgets/refresh_scaffold.dart';
 import '../widgets/safe_stream_builder.dart';
+import '../widgets/progressive_image.dart';
+import '../widgets/skeleton.dart';
+import 'package:fouta_app/design/components/f_button.dart';
+import 'package:fouta_app/design/components/f_chip.dart';
+import 'package:fouta_app/design/tokens.dart';
 import '../widgets/fouta_button.dart';
+
 
 // TODO(IA): Align screen layout with docs/design/information-architecture.md after DS v1 adoption
 class MarketplaceScreen extends StatefulWidget {
@@ -25,6 +31,12 @@ class MarketplaceScreen extends StatefulWidget {
 class _MarketplaceScreenState extends State<MarketplaceScreen> {
   final MarketplaceService _service = MarketplaceService();
   MarketplaceFilters _filters = MarketplaceFilters();
+  final List<String> _categories = const [
+    'All',
+    'Electronics',
+    'Clothing',
+    'Books',
+  ];
 
   void _openFilters() {
     showModalBottomSheet(
@@ -142,7 +154,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               if (user != null)
                 Padding(
                   padding: const EdgeInsets.all(16),
-                  child: FoutaButton(
+                  child: FButton(
                     label: hasListings ? 'Sell' : 'Start Selling',
                     onPressed: () async {
                       if (hasListings) {
@@ -152,8 +164,35 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       }
                     },
                     expanded: true,
+                    tier: FTier.t1,
                   ),
                 ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Wrap(
+                  spacing: FSpacing.s2,
+                  children: _categories.map((c) {
+                    final selected =
+                        _filters.category == null && c == 'All' ||
+                            _filters.category == c;
+                    return FChip(
+                      label: c,
+                      tier: FTier.t3,
+                      selected: selected,
+                      onSelected: (_) {
+                        setState(() {
+                          _filters = MarketplaceFilters(
+                            category: c == 'All' ? null : c,
+                            minPrice: _filters.minPrice,
+                            maxPrice: _filters.maxPrice,
+                            query: _filters.query,
+                          );
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
               Expanded(child: content),
             ],
           );

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'marketplace_service.dart';
-import 'package:fouta_app/theme/tokens.dart';
+import 'package:fouta_app/design/components/f_card.dart';
+import 'package:fouta_app/design/tokens.dart';
 
 class ProductCard extends StatelessWidget {
   const ProductCard({
@@ -24,11 +25,14 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final image = product.urls.isNotEmpty ? product.urls.first : null;
-    return Card(
+    return FCard(
+      tier: FTier.t2,
+      padding: EdgeInsets.zero,
       clipBehavior: Clip.hardEdge,
       child: InkWell(
         onTap: onTap,
-        focusColor: AppColors.primary.withOpacity(0.3),
+        focusColor:
+            FColors.brand(Theme.of(context).brightness).withOpacity(0.3),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -86,7 +90,8 @@ class ProductCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: InkWell(
                 onTap: onSellerTap,
-                focusColor: AppColors.primary.withOpacity(0.3),
+                focusColor: FColors.brand(Theme.of(context).brightness)
+                    .withOpacity(0.3),
                 child: Text(
                   product.sellerId,
                   style: Theme.of(context).textTheme.bodySmall,
