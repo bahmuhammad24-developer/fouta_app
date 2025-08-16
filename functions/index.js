@@ -170,7 +170,7 @@ const ffmpeg = require("@ffmpeg-installer/ffmpeg");
 const ffmpegLib = require("fluent-ffmpeg");
 ffmpegLib.setFfmpegPath(ffmpeg.path);
 
-exports.processMedia = onObjectFinalized(async (event) => {
+exports.processMedia = onObjectFinalized({ region: "us-east1" }, async (event) => {
   const object = event.data;
   const contentType = object.contentType || "";
   const filePath = object.name;
