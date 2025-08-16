@@ -30,8 +30,8 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Firebase CLI
-        run: npm i -g firebase-tools
+      - name: Install Firebase CLI (pin)
+        run: npm i -g firebase-tools@14.10.1
 
       # Auth to Google using the service account JSON in FIREBASE_SERVICE_ACCOUNT
       - name: Authenticate to Google Cloud (workload identity)
@@ -61,13 +61,33 @@ jobs:
             --token "${{ steps.token.outputs.token }}" \
             "echo OK" || true
 
-      - name: Deploy rules & indexes
+      - name: Deploy Firestore/Storage rules
         run: |
           firebase deploy --non-interactive \
             --project "$FIREBASE_PROJECT_ID" \
-            --only firestore:rules,firestore:indexes,storage \
+            --only firestore:rules,storage \
             --force \
             --token "${{ steps.token.outputs.token }}"
+
+      - name: Deploy Firestore indexes (ignore 409 already-exists)
+        shell: bash
+        run: |
+          set -o pipefail
+          LOG=$(mktemp)
+          if firebase deploy --only firestore:indexes --non-interactive \
+              --project "$FIREBASE_PROJECT_ID" \
+              --force \
+              --token "${{ steps.token.outputs.token }}" 2>&1 | tee "$LOG"; then
+            echo "Indexes deployed."
+          else
+            if grep -qiE "409.*index already exists|ALREADY_EXISTS|already exists" "$LOG"; then
+              echo "Indexes already exist; treating as success."
+            else
+              echo "Deploy failed for a reason other than 409:"
+              cat "$LOG"
+              exit 1
+            fi
+          fi
 
       - name: Deploy functions (if present)
         if: ${{ hashFiles('functions/package.json') != '' }}
