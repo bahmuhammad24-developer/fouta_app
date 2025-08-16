@@ -1,0 +1,2 @@
+- Switched Firestore index deploys to `--force` to eliminate 409 “index already exists” errors caused by drift between Console-created indexes and the repo’s `firestore.indexes.json`.
+- Policy: The repo file is authoritative. Use `firebase firestore:indexes > firestore.indexes.json` if you must import remote indexes.

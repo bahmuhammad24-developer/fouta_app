@@ -65,7 +65,8 @@ jobs:
         run: |
           firebase deploy --non-interactive \
             --project "$FIREBASE_PROJECT_ID" \
-            --only firestore:rules,firestore:indexes,storage \
+            --only firestore:rules,firestore:indexes,storage:rules \
+            --force \
             --token "${{ steps.token.outputs.token }}"
 
       - name: Deploy functions (if present)
