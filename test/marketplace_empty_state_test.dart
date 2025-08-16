@@ -16,7 +16,7 @@ void main() {
       home: MarketplaceScreen(service: _FakeMarketplaceService()),
     ));
     await tester.pump();
-    expect(find.text('No listings yet'), findsOneWidget);
+    expect(find.text('No products'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
