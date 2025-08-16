@@ -9,7 +9,7 @@
 
 # Local commands
 - Deploy backend locally (after `firebase login`):
-firebase deploy --only firestore:rules,firestore:indexes,storage:rules,functions --project <PROJECT_ID> --non-interactive
+firebase deploy --only firestore:rules,firestore:indexes,storage,functions --project <PROJECT_ID> --non-interactive
 
 - Rebuild iOS locally:
 flutter clean && flutter pub get
