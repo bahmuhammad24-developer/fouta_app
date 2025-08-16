@@ -1,5 +1,6 @@
 # Changelog
 
+- 2025-08-16 – feat(marketplace): add seller onboarding flow with Firestore-backed profiles.
 - 2025-08-12 America/New_York – fix(build): resolve trigger/widget API mismatches, nullability, and syntax issues; stabilize imports.
 
 
