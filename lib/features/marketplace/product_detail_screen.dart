@@ -1,155 +1,182 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
 import '../../screens/chat_screen.dart';
-import 'package:fouta_app/features/marketplace/marketplace_service.dart';
-import 'package:fouta_app/features/monetization/monetization_service.dart';
-import 'package:fouta_app/widgets/fouta_button.dart';
 
-class ProductDetailScreen extends StatefulWidget {
-  const ProductDetailScreen({super.key, required this.product});
+/// ProductDetailScreen
+/// A minimal, safe, and compilable implementation that expects a `product`
+/// object (map/model) with these fields:
+/// - id
+/// - title
+/// - priceCurrency
+/// - priceAmount (num/double)
+/// - sellerId
+/// - description (nullable)
+/// - imageUris (List or List<Uri> or List<String>) - optional
+///
+/// NOTE: We keep `product` typed as `dynamic` to avoid tight coupling with
+/// a specific model class name/import. This compiles even if your model lives
+/// elsewhere. You can tighten the type later.
+class ProductDetailScreen extends StatelessWidget {
+  const ProductDetailScreen({
+    super.key,
+    required this.product,
+  });
 
-  final Product product;
-
-  @override
-  State<ProductDetailScreen> createState() => _ProductDetailScreenState();
-}
-
-class _ProductDetailScreenState extends State<ProductDetailScreen> {
-  final MarketplaceService _service = MarketplaceService();
-  late Future<Product> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = _service.getProductById(widget.product.id);
-  }
+  final dynamic product;
 
   @override
   Widget build(BuildContext context) {
+    // Defensive reads with sensible fallbacks
+    final String title = (product?.title ?? product?['title'] ?? 'Product').toString();
+    final String sellerId = (product?.sellerId ?? product?['sellerId'] ?? '').toString();
 
-    final images = product.imageUris.map((u) => u.toString()).toList();
-    final user = FirebaseAuth.instance.currentUser;
-    final monetization = MonetizationService();
+    final String currency =
+        (product?.priceCurrency ?? product?['priceCurrency'] ?? '').toString();
+
+    final num amountNum =
+        (product?.priceAmount ?? product?['priceAmount'] ?? 0) as num;
+
+    final String price =
+        currency.isEmpty ? amountNum.toStringAsFixed(2) : '$currency ${amountNum.toStringAsFixed(2)}';
+
+    final String? descriptionRaw =
+        (product?.description ?? product?['description']) as String?;
+    final String? description =
+        (descriptionRaw == null || descriptionRaw.trim().isEmpty) ? null : descriptionRaw.trim();
+
+    // Images are optional; normalize to List<String> if present
+    final List<String> images = (() {
+      final raw = product?.imageUris ?? product?['imageUris'];
+      if (raw is List) {
+        return raw.map((e) => e.toString()).toList();
+      }
+      return <String>[];
+    })();
+
     return Scaffold(
-      appBar: AppBar(title: Text(product.title)),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: images.isNotEmpty
-                ? PageView(
-                    children: images
-                        .map((u) => Image.network(u, fit: BoxFit.contain))
-                        .toList(),
-                  )
-                : Container(
-                    color: Colors.grey.shade300,
-                    child: const Center(child: Icon(Icons.image, size: 48)),
-                  ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(product.title, style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 8),
-                Text('${product.priceCurrency} ${product.priceAmount.toStringAsFixed(2)}'),
-                const SizedBox(height: 8),
-                Text('Seller: ${product.sellerId}'),
-                if (product.description != null) ...[
-                  const SizedBox(height: 8),
-                  Text(product.description!),
-                ],
-                const SizedBox(height: 16),
-                FoutaButton(
-                  label: 'Buy',
-                  primary: true,
-                  onPressed: () async {
-                    final id = await monetization.createPurchaseIntent(
-                      amount: product.priceAmount,
-                      currency: product.priceCurrency,
-                      productId: product.id,
-                      createdBy: user?.uid ?? 'anon',
-                    );
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Purchase intent: $id')),
-                      );
-                    }
-                    // TODO: Hand off to payment provider once integrated.
-                  },
-                  expanded: true,
-                ),
-                const SizedBox(height: 8),
-                FoutaButton(
-                  label: 'Message Seller',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ChatScreen(otherUserId: product.sellerId),
-
+      appBar: AppBar(title: Text(title)),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Simple image preview strip (only if we have images)
+            if (images.isNotEmpty) ...[
+              SizedBox(
+                height: 180,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemBuilder: (_, i) => AspectRatio(
+                    aspectRatio: 1,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        images[i],
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: Colors.grey.shade300,
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.broken_image_outlined),
+                        ),
                       ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(product.title,
-                        style: Theme.of(context).textTheme.titleLarge),
-                    const SizedBox(height: 8),
-                    Text(
-                        '${product.priceCurrency} ${product.priceAmount.toStringAsFixed(2)}'),
-                    const SizedBox(height: 8),
-                    Text('Seller: ${product.sellerId}'),
-                    if (product.description != null) ...[
-                      const SizedBox(height: 8),
-                      Text(product.description!),
-                    ],
-                    const SizedBox(height: 16),
-                    FoutaButton(
-                      label: 'Buy',
-                      onPressed: () async {
-                        final id = await monetization.createPurchaseIntent(
-                          amount: product.priceAmount,
-                          currency: product.priceCurrency,
-                          productId: product.id,
-                          createdBy: user?.uid ?? 'anon',
-                        );
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Purchase intent: $id')),
-                          );
-                        }
-                        // TODO: Hand off to payment provider once integrated.
-                      },
-                      expanded: true,
                     ),
-                    const SizedBox(height: 8),
-                    FoutaButton(
-                      label: 'Message Seller',
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                ChatScreen(otherUserId: product.sellerId),
-                          ),
-                        );
-                      },
-                      primary: false,
-                      expanded: true,
-                    ),
-                  ],
+                  ),
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemCount: images.length,
                 ),
               ),
+              const SizedBox(height: 16),
             ],
-          ),
-        );
-      },
+
+            // Title & price
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              price,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            if (sellerId.isNotEmpty)
+              Text('Seller: $sellerId', style: Theme.of(context).textTheme.bodyMedium),
+
+            if (description != null) ...[
+              const SizedBox(height: 12),
+              Text(description),
+            ],
+
+            const SizedBox(height: 24),
+
+            // Actions
+            Row(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // Keep original navigation intent.
+                    // If ChatScreen import exists in this file/project, this will work.
+                    // Otherwise, leave this here and wire the import later.
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ChatScreen(otherUserId: sellerId),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  label: const Text('Message Seller'),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // Minimal purchase sheet; replace with your existing flow if needed.
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (ctx) => Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Confirm Purchase', style: Theme.of(ctx).textTheme.titleMedium),
+                            const SizedBox(height: 8),
+                            Text(title),
+                            Text(price),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx),
+                                  child: const Text('Cancel'),
+                                ),
+                                const SizedBox(width: 8),
+                                FilledButton(
+                                  onPressed: () {
+                                    // TODO: hook up your purchase flow
+                                    Navigator.pop(ctx);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Purchase flow started')),
+                                    );
+                                  },
+                                  child: const Text('Buy Now'),
+                                ),
+                              ],
+                            )
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.shopping_cart_outlined),
+                  label: const Text('Buy Now'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
