@@ -1,5 +1,9 @@
 name: Firebase Deploy (rules, indexes, functions)
 # ------------------------------------------------------------------------------
+# Read first: docs/firebase-deploy-journey.md (full fixes & IAM roles)
+# Also: docs/ci-auth.md (ADC policy), docs/ai-collaboration.md (AI rules)
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # CI Auth Policy:
 # - Use Google ADC via google-github-actions/auth@v2 (Workload Identity or SA JSON)
 # - Do NOT use Firebase CLI tokens; do NOT pass --token
