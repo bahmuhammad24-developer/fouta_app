@@ -69,14 +69,29 @@ jobs:
             --token "${{ steps.token.outputs.token }}"
 
       - name: Deploy functions (if present)
+        if: ${{ hashFiles('functions/package.json') != '' }}
+        working-directory: functions
+        env:
+          FIREBASE_TOKEN: ${{ steps.token.outputs.token }}
+          FIREBASE_PROJECT_ID: ${{ env.FIREBASE_PROJECT_ID }}
         run: |
-          if [ -d "functions" ] && [ -f "functions/package.json" ]; then
-            npm --prefix functions ci
-            firebase deploy --non-interactive \
-              --project "$FIREBASE_PROJECT_ID" \
-              --only functions \
-              --token "${{ steps.token.outputs.token }}"
+          set -euo pipefail
+          echo "🔧 Preparing Cloud Functions (prod deps only)…"
+          if [ -f package-lock.json ]; then
+            echo "Trying npm ci --omit=dev (strict, fast)…"
+            if ! npm ci --omit=dev --no-audit --no-fund; then
+              echo "npm ci failed; falling back to npm install --omit=dev…"
+              npm install --omit=dev --no-audit --no-fund
+            fi
           else
-            echo "No functions dir; skipping"
+            echo "No package-lock.json found; using npm install --omit=dev…"
+            npm install --omit=dev --no-audit --no-fund
           fi
+
+          cd ..
+          echo "🚀 Deploying functions…"
+          firebase deploy --non-interactive \
+            --project "$FIREBASE_PROJECT_ID" \
+            --only functions \
+            --token "$FIREBASE_TOKEN"
 
