@@ -50,7 +50,7 @@
       "collectionGroup": "posts",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "visibility", "op": "EQUAL" },
+        { "fieldPath": "visibility", "op": "EQUAL", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
