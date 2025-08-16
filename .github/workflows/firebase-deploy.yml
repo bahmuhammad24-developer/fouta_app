@@ -50,6 +50,9 @@ jobs:
       - name: Print Firebase CLI version
         run: firebase --version
 
+      - name: Validate Firestore indexes schema
+        run: npm run check:indexes
+
       - name: Validate rules + indexes (best-effort)
         run: |
           firebase emulators:exec \
