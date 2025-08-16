@@ -8,11 +8,11 @@ void main() {
     final product = Product(
       id: '1',
       sellerId: 'seller',
-      urls: const [],
+      imageUris: const [],
       title: 'Test',
       category: 'c',
-      price: 1,
-      currency: 'USD',
+      priceAmount: 1,
+      priceCurrency: 'USD',
       favoriteUserIds: const [],
     );
 
