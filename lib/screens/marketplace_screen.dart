@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -6,6 +7,7 @@ import '../features/marketplace/marketplace_service.dart';
 import '../features/marketplace/product_detail_screen.dart';
 import 'package:fouta_app/features/marketplace/product_card.dart';
 import 'package:fouta_app/features/marketplace/create_product_nav.dart';
+import 'package:fouta_app/features/marketplace/onboarding/seller_onboarding_nav.dart';
 import 'marketplace_filters_sheet.dart';
 import 'seller_profile_screen.dart';
 import '../widgets/refresh_scaffold.dart';
@@ -15,6 +17,8 @@ import '../widgets/skeleton.dart';
 import 'package:fouta_app/design/components/f_button.dart';
 import 'package:fouta_app/design/components/f_chip.dart';
 import 'package:fouta_app/design/tokens.dart';
+import '../widgets/fouta_button.dart';
+
 
 // TODO(IA): Align screen layout with docs/design/information-architecture.md after DS v1 adoption
 class MarketplaceScreen extends StatefulWidget {
@@ -89,6 +93,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       try {
                         return ProductCard(
                           product: product,
+                          viewerId: userId,
                           onTap: () {
                             Navigator.push(
                               context,
@@ -124,12 +129,39 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           return Column(
             children: [
               if (user != null)
+                FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                  future: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(userId)
+                      .collection('meta')
+                      .doc('onboarding')
+                      .get(),
+                  builder: (context, snap) {
+                    final data = snap.data?.data();
+                    final incomplete = (data?['completed'] ?? true) == false;
+                    if (incomplete) {
+                      return ListTile(
+                        title: const Text('Finish setting up your shop'),
+                        trailing: TextButton(
+                          onPressed: () => navigateToSellerOnboarding(context),
+                          child: const Text('Resume'),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              if (user != null)
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: FButton(
                     label: hasListings ? 'Sell' : 'Start Selling',
                     onPressed: () async {
-                      await navigateToCreateProduct(context);
+                      if (hasListings) {
+                        await navigateToCreateProduct(context);
+                      } else {
+                        await navigateToSellerOnboarding(context);
+                      }
                     },
                     expanded: true,
                     tier: FTier.t1,
@@ -169,88 +201,4 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  Widget _buildProductCard(Product product, String userId) {
-    final image = product.urls.isNotEmpty ? product.urls.first : null;
-    return Card(
-      clipBehavior: Clip.hardEdge,
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ProductDetailScreen(product: product),
-            ),
-          );
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(child: Skeleton.rect()),
-                  if (image != null)
-                    Positioned.fill(
-                      child: ProgressiveImage(
-                        imageUrl: image,
-                        thumbUrl: image,
-                        fit: BoxFit.cover,
-                      ),
-                    )
-                  else
-                    const Positioned.fill(
-                      child: Icon(Icons.image, size: 48),
-                    ),
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: IconButton(
-                      icon: Icon(
-                        product.favoriteUserIds.contains(userId)
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        color: product.favoriteUserIds.contains(userId)
-                            ? Colors.red
-                            : Colors.white,
-                      ),
-                      onPressed: () => _service.toggleFavorite(product.id, userId),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Text(
-                product.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text('${product.currency}${product.price.toStringAsFixed(2)}'),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => SellerProfileScreen(sellerId: product.sellerId),
-                    ),
-                  );
-                },
-                child: Text(
-                  product.sellerId,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

@@ -12,6 +12,7 @@ class ProductCard extends StatelessWidget {
     this.onFavorite,
     this.isFavorited = false,
     this.onSellerTap,
+    this.viewerId,
   });
 
   final Product product;
@@ -19,6 +20,7 @@ class ProductCard extends StatelessWidget {
   final VoidCallback? onFavorite;
   final bool isFavorited;
   final VoidCallback? onSellerTap;
+  final String? viewerId;
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +50,15 @@ class ProductCard extends StatelessWidget {
                             child: const Icon(Icons.image, size: 48),
                           ),
                   ),
+                  if (product.status == 'draft' && product.sellerId == viewerId)
+                    const Positioned(
+                      top: 4,
+                      left: 4,
+                      child: Chip(
+                        label: Text('Draft'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    ),
                   Positioned(
                     top: 4,
                     right: 4,

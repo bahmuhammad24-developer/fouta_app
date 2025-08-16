@@ -1,0 +1,2 @@
+- Added `docs/ops/codex-prompt-spec.md` describing the standard structure for Codex prompts.
+- Ensures future AIs follow consistent formatting for repository changes.
