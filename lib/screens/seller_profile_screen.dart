@@ -110,7 +110,7 @@ class SellerProfileScreen extends StatelessWidget {
                   itemCount: products.length,
                   itemBuilder: (context, index) {
                     final product = products[index];
-                    return ProductCard(product: product);
+                    return ProductCard(product: product, viewerId: userId);
                   },
                 );
               },

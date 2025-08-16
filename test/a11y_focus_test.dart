@@ -7,16 +7,20 @@ void main() {
   testWidgets('focused product card shows focus highlight', (tester) async {
     final product = Product(
       id: '1',
+
       sellerId: 'seller',
       imageUris: const [],
       title: 'Test',
       category: 'c',
       priceAmount: 1,
       priceCurrency: 'USD',
+
       favoriteUserIds: const [],
     );
 
-    await tester.pumpWidget(MaterialApp(home: ProductCard(product: product)));
+    await tester.pumpWidget(
+      MaterialApp(home: ProductCard(product: product, viewerId: 'viewer')),
+    );
 
     final inkFinder = find.descendant(
       of: find.byType(ProductCard),

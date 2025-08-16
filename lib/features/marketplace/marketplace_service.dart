@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../main.dart';
 import '../../utils/json_safety.dart';
@@ -15,6 +16,7 @@ class Product {
   final String sellerId;
   final List<String> favoriteUserIds; // optional favorites
   final String? category;
+  final String status;
 
   Product({
     required this.id,
@@ -26,6 +28,7 @@ class Product {
     List<Uri>? imageUris,
     List<String>? favoriteUserIds,
     this.category,
+    this.status = 'published',
   })  : imageUris = imageUris ?? const [],
         favoriteUserIds = favoriteUserIds ?? const [];
 
@@ -54,7 +57,10 @@ class Product {
       favoriteUserIds: ((map['favoriteUserIds'] as List?) ?? const [])
           .map((e) => e.toString())
           .toList(),
+
       category: (map['category'] as String?)?.trim(),
+      status: (map['status'] ?? 'published').toString(),
+
     );
   }
 
@@ -67,6 +73,7 @@ class Product {
         'sellerId': sellerId,
         'favoriteUserIds': favoriteUserIds,
         if (category != null) 'category': category,
+        'status': status,
       };
 }
 
@@ -97,6 +104,42 @@ class MarketplaceService {
     // ignore: unused_local_variable
     final priceCurrency = currency; // preserve compatibility
     return 'stub_prod_${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  /// Create a draft product under the current user.
+  Future<String> createDraftProduct({
+    required String title,
+    required double price,
+    required String currency,
+    List<Uri>? images,
+  }) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) throw Exception('Not authenticated');
+    final doc = _collection.doc();
+    await doc.set({
+      'title': title,
+      'priceAmount': price,
+      'priceCurrency': currency,
+      'imageUris': (images ?? const []).map((u) => u.toString()).toList(),
+      'sellerId': uid,
+      'status': 'draft',
+    });
+    return doc.id;
+  }
+
+  /// Publish a draft product if required fields are present.
+  Future<void> publishProduct(String productId) async {
+    final doc = _collection.doc(productId);
+    final snap = await doc.get();
+    final data = snap.data();
+    if (data == null) throw Exception('not-found');
+    final hasTitle = (data['title'] ?? '').toString().isNotEmpty;
+    final hasPrice = data['priceAmount'] != null;
+    final hasImages = (data['imageUris'] as List?)?.isNotEmpty ?? false;
+    if (!hasTitle || !hasPrice || !hasImages) {
+      throw Exception('missing-fields');
+    }
+    await doc.update({'status': 'published'});
   }
 
   Future<void> toggleFavorite(String productId, String userId) async {

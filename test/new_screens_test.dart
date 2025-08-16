@@ -22,7 +22,8 @@ void main() {
 
   testWidgets('Marketplace screen shows placeholder', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: MarketplaceScreen()));
-    expect(find.text('Marketplace listings will appear here.'), findsOneWidget);
+    await tester.pump();
+    expect(find.text('No products'), findsOneWidget);
   });
 
   testWidgets('AR Camera screen shows placeholder', (tester) async {

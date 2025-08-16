@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'marketplace_service.dart';
 import 'package:fouta_app/theme/tokens.dart';
 import '../../widgets/skeleton.dart';
+import 'package:fouta_app/design/components/f_card.dart';
+import 'package:fouta_app/design/tokens.dart';
+
 
 class ProductCard extends StatefulWidget {
   const ProductCard({
@@ -12,6 +15,7 @@ class ProductCard extends StatefulWidget {
     this.onFavorite,
     this.isFavorited = false,
     this.onSellerTap,
+    this.viewerId,
   });
 
   final Product product;
@@ -19,6 +23,7 @@ class ProductCard extends StatefulWidget {
   final Future<void> Function()? onFavorite;
   final bool isFavorited;
   final VoidCallback? onSellerTap;
+  final String? viewerId;
 
   @override
   State<ProductCard> createState() => _ProductCardState();
@@ -54,6 +59,7 @@ class _ProductCardState extends State<ProductCard> {
       child: InkWell(
         onTap: widget.onTap,
         focusColor: AppColors.primary.withOpacity(0.3),
+
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -61,6 +67,7 @@ class _ProductCardState extends State<ProductCard> {
               aspectRatio: 4 / 3,
               child: Stack(
                 children: [
+
                   Positioned.fill(child: Skeleton.rect()),
                   if (image != null)
                     Positioned.fill(
@@ -78,6 +85,7 @@ class _ProductCardState extends State<ProductCard> {
                     )
                   else
                     const Center(child: Icon(Icons.image, size: 48)),
+
                   Positioned(
                     top: 4,
                     right: 4,
@@ -108,8 +116,10 @@ class _ProductCardState extends State<ProductCard> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: InkWell(
+
                 onTap: widget.onSellerTap,
                 focusColor: AppColors.primary.withOpacity(0.3),
+
                 child: Text(
                   widget.product.sellerId,
                   style: Theme.of(context).textTheme.bodySmall,
