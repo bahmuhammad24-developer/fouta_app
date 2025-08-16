@@ -92,26 +92,33 @@ jobs:
             fi
           fi
 
-      - name: Deploy functions (if present)
+      - name: Compute functions package hash
         if: ${{ hashFiles('functions/package.json') != '' }}
-        working-directory: functions
+        run: echo "FN_HASH=$(sha256sum functions/package.json | cut -d' ' -f1)" >> $GITHUB_ENV
+
+      - name: Cache functions node_modules
+        if: ${{ hashFiles('functions/package.json') != '' }}
+        uses: actions/cache@v4
+        with:
+          path: functions/node_modules
+          key: functions-${{ env.FN_HASH }}
+
+      - name: Deploy functions (if present)
+        if: ${{ env.FN_HASH != '' }}
         env:
           FIREBASE_PROJECT_ID: ${{ env.FIREBASE_PROJECT_ID }}
         run: |
           set -euo pipefail
-          echo "🔧 Preparing Cloud Functions (prod deps only)…"
-          if [ -f package-lock.json ]; then
-            echo "Trying npm ci --omit=dev (strict, fast)…"
-            if ! npm ci --omit=dev --no-audit --no-fund; then
-              echo "npm ci failed; falling back to npm install --omit=dev…"
-              npm install --omit=dev --no-audit --no-fund
-            fi
-          else
-            echo "No package-lock.json found; using npm install --omit=dev…"
-            npm install --omit=dev --no-audit --no-fund
+          if git diff --quiet HEAD~1 -- functions/; then
+            echo "No changes in functions; skipping deploy."
+            exit 0
           fi
 
+          echo "🔧 Preparing Cloud Functions (prod deps only)…"
+          cd functions
+          npm install --omit=dev --no-audit --no-fund
           cd ..
+
           echo "🚀 Deploying functions…"
           firebase deploy --non-interactive \
             --project "$FIREBASE_PROJECT_ID" \
